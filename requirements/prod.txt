@@ -1,0 +1,11 @@
+# ==========================================================================
+# OdontoSaaS — Dependências de PRODUÇÃO
+# Uso: pip install -r requirements/prod.txt
+# ==========================================================================
+-r base.txt
+
+# --- Arquivos estáticos ---
+whitenoise==6.8.2
+
+# --- Observabilidade (opcional, recomendável) ---
+sentry-sdk==2.19.2

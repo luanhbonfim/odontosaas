@@ -1,0 +1,80 @@
+# ==========================================================================
+# OdontoSaaS — Configuração de ferramentas do projeto
+# Nesta tarefa: apenas Ruff (lint + format). Demais ferramentas (pytest, etc.)
+# serão adicionadas em tarefas posteriores do backlog.
+# ==========================================================================
+
+[tool.ruff]
+# Coerente com .editorconfig e a stack (Python 3.12+)
+line-length = 100
+target-version = "py312"
+# Não lintar código gerado/externo
+extend-exclude = [
+    "migrations",
+    ".venv",
+    "venv",
+    "staticfiles",
+    "static_root",
+    "media",
+]
+
+[tool.ruff.lint]
+# Conjunto de regras pragmático para projeto Django
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (ordenação de imports)
+    "UP",   # pyupgrade (sintaxe moderna)
+    "B",    # flake8-bugbear (armadilhas comuns)
+    "C4",   # flake8-comprehensions
+    "DJ",   # flake8-django (boas práticas Django)
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",  # comprimento de linha é tratado pelo formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Settings e __init__ costumam ter imports "não usados" propositais
+"config/settings/*.py" = ["F403", "F405"]
+"**/__init__.py" = ["F401"]
+"tests/**" = ["S101"]  # asserts em testes são esperados
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+# ==========================================================================
+# Pytest (via pytest-django)
+# ==========================================================================
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["test_*.py", "*_test.py", "tests.py"]
+testpaths = ["tests", "apps"]
+addopts = "-ra --strict-markers"
+
+# ==========================================================================
+# Coverage
+# ==========================================================================
+[tool.coverage.run]
+source = ["apps", "config"]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "config/wsgi.py",
+    "config/asgi.py",
+    # Settings de produção só carregam em produção — não exercíveis no CI.
+    "config/settings/prod.py",
+    "*/__init__.py",
+    "manage.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+# Reprova o build se a cobertura total ficar abaixo do alvo.
+fail_under = 80

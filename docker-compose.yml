@@ -1,0 +1,200 @@
+# ==========================================================================
+# OdontoSaaS — docker-compose (ambiente de desenvolvimento local)
+# Serviços serão adicionados incrementalmente pelo backlog da Sprint 0:
+#   [x] db  ·  [ ] redis  ·  [ ] web  ·  [ ] celery_worker  ·  [ ] celery_beat  ·  [ ] waha
+# Uso: copie .env.example para .env antes de subir  ->  cp .env.example .env
+# ==========================================================================
+
+services:
+  # ------------------------------------------------------------------------
+  # Banco de dados — PostgreSQL 16 (multi-tenant via django-tenants)
+  # ------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: odonto_db
+    restart: unless-stopped
+    # O Postgres só precisa das POSTGRES_*; a interpolação ${...} lê o .env
+    # automaticamente. Evita-se env_file aqui por menor privilégio.
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - odonto_pgdata:/var/lib/postgresql/data
+    ports:
+      # Exposto no host para inspeção/dev; em produção pode ser removido.
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ------------------------------------------------------------------------
+  # Redis 7 — broker/result backend do Celery e cache da aplicação
+  # ------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: odonto_redis
+    restart: unless-stopped
+    # Persistência AOF para não perder a fila em reinícios do container.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - odonto_redisdata:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ------------------------------------------------------------------------
+  # Web — aplicação Django servida por Gunicorn
+  # ------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      args:
+        # Imagem de dev inclui pytest/ruff para rodar testes no container.
+        REQUIREMENTS: dev
+    image: odonto-web:dev
+    container_name: odonto_web
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Hot-reload do código em dev; o venv (/opt/venv) fica fora do mount.
+      - .:/app
+    ports:
+      - "8000:8000"
+    # Gunicorn com --reload para desenvolvimento (o CMD do Dockerfile usa
+    # 3 workers sem reload, adequado à produção).
+    command:
+      - gunicorn
+      - config.wsgi:application
+      - --bind=0.0.0.0:8000
+      - --workers=2
+      - --reload
+
+  # ------------------------------------------------------------------------
+  # Celery Worker — processamento assíncrono (envio WhatsApp, Google, etc.)
+  # Reaproveita a imagem da aplicação (odonto-web:dev).
+  # NOTA: o boot completo depende de `config/celery.py` (Sprint 1). Até lá,
+  # `celery -A config worker` não encontra o app — comportamento esperado.
+  # ------------------------------------------------------------------------
+  celery_worker:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: dev
+    image: odonto-web:dev
+    container_name: odonto_celery_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command:
+      - celery
+      - -A
+      - config
+      - worker
+      - -l
+      - info
+
+  # ------------------------------------------------------------------------
+  # Celery Beat — agendador (cron) das tarefas periódicas (lembretes, sync).
+  # Usa o DatabaseScheduler do django-celery-beat: cada clínica configura a
+  # antecedência via banco, sem redeploy.
+  # NOTA: boot completo depende de `config/celery.py` + migrations do
+  # django-celery-beat (Sprint 1). Comportamento esperado até lá.
+  # ------------------------------------------------------------------------
+  celery_beat:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: dev
+    image: odonto-web:dev
+    container_name: odonto_celery_beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command:
+      - celery
+      - -A
+      - config
+      - beat
+      - -l
+      - info
+      - --scheduler
+      - django_celery_beat.schedulers:DatabaseScheduler
+
+  # ------------------------------------------------------------------------
+  # WAHA — WhatsApp HTTP API (engine NOWEB, leve, sem navegador).
+  # Container de terceiros autossuficiente (não depende de db/redis).
+  # Cada clínica terá sua própria "session" (multi-tenant).
+  # ------------------------------------------------------------------------
+  waha:
+    # Dica: fixar uma tag (ex.: devlikeapro/waha:2026.6) em produção.
+    image: devlikeapro/waha:latest
+    container_name: odonto_waha
+    restart: unless-stopped
+    # Apenas as vars do WAHA (menor privilégio; sem env_file).
+    environment:
+      WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-NOWEB}
+      # Protege os endpoints do WAHA (header X-Api-Key)
+      WAHA_API_KEY: ${WAHA_API_KEY}
+      # Webhook global: WAHA chama o Django ao receber mensagens
+      WHATSAPP_HOOK_URL: ${WHATSAPP_HOOK_URL}
+      WHATSAPP_HOOK_EVENTS: ${WHATSAPP_HOOK_EVENTS:-message}
+      # Pasta de sessões (casa com o volume montado abaixo)
+      WAHA_LOCAL_STORE_BASE_DIR: ${WAHA_LOCAL_STORE_BASE_DIR:-/app/.sessions}
+      # Credenciais fixas de dashboard/swagger (senão o WAHA gera novas a cada start)
+      WAHA_DASHBOARD_USERNAME: ${WAHA_DASHBOARD_USERNAME:-admin}
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD:-changeme}
+      WHATSAPP_SWAGGER_USERNAME: ${WHATSAPP_SWAGGER_USERNAME:-admin}
+      WHATSAPP_SWAGGER_PASSWORD: ${WHATSAPP_SWAGGER_PASSWORD:-changeme}
+    volumes:
+      - odonto_wahadata:/app/.sessions
+    ports:
+      - "${WAHA_PORT:-3000}:3000"
+    healthcheck:
+      # /ping é o endpoint de liveness público do WAHA (/health exige X-Api-Key).
+      # A imagem WAHA é Node; usamos node para a checagem.
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3000/ping',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  odonto_pgdata:
+    name: odonto_pgdata
+  odonto_redisdata:
+    name: odonto_redisdata
+  odonto_wahadata:
+    name: odonto_wahadata

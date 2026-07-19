@@ -1,0 +1,20 @@
+# ==========================================================================
+# OdontoSaaS — Dependências de DESENVOLVIMENTO / TESTES / QUALIDADE
+# Uso: pip install -r requirements/dev.txt
+# ==========================================================================
+-r base.txt
+
+# --- Testes ---
+pytest==8.3.4
+pytest-django==4.9.0
+pytest-cov==6.0.0
+factory-boy==3.3.1                  # fábricas de dados para testes
+responses==0.25.3                  # mock de chamadas HTTP (WAHA/Google)
+
+# --- Qualidade de código ---
+ruff==0.8.4                        # lint + format
+pre-commit==4.0.1
+
+# --- DX ---
+django-extensions==3.2.3
+ipython==8.31.0

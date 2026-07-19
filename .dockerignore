@@ -1,0 +1,55 @@
+# ==========================================================================
+# OdontoSaaS — .dockerignore
+# Mantém o contexto de build enxuto e evita vazar segredos para a imagem.
+# ==========================================================================
+
+# Segredos / ambiente
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Controle de versão / CI
+.git
+.gitignore
+.github
+.pre-commit-config.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Testes / cobertura / cache
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Django (gerado)
+staticfiles/
+static_root/
+media/
+*.log
+db.sqlite3
+
+# IDEs / SO
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Documentação e docker-compose não precisam ir para a imagem da app
+docs/
+docker-compose*.yml

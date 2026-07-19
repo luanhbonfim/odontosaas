@@ -1,0 +1,21 @@
+# ==========================================================================
+# OdontoSaaS — normalização de fim de linha (evita CRLF no repositório)
+# Garante LF para todo texto, independentemente do SO do contribuidor.
+# Importante para o CI (ruff format exige LF) e para o Makefile/shell.
+# ==========================================================================
+
+# Por padrão, normaliza texto para LF no repositório.
+* text=auto eol=lf
+
+# Scripts do Windows permanecem em CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Arquivos binários não sofrem conversão.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
