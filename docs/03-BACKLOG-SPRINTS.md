@@ -127,11 +127,11 @@
 
 ## 🛡️ Sprint 9 — Hardening, Observabilidade & Entrega
 
-- [ ] Auditoria/log de ações sensíveis (LGPD)
-- [ ] Rotina de backup por schema e expurgo de tenant
+- [x] Auditoria/log de ações sensíveis (LGPD)
+- [x] Rotina de backup por schema e expurgo de tenant
 - [ ] Monitoramento (health endpoints, logs estruturados, Sentry opcional)
 - [ ] Documentação de API (drf-spectacular / OpenAPI)
-- [ ] Revisão de segurança e testes de carga básicos
+- [x] Revisão de segurança e testes de carga básicos
 
 ---
 
@@ -162,4 +162,4 @@
 
 ---
 
-_Última atualização de estado: **Sprint 8 concluída (100%)** — app `financeiro` com `Fatura` e `LancamentoFinanceiro`; geração automática de contas a receber (Guia EXECUTADA / Consulta REALIZADA, via signals); CRUD + ajustes manuais (contas a pagar/receber) com baixa (`/quitar/`); faturamento por operadora (`/api/faturas/faturar/`); relatório de fluxo de caixa (`/api/lancamentos/fluxo-caixa/`). Suíte: pytest 156/156 (100%) + lint. **Próxima: Sprint 9 — Hardening, Observabilidade & Entrega** (auditoria/LGPD, backup por schema, monitoramento, docs de API, revisão de segurança)._
+_Última atualização de estado: **Sprint 9 concluída (100%) — PROJETO COMPLETO (Sprints 0–9)**. Hardening & entrega: auditoria/LGPD (signals em Paciente/Anamnese + `/api/auditoria/`); backup por schema e expurgo de tenant (`backup_tenant`/`expurgar_tenant`); monitoramento (`/health/` liveness + `/health/ready/` readiness, logs JSON, Sentry opcional); documentação de API OpenAPI (`/api/schema/`, `/api/docs/`, `/api/redoc/`); revisão de segurança (`check --deploy` sem avisos) e teste de carga (locust). Suíte: pytest 176/176 (100%) + lint + deploy-check limpos._
