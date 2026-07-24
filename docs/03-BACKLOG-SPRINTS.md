@@ -117,11 +117,11 @@
 
 ## 💰 Sprint 8 — Gestão Financeira
 
-- [ ] Criar app `financeiro` com models `LancamentoFinanceiro` e `Fatura`
-- [ ] Geração automática de contas a receber a partir de consultas/guias realizadas + testes
-- [ ] Lançamentos e ajustes manuais (contas a pagar/receber) + testes
-- [ ] Faturamento por operadora (agrupar guias em `Fatura`) + testes
-- [ ] Relatório/consulta de fluxo de caixa (a receber x a pagar) + testes
+- [x] Criar app `financeiro` com models `LancamentoFinanceiro` e `Fatura`
+- [x] Geração automática de contas a receber a partir de consultas/guias realizadas + testes
+- [x] Lançamentos e ajustes manuais (contas a pagar/receber) + testes
+- [x] Faturamento por operadora (agrupar guias em `Fatura`) + testes
+- [x] Relatório/consulta de fluxo de caixa (a receber x a pagar) + testes
 
 ---
 
@@ -162,4 +162,4 @@
 
 ---
 
-_Última atualização de estado: **Sprint 7 concluída (100%)** — app `estoque` com `CategoriaInsumo`, `Insumo`, `MovimentacaoEstoque`, `ConsumoInsumo`; CRUD + cálculo de saldo; alerta de estoque mínimo (flag + `/api/insumos/alertas/`); baixa automática ao realizar a consulta (signal idempotente). Suíte: pytest 144/144 (100%) + lint. **Próxima: Sprint 8 — Gestão Financeira** (app `financeiro` com `LancamentoFinanceiro` e `Fatura`)._
+_Última atualização de estado: **Sprint 8 concluída (100%)** — app `financeiro` com `Fatura` e `LancamentoFinanceiro`; geração automática de contas a receber (Guia EXECUTADA / Consulta REALIZADA, via signals); CRUD + ajustes manuais (contas a pagar/receber) com baixa (`/quitar/`); faturamento por operadora (`/api/faturas/faturar/`); relatório de fluxo de caixa (`/api/lancamentos/fluxo-caixa/`). Suíte: pytest 156/156 (100%) + lint. **Próxima: Sprint 9 — Hardening, Observabilidade & Entrega** (auditoria/LGPD, backup por schema, monitoramento, docs de API, revisão de segurança)._
