@@ -34,6 +34,9 @@ class Consulta(ModeloBase):
     inicio = models.DateTimeField()
     fim = models.DateTimeField()
     procedimento = models.CharField(max_length=255, blank=True)
+    # Valor do atendimento particular. Ao ficar REALIZADA (e valor > 0), gera uma
+    # conta a receber no financeiro (Sprint 8). Convênio é faturado via Guia.
+    valor = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.AGENDADA)
     status_confirmacao = models.CharField(
         max_length=20,

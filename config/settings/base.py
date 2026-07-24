@@ -68,7 +68,7 @@ TENANT_APPS = [
     "apps.integracoes",  # integrações externas (Google Calendar) (Sprint 5)
     "apps.notificacoes",  # notificações WhatsApp / WAHA (Sprint 6)
     "apps.estoque",  # gestão de insumos / estoque (Sprint 7)
-    # Demais apps de negócio (financeiro) entram nas próximas sprints.
+    "apps.financeiro",  # gestão financeira (Sprint 8)
 ]
 
 # INSTALLED_APPS = SHARED + (TENANT que ainda não esteja em SHARED)

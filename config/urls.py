@@ -18,6 +18,7 @@ from apps.estoque.views import (
     InsumoViewSet,
     MovimentacaoEstoqueViewSet,
 )
+from apps.financeiro.views import FaturaViewSet, LancamentoFinanceiroViewSet
 from apps.integracoes.views import google_authorize, google_callback, google_webhook
 from apps.notificacoes.views import (
     ConfiguracaoNotificacaoViewSet,
@@ -45,6 +46,8 @@ router.register(
     "movimentacoes-estoque", MovimentacaoEstoqueViewSet, basename="movimentacao-estoque"
 )
 router.register("consumos-insumo", ConsumoInsumoViewSet, basename="consumo-insumo")
+router.register("lancamentos", LancamentoFinanceiroViewSet, basename="lancamento")
+router.register("faturas", FaturaViewSet, basename="fatura")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
