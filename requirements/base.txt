@@ -6,6 +6,7 @@
 # --- Core / Framework ---
 Django==5.1.4
 djangorestframework==3.15.2
+drf-spectacular==0.28.0            # schema OpenAPI + Swagger UI / ReDoc
 
 # --- Multi-tenant (schema-per-tenant) ---
 django-tenants==3.7.0

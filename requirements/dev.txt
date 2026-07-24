@@ -10,6 +10,7 @@ pytest-django==4.9.0
 pytest-cov==6.0.0
 factory-boy==3.3.1                  # fábricas de dados para testes
 responses==0.25.3                  # mock de chamadas HTTP (WAHA/Google)
+locust==2.32.4                     # teste de carga básico (tests/load/locustfile.py)
 
 # --- Qualidade de código ---
 ruff==0.8.4                        # lint + format

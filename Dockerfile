@@ -43,9 +43,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
     DJANGO_SETTINGS_MODULE=config.settings.prod
 
-# Biblioteca cliente do PostgreSQL em runtime
+# Cliente do PostgreSQL em runtime: libpq5 (psycopg) + postgresql-client (pg_dump,
+# usado pela rotina de backup por schema — comando backup_tenant).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpq5 \
+        postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Usuário e grupo de sistema não-root
