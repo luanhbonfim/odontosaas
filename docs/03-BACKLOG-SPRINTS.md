@@ -38,80 +38,80 @@
 - [x] Job de **testes** (pytest + coverage) com serviços `postgres:16` e `redis:7`
 - [x] Configurar limite mínimo de cobertura (falha se abaixo do alvo)
 - [x] (Opcional) Job de **build** da imagem Docker em `main`/tags
-- [ ] Validar pipeline verde em um push inicial
+- [x] Validar pipeline verde em um push inicial
 
 ---
 
 ## 🧱 Sprint 1 — Fundação Multi-Tenant & Autenticação
 
-- [ ] Instalar e configurar `django-tenants` (DATABASE ENGINE, middleware, `SHARED_APPS`/`TENANT_APPS`)
-- [ ] Criar app `tenants` com models `Clinica` (tenant) e `Dominio` — schema `public`
-- [ ] Criar app `plataforma` com `PlanoAssinatura` (schema `public`)
-- [ ] Criar modelo base abstrato `ModeloBase` (`criado_em`, `atualizado_em`, `ativo`)
-- [ ] Criar app `usuarios` com `Usuario` custom (AbstractUser, login por e-mail, campo `papel`)
-- [ ] Configurar Celery + Redis no projeto (`celery.py`, tasks tenant-aware, `django-celery-beat`)
-- [ ] Criar comando/rotina de provisionamento de tenant (criar `Clinica` + schema + domínio)
-- [ ] Testes: criação de tenant, isolamento de schema, autenticação por papel
+- [x] Instalar e configurar `django-tenants` (DATABASE ENGINE, middleware, `SHARED_APPS`/`TENANT_APPS`)
+- [x] Criar app `tenants` com models `Clinica` (tenant) e `Dominio` — schema `public`
+- [x] Criar app `plataforma` com `PlanoAssinatura` (schema `public`)
+- [x] Criar modelo base abstrato `ModeloBase` (`criado_em`, `atualizado_em`, `ativo`)
+- [x] Criar app `usuarios` com `Usuario` custom (AbstractUser, login por e-mail, campo `papel`)
+- [x] Configurar Celery + Redis no projeto (`celery.py`, tasks tenant-aware, `django-celery-beat`)
+- [x] Criar comando/rotina de provisionamento de tenant (criar `Clinica` + schema + domínio)
+- [x] Testes: criação de tenant, isolamento de schema, autenticação por papel
 
 ---
 
 ## 👨‍⚕️ Sprint 2 — Gestão de Dentistas
 
-- [ ] Criar app `dentistas` com models `Dentista` e `Especialidade` (M2M)
-- [ ] CRUD de `Dentista` (views/serializers/urls) com validação de CRO único
-- [ ] Vínculo opcional `Dentista` ↔ `Usuario` (login do profissional)
-- [ ] Testes de CRUD e validações do módulo de dentistas
+- [x] Criar app `dentistas` com models `Dentista` e `Especialidade` (M2M)
+- [x] CRUD de `Dentista` (views/serializers/urls) com validação de CRO único
+- [x] Vínculo opcional `Dentista` ↔ `Usuario` (login do profissional)
+- [x] Testes de CRUD e validações do módulo de dentistas
 
 ---
 
 ## 🧑‍🤝‍🧑 Sprint 3 — Pacientes, Planos e Guias
 
-- [ ] Criar app `pacientes` com model `Paciente` (CPF único, WhatsApp)
-- [ ] CRUD de `Paciente` + testes
-- [ ] Model `PlanoOdontologico` (vários por paciente) + CRUD + testes
-- [ ] Model `Guia` (vínculo plano ↔ consulta, status) + CRUD + testes
-- [ ] Regra de negócio: transição de status da guia (`EMITIDA → AUTORIZADA → EXECUTADA → PAGA/GLOSADA`)
+- [x] Criar app `pacientes` com model `Paciente` (CPF único, WhatsApp)
+- [x] CRUD de `Paciente` + testes
+- [x] Model `PlanoOdontologico` (vários por paciente) + CRUD + testes
+- [x] Model `Guia` (vínculo plano ↔ consulta, status) + CRUD + testes
+- [x] Regra de negócio: transição de status da guia (`EMITIDA → AUTORIZADA → EXECUTADA → PAGA/GLOSADA`)
 
 ---
 
 ## 📅 Sprint 4 — Atendimento, Agenda & Anamnese
 
-- [ ] Criar app `agenda` com model `Consulta` (status + status_confirmacao)
-- [ ] Agendamento de consulta com verificação de conflito de horário do dentista + testes
-- [ ] Fluxo "iniciar consulta" (`AGENDADA → EM_ATENDIMENTO → REALIZADA`) + testes
-- [ ] Model `Anamnese` + registro vinculado à consulta/paciente + testes
-- [ ] Vincular `Guia` à `Consulta` no momento do atendimento + testes
+- [x] Criar app `agenda` com model `Consulta` (status + status_confirmacao)
+- [x] Agendamento de consulta com verificação de conflito de horário do dentista + testes
+- [x] Fluxo "iniciar consulta" (`AGENDADA → EM_ATENDIMENTO → REALIZADA`) + testes
+- [x] Model `Anamnese` + registro vinculado à consulta/paciente + testes
+- [x] Vincular `Guia` à `Consulta` no momento do atendimento + testes
 
 ---
 
 ## 🔗 Sprint 5 — Integração Google Calendar (OAuth2 + Sync)
 
-- [ ] Criar app `integracoes` com model `CredencialGoogleCalendar` (tokens criptografados)
-- [ ] Implementar fluxo OAuth2 (authorize + callback) por clínica/dentista + testes (mock)
-- [ ] Model `AgendaEvento` (espelho local do evento Google)
-- [ ] Task `sincronizar_evento_google` (insert/update `events`) + armazenar `google_event_id` + testes
-- [ ] Sincronização incremental por `syncToken` (Celery Beat) + testes
-- [ ] (Opcional) Webhook de push notifications do Google + renovação de canal + testes
+- [x] Criar app `integracoes` com model `CredencialGoogleCalendar` (tokens criptografados)
+- [x] Implementar fluxo OAuth2 (authorize + callback) por clínica/dentista + testes (mock)
+- [x] Model `AgendaEvento` (espelho local do evento Google)
+- [x] Task `sincronizar_evento_google` (insert/update `events`) + armazenar `google_event_id` + testes
+- [x] Sincronização incremental por `syncToken` (Celery Beat) + testes
+- [x] (Opcional) Webhook de push notifications do Google + renovação de canal + testes
 
 ---
 
 ## 💬 Sprint 6 — Notificações WhatsApp (WAHA)
 
-- [ ] Criar app `notificacoes` com `ConfiguracaoNotificacao` (com `waha_session`), `TemplateMensagem`, `LogNotificacao`
-- [ ] Tela/endpoint de personalização (template + dias de antecedência) + testes
-- [ ] Cliente HTTP do WAHA (`POST /api/sendText`, gestão de session) + testes (mock)
-- [ ] Task periódica (Beat) que varre consultas e dispara pedidos de confirmação + testes
-- [ ] Webhook de recebimento do WAHA (evento `message`) + parser da resposta (confirma/recusa) + testes
-- [ ] Gatilho: resposta do paciente → atualiza `Consulta.status_confirmacao` → dispara sync Google + testes
+- [x] Criar app `notificacoes` com `ConfiguracaoNotificacao` (com `waha_session`), `TemplateMensagem`, `LogNotificacao`
+- [x] Tela/endpoint de personalização (template + dias de antecedência) + testes
+- [x] Cliente HTTP do WAHA (`POST /api/sendText`, gestão de session) + testes (mock)
+- [x] Task periódica (Beat) que varre consultas e dispara pedidos de confirmação + testes
+- [x] Webhook de recebimento do WAHA (evento `message`) + parser da resposta (confirma/recusa) + testes
+- [x] Gatilho: resposta do paciente → atualiza `Consulta.status_confirmacao` → dispara sync Google + testes
 
 ---
 
 ## 📦 Sprint 7 — Gestão de Insumos (Estoque)
 
-- [ ] Criar app `estoque` com models `Insumo`, `CategoriaInsumo`, `MovimentacaoEstoque`
-- [ ] CRUD de insumos + cálculo de saldo por movimentações + testes
-- [ ] Alerta de estoque mínimo + testes
-- [ ] Baixa automática de insumo vinculada à consulta realizada + testes
+- [x] Criar app `estoque` com models `Insumo`, `CategoriaInsumo`, `MovimentacaoEstoque`
+- [x] CRUD de insumos + cálculo de saldo por movimentações + testes
+- [x] Alerta de estoque mínimo + testes
+- [x] Baixa automática de insumo vinculada à consulta realizada + testes
 
 ---
 
@@ -135,4 +135,31 @@
 
 ---
 
-_Última atualização de estado: Sprint 0 — job `build` (main/tags, needs lint+test, build-push-action) adicionado e validado (YAML). Próxima: validar pipeline verde em um push inicial (requer repo GitHub)._
+## 🔧 Evoluções pós-teste (validadas ao vivo — fora do fluxo de sprints)
+
+> Ajustes e melhorias que surgiram durante os **testes manuais** (WhatsApp real + Google Calendar
+> real), já implementados, testados e **validados pelo usuário**. Não são tarefas de sprint — ficam
+> aqui como histórico do que evoluiu além do checklist original.
+
+### Notificações / WhatsApp (WAHA)
+- [x] Matching **híbrido** da confirmação: (a) resposta **citando** a mensagem (`replyTo` ↔ `LogNotificacao.provider_message_id`) **ou** (b) **SIM/NÃO digitado direto** casado pelo **telefone do paciente**, exigindo uma confirmação nossa pendente para consulta **futura**. Um "SIM" avulso (sem confirmação pendente) **não** dispara o gatilho.
+- [x] Resolução do **telefone real** quando o WhatsApp entrega o remetente como **LID de privacidade** (extraído de `_data.key.remoteJidAlt`).
+- [x] Campo `provider_message_id` no `LogNotificacao` (migração `notificacoes.0002`).
+- [x] **Mensagem de agradecimento** automática ao confirmar.
+- [x] Constatação: botões interativos (`sendButtons`) não são confiáveis na engine NOWEB → padrão é texto "responda SIM/NÃO".
+
+### Agenda / Google Calendar
+- [x] Consulta **confirmada** deixa o evento **verde** no Google (`colorId=10`).
+- [x] **Descrição** do evento com Paciente / Telefone (formatado) / Dentista.
+- [x] **Import bidirecional (Google → sistema):** evento criado pela dentista no Google Agenda é importado como `Consulta`. Convenção: **título = nome do paciente**, **telefone na descrição**. Paciente **criado automaticamente**; dentista = credencial ou 1º ativo (fallback); consulta entra `PENDENTE` (segue para a confirmação de 1 dia antes).
+
+### Pacientes
+- [x] Property `Paciente.telefone_formatado` → formato **`(DDD) número`** (remove código do país 55).
+- [x] `CPF` **opcional** no model (`null=True, blank=True`) para permitir auto-criação (ex.: import do Google); **a API continua exigindo** CPF (migração `pacientes.0005`).
+
+### Qualidade
+- [x] Suíte: **131 testes** · **100%** de cobertura · `ruff` lint+format limpos.
+
+---
+
+_Última atualização de estado: **Sprint 7 concluída (100%)** — app `estoque` com `CategoriaInsumo`, `Insumo`, `MovimentacaoEstoque`, `ConsumoInsumo`; CRUD + cálculo de saldo; alerta de estoque mínimo (flag + `/api/insumos/alertas/`); baixa automática ao realizar a consulta (signal idempotente). Suíte: pytest 144/144 (100%) + lint. **Próxima: Sprint 8 — Gestão Financeira** (app `financeiro` com `LancamentoFinanceiro` e `Fatura`)._
