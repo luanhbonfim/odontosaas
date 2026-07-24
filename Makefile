@@ -6,7 +6,7 @@
 COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
-.PHONY: help build up down restart logs ps migrate makemigrations shell test lint fmt createsuperuser
+.PHONY: help build up down restart logs ps check migrate makemigrations shell test lint fmt createsuperuser
 
 help: ## Lista os comandos disponíveis
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -29,6 +29,9 @@ logs: ## Segue os logs de todos os serviços
 
 ps: ## Mostra o status dos serviços
 	$(COMPOSE) ps
+
+check: ## Roda o manage.py check (sem banco)
+	$(COMPOSE) run --rm --no-deps web python manage.py check
 
 migrate: ## Aplica as migrations do Django
 	$(COMPOSE) run --rm web python manage.py migrate

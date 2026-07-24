@@ -74,6 +74,7 @@ jobs:
     env:
       DJANGO_SETTINGS_MODULE: config.settings.dev
       DJANGO_SECRET_KEY: ci-secret-key-nao-usar-em-producao
+      FIELD_ENCRYPTION_KEY: 7bfL4XTjSO_rOvwylRpwinUaaB-e2N_Q4mQG2eV8-68=
       DATABASE_URL: postgres://odonto:odonto@localhost:5432/odonto
       REDIS_URL: redis://localhost:6379/0
       CELERY_BROKER_URL: redis://localhost:6379/0

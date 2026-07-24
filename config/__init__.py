@@ -1,2 +1,5 @@
-# O app do Celery será importado aqui na Sprint 1 (config/celery.py),
-# para garantir que a instância seja carregada quando o Django iniciar.
+# Garante que o app do Celery seja carregado quando o Django iniciar,
+# para que os @shared_task usem a instância correta.
+from .celery import app as celery_app
+
+__all__ = ("celery_app",)

@@ -98,6 +98,9 @@ services:
     image: odonto-web:dev
     container_name: odonto_celery_worker
     restart: unless-stopped
+    # Worker não serve HTTP; desabilita o healthcheck herdado da imagem web.
+    healthcheck:
+      disable: true
     env_file:
       - .env
     depends_on:
@@ -130,6 +133,9 @@ services:
     image: odonto-web:dev
     container_name: odonto_celery_beat
     restart: unless-stopped
+    # Beat não serve HTTP; desabilita o healthcheck herdado da imagem web.
+    healthcheck:
+      disable: true
     env_file:
       - .env
     depends_on:
