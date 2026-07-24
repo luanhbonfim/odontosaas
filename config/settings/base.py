@@ -51,6 +51,7 @@ SHARED_APPS = [
     "apps.tenants",  # model do tenant (Clinica) e de domínio (Dominio)
     "apps.plataforma",  # planos de assinatura do SaaS
     "django_celery_beat",  # agenda global de tarefas periódicas (schema public)
+    "drf_spectacular",  # documentação de API (OpenAPI / Swagger / ReDoc)
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
 ]
@@ -69,6 +70,7 @@ TENANT_APPS = [
     "apps.notificacoes",  # notificações WhatsApp / WAHA (Sprint 6)
     "apps.estoque",  # gestão de insumos / estoque (Sprint 7)
     "apps.financeiro",  # gestão financeira (Sprint 8)
+    "apps.auditoria",  # trilha de auditoria / LGPD (Sprint 9)
 ]
 
 # INSTALLED_APPS = SHARED + (TENANT que ainda não esteja em SHARED)
@@ -76,6 +78,19 @@ INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in S
 
 # Model de usuário customizado (login por e-mail), vive no schema do tenant.
 AUTH_USER_MODEL = "usuarios.Usuario"
+
+# --------------------------------------------------------------------------
+# Django REST Framework + documentação de API (drf-spectacular / OpenAPI)
+# --------------------------------------------------------------------------
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "OdontoSaaS API",
+    "DESCRIPTION": "API do sistema multi-tenant de gestão de clínicas odontológicas.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
 
 # --------------------------------------------------------------------------
 # Middleware
@@ -91,6 +106,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Captura o usuário autenticado para a trilha de auditoria (após o auth).
+    "apps.auditoria.middleware.AuditoriaMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -210,3 +227,28 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Outras configurações
 # --------------------------------------------------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# --------------------------------------------------------------------------
+# Observabilidade — logs estruturados (JSON) + Sentry opcional
+# --------------------------------------------------------------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {"()": "config.logging.JsonFormatter"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "json"},
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": env("DJANGO_LOG_LEVEL", default="INFO"),
+    },
+}
+
+# Sentry só é ativado se SENTRY_DSN for definido e o pacote sentry-sdk existir.
+SENTRY_DSN = env("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    from config.observabilidade import configurar_sentry
+
+    configurar_sentry(SENTRY_DSN)

@@ -25,7 +25,7 @@ class FaturaSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["valor_total", "criado_em", "atualizado_em"]
 
-    def get_quantidade_lancamentos(self, obj):
+    def get_quantidade_lancamentos(self, obj) -> int:
         return obj.lancamentos.count()
 
 

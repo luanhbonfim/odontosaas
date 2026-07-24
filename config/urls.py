@@ -8,9 +8,15 @@ de formato mais de uma vez). O endpoint /health/ é tratado pelo
 
 from django.contrib import admin
 from django.urls import include, path
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 from rest_framework.routers import DefaultRouter
 
 from apps.agenda.views import AnamneseViewSet, ConsultaViewSet
+from apps.auditoria.views import RegistroAuditoriaViewSet
 from apps.dentistas.views import DentistaViewSet
 from apps.estoque.views import (
     CategoriaInsumoViewSet,
@@ -48,10 +54,15 @@ router.register(
 router.register("consumos-insumo", ConsumoInsumoViewSet, basename="consumo-insumo")
 router.register("lancamentos", LancamentoFinanceiroViewSet, basename="lancamento")
 router.register("faturas", FaturaViewSet, basename="fatura")
+router.register("auditoria", RegistroAuditoriaViewSet, basename="auditoria")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
+    # Documentação de API (OpenAPI / Swagger UI / ReDoc)
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
     # OAuth2 Google Calendar (fluxo de navegador; sem barra final p/ casar com o redirect_uri)
     path("integracoes/google/authorize", google_authorize, name="google_authorize"),
     path("integracoes/google/callback", google_callback, name="google_callback"),
