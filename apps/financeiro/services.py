@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 from django.db.models import Sum
+from django.utils import timezone
 
 from .models import Fatura, LancamentoFinanceiro
 
@@ -22,17 +23,29 @@ def gerar_conta_da_guia(guia):
         tipo=LancamentoFinanceiro.Tipo.RECEITA,
         descricao=f"Guia {guia.numero_guia} - {guia.procedimento}",
         valor=guia.valor,
+        vencimento=timezone.localdate(),
         guia=guia,
     )
 
 
+def estornar_conta_da_guia(guia):
+    """Cancela a conta a receber de uma guia glosada/excluída — só se ainda **não**
+    foi paga. Uma conta já PAGO (recebida) não é mexida: a glosa nesse caso é uma
+    reconciliação manual. Recalcula a fatura afetada. Retorna quantas foram canceladas.
+    """
+    return _cancelar_contas_pendentes(LancamentoFinanceiro.objects.filter(guia=guia))
+
+
 def gerar_conta_da_consulta(consulta):
     """
-    Gera a conta a receber (RECEITA) de uma consulta particular realizada.
+    Gera a conta a receber (RECEITA) de uma consulta **particular** realizada.
 
-    Idempotente (uma conta por consulta) e ignora consultas sem valor. Retorna o
-    LancamentoFinanceiro criado ou None.
+    Consulta por convênio é faturada via Guia — não gera conta particular (evita
+    cobrança em dobro). Idempotente (uma conta por consulta) e ignora consultas
+    sem valor. Retorna o LancamentoFinanceiro criado ou None.
     """
+    if consulta.convenio_id:
+        return None
     if not consulta.valor or consulta.valor <= 0:
         return None
     if LancamentoFinanceiro.objects.filter(consulta=consulta).exists():
@@ -41,8 +54,71 @@ def gerar_conta_da_consulta(consulta):
         tipo=LancamentoFinanceiro.Tipo.RECEITA,
         descricao=f"Consulta particular - {consulta.paciente.nome_completo}",
         valor=consulta.valor,
+        vencimento=timezone.localdate(),
         consulta=consulta,
     )
+
+
+def estornar_conta_da_consulta(consulta):
+    """Cancela a conta a receber de uma consulta cancelada/excluída — só se não paga."""
+    return _cancelar_contas_pendentes(LancamentoFinanceiro.objects.filter(consulta=consulta))
+
+
+def _faturas_de(contas_qs):
+    """Faturas distintas referenciadas por um queryset de lançamentos."""
+    ids = list(
+        contas_qs.exclude(fatura__isnull=True).values_list("fatura_id", flat=True).distinct()
+    )
+    return list(Fatura.objects.filter(id__in=ids)) if ids else []
+
+
+def recalcular_total_fatura(fatura):
+    """Recalcula `valor_total` pela soma dos lançamentos não cancelados da fatura (F6)."""
+    total = fatura.lancamentos.exclude(
+        status=LancamentoFinanceiro.Status.CANCELADO
+    ).aggregate(s=Sum("valor"))["s"] or Decimal("0")
+    if fatura.valor_total != total:
+        fatura.valor_total = total
+        fatura.save(update_fields=["valor_total", "atualizado_em"])
+    return total
+
+
+def _cancelar_contas_pendentes(contas_qs):
+    """Cancela as contas PENDENTES do queryset e recalcula as faturas afetadas."""
+    pendentes = contas_qs.filter(status=LancamentoFinanceiro.Status.PENDENTE)
+    faturas = _faturas_de(pendentes)
+    quantidade = pendentes.update(status=LancamentoFinanceiro.Status.CANCELADO)
+    for fatura in faturas:
+        recalcular_total_fatura(fatura)
+    return quantidade
+
+
+def sincronizar_valor_conta_da_guia(guia):
+    """F3: se o valor da guia mudou, atualiza a conta a receber PENDENTE (e a fatura)."""
+    if not guia.valor or guia.valor <= 0:
+        return 0
+    return _sincronizar_valor(LancamentoFinanceiro.objects.filter(guia=guia), guia.valor)
+
+
+def sincronizar_valor_conta_da_consulta(consulta):
+    """F3: idem para a conta particular de uma consulta editada."""
+    if not consulta.valor or consulta.valor <= 0:
+        return 0
+    return _sincronizar_valor(
+        LancamentoFinanceiro.objects.filter(consulta=consulta), consulta.valor
+    )
+
+
+def _sincronizar_valor(contas_qs, novo_valor):
+    """Atualiza o valor das contas PENDENTES que divergem e recalcula as faturas."""
+    pendentes = contas_qs.filter(status=LancamentoFinanceiro.Status.PENDENTE).exclude(
+        valor=novo_valor
+    )
+    faturas = _faturas_de(pendentes)
+    quantidade = pendentes.update(valor=novo_valor)
+    for fatura in faturas:
+        recalcular_total_fatura(fatura)
+    return quantidade
 
 
 def faturar_operadora(operadora, competencia=""):
@@ -54,6 +130,7 @@ def faturar_operadora(operadora, competencia=""):
     lancamentos = list(
         LancamentoFinanceiro.objects.filter(
             tipo=LancamentoFinanceiro.Tipo.RECEITA,
+            status=LancamentoFinanceiro.Status.PENDENTE,  # não re-fatura pagas/canceladas
             fatura__isnull=True,
             guia__isnull=False,
             guia__plano__operadora=operadora,

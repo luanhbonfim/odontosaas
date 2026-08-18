@@ -1,0 +1,173 @@
+# ==========================================================================
+# OdontoSaaS — docker-compose de PRODUÇÃO
+#
+# Diferenças para o de desenvolvimento:
+#   - Caddy (edge) na frente: HTTPS automático + serve o SPA + proxy do Django.
+#   - Banco/Redis/WAHA SEM porta pública (só rede interna do Docker).
+#   - Sem hot-reload/volume de código: a imagem é imutável (build).
+#   - Gunicorn com 3 workers (CMD padrão do Dockerfile), settings de produção.
+#
+# Uso:
+#   cp deploy/.env.prod.example .env      # e preencha os segredos
+#   bash deploy/deploy.sh                 # migra, coleta estáticos e sobe
+# ==========================================================================
+
+services:
+  # ---------------------- Borda: Caddy + SPA (único exposto) ----------------
+  edge:
+    build:
+      context: .
+      dockerfile: deploy/edge.Dockerfile
+    image: odonto-edge:prod
+    container_name: odonto_edge
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+      ACME_EMAIL: ${ACME_EMAIL}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - odonto_caddydata:/data
+      - odonto_caddyconfig:/config
+    depends_on:
+      - web
+
+  # ---------------------- Aplicação Django (Gunicorn) -----------------------
+  web:
+    build:
+      context: .
+      # REQUIREMENTS=prod (padrão do Dockerfile) — sem pytest/ruff.
+    image: odonto-web:prod
+    container_name: odonto_web
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # STATIC_ROOT compartilhado: o collectstatic (deploy.sh) grava aqui e o
+      # WhiteNoise serve a partir daqui no container em execução.
+      - odonto_static:/app/staticfiles
+    # Sem `ports`: o acesso é só via Caddy (rede interna). CMD = gunicorn (Dockerfile).
+
+  # ---------------------- Celery Worker -------------------------------------
+  celery_worker:
+    image: odonto-web:prod
+    container_name: odonto_celery_worker
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["celery", "-A", "config", "worker", "-l", "info"]
+
+  # ---------------------- Celery Beat (agendador) ---------------------------
+  celery_beat:
+    image: odonto-web:prod
+    container_name: odonto_celery_beat
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command:
+      - celery
+      - -A
+      - config
+      - beat
+      - -l
+      - info
+      - --scheduler
+      - django_celery_beat.schedulers:DatabaseScheduler
+
+  # ---------------------- PostgreSQL (interno) ------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: odonto_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - odonto_pgdata:/var/lib/postgresql/data
+    # SEM `ports`: o banco não é acessível de fora do servidor.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------- Redis (interno) -----------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: odonto_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - odonto_redisdata:/data
+    # SEM `ports`.
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ---------------------- WAHA (WhatsApp, interno) --------------------------
+  waha:
+    image: ${WAHA_IMAGE:-devlikeapro/waha:latest}
+    container_name: odonto_waha
+    restart: unless-stopped
+    environment:
+      WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-GOWS}
+      WAHA_API_KEY: ${WAHA_API_KEY}
+      WHATSAPP_HOOK_URL: ${WHATSAPP_HOOK_URL:-http://web:8000/notificacoes/whatsapp/webhook}
+      WHATSAPP_HOOK_EVENTS: ${WHATSAPP_HOOK_EVENTS:-message}
+      WAHA_LOCAL_STORE_BASE_DIR: ${WAHA_LOCAL_STORE_BASE_DIR:-/app/.sessions}
+      WAHA_DASHBOARD_USERNAME: ${WAHA_DASHBOARD_USERNAME:-admin}
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD}
+      WHATSAPP_SWAGGER_USERNAME: ${WHATSAPP_SWAGGER_USERNAME:-admin}
+      WHATSAPP_SWAGGER_PASSWORD: ${WHATSAPP_SWAGGER_PASSWORD}
+    volumes:
+      - odonto_wahadata:/app/.sessions
+    # SEM `ports`: o app fala com o WAHA internamente (WAHA_API_URL=http://waha:3000).
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3000/ping',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  odonto_pgdata:
+    name: odonto_pgdata
+  odonto_redisdata:
+    name: odonto_redisdata
+  odonto_wahadata:
+    name: odonto_wahadata
+  odonto_static:
+    name: odonto_static
+  odonto_caddydata:
+    name: odonto_caddydata
+  odonto_caddyconfig:
+    name: odonto_caddyconfig

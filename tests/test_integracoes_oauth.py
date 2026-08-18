@@ -65,10 +65,10 @@ def test_fluxo_oauth_completo_com_dentista():
             assert resp.status_code == 302
             assert "accounts.google.com" in resp["Location"]
 
-            # callback (mesmo client -> sessão carrega state + dentista)
+            # callback (mesmo client -> sessão carrega state + dentista); redireciona à SPA
             resp = client.get("/integracoes/google/callback?code=abc", HTTP_HOST=host)
-            assert resp.status_code == 200
-            assert resp.json()["status"] == "conectado"
+            assert resp.status_code == 302
+            assert resp["Location"].endswith("/integracoes?google=conectado")
 
         with schema_context(clinica.schema_name):
             cred = CredencialGoogleCalendar.objects.get()
@@ -88,7 +88,7 @@ def test_callback_sem_dentista_cria_credencial_da_clinica():
         client = Client()
         with patch("apps.integracoes.views.get_flow", return_value=_mock_flow()):
             resp = client.get("/integracoes/google/callback?code=abc", HTTP_HOST=host)
-            assert resp.status_code == 200
+            assert resp.status_code == 302
 
         with schema_context(clinica.schema_name):
             cred = CredencialGoogleCalendar.objects.get()

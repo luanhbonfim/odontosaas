@@ -124,3 +124,87 @@ def test_consulta_cancelada_nao_bloqueia_horario():
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_excluir_so_agendada_e_campo_convenio():
+    host = "delcons.localhost"
+    clinica = _criar_clinica("delcons_tenant", host)
+    client = APIClient()
+    try:
+        pac, den = _base(client, host)
+        inicio = (timezone.now() + timedelta(days=1)).replace(microsecond=0)
+        fim = inicio + timedelta(minutes=30)
+
+        def agendar():
+            return client.post(
+                "/api/consultas/",
+                {
+                    "paciente": pac,
+                    "dentista": den,
+                    "inicio": inicio.isoformat(),
+                    "fim": fim.isoformat(),
+                },
+                format="json",
+                HTTP_HOST=host,
+            ).json()
+
+        # AGENDADA -> exclui (204)
+        c1 = agendar()
+        assert "convenio" in c1 and c1["convenio"] is None and "convenio_nome" in c1
+        assert client.delete(f"/api/consultas/{c1['id']}/", HTTP_HOST=host).status_code == 204
+
+        # REALIZADA -> não pode excluir (400)
+        c2 = agendar()
+        for novo in ("EM_ATENDIMENTO", "REALIZADA"):
+            client.patch(
+                f"/api/consultas/{c2['id']}/", {"status": novo}, format="json", HTTP_HOST=host
+            )
+        assert client.delete(f"/api/consultas/{c2['id']}/", HTTP_HOST=host).status_code == 400
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_ficha_da_consulta_dentes_e_anotacoes():
+    """A ficha (odontograma + anotações) faz round-trip pela API."""
+    host = "ficha.localhost"
+    clinica = _criar_clinica("ficha_tenant", host)
+    client = APIClient()
+    try:
+        pac, den = _base(client, host)
+        inicio = (timezone.now() + timedelta(days=1)).replace(microsecond=0)
+        fim = inicio + timedelta(minutes=30)
+
+        c = client.post(
+            "/api/consultas/",
+            {
+                "paciente": pac,
+                "dentista": den,
+                "inicio": inicio.isoformat(),
+                "fim": fim.isoformat(),
+            },
+            format="json",
+            HTTP_HOST=host,
+        ).json()
+        # Recém-criada: ficha vazia.
+        assert c["dentes"] == [] and c["anotacoes"] == ""
+
+        dentes = [
+            {"dente": 44, "procedimento": "Restauração"},
+            {"dente": 22, "procedimento": ""},
+        ]
+        resp = client.patch(
+            f"/api/consultas/{c['id']}/",
+            {"dentes": dentes, "anotacoes": "Restauração no 44."},
+            format="json",
+            HTTP_HOST=host,
+        )
+        assert resp.status_code == 200
+        corpo = resp.json()
+        assert corpo["dentes"] == dentes
+        assert corpo["anotacoes"] == "Restauração no 44."
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)

@@ -20,6 +20,33 @@ class ConfiguracaoNotificacao(ModeloBase):
     dias_antecedencia = models.PositiveIntegerField(default=1)
     horario_envio = models.TimeField(default=time(9, 0))
     waha_session = models.CharField(max_length=100, blank=True)
+    # Número de WhatsApp da clínica (exibição/contato). Só dígitos com DDI/DDD.
+    numero_clinica = models.CharField(max_length=20, blank=True)
+    # Gatilho de confirmação: palavras (separadas por vírgula) que CONFIRMAM ou
+    # RECUSAM a consulta na resposta do paciente. Vazio = usa o padrão do sistema.
+    palavras_confirmacao = models.CharField(max_length=255, blank=True)
+    palavras_recusa = models.CharField(max_length=255, blank=True)
+    # Enviar a mensagem de agradecimento ao paciente quando ele confirma.
+    enviar_agradecimento = models.BooleanField(default=True)
+    # Enviar a mensagem de reagendamento quando a consulta é remarcada.
+    enviar_reagendamento = models.BooleanField(default=True)
+    # Quantos minutos após o reagendamento o aviso é disparado (ex.: 1 = no minuto
+    # seguinte). Deixa o horário previsto fixo em vez de "sempre agora".
+    reagendamento_minutos = models.PositiveIntegerField(default=1)
+    # Enviar a mensagem de cancelamento quando a consulta é cancelada/recusada.
+    enviar_cancelamento = models.BooleanField(default=True)
+    # Cancelar automaticamente consultas não confirmadas até X horas antes do
+    # início (a consulta fica CANCELADA na nossa agenda e sai do Google).
+    cancelar_nao_confirmadas = models.BooleanField(default=False)
+    cancelar_horas_antes = models.PositiveIntegerField(default=10)
+    # Reforço: se o paciente responde algo que não é sim/não, reenviar um pedido
+    # para responder apenas SIM ou NÃO (até responder certo).
+    reforcar_confirmacao = models.BooleanField(default=True)
+    mensagem_reforco = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Vazio = texto padrão ('Por favor, responda apenas com SIM ou NÃO.').",
+    )
 
     class Meta:
         verbose_name = "Configuração de notificação"
@@ -34,11 +61,33 @@ class TemplateMensagem(ModeloBase):
 
     class Tipo(models.TextChoices):
         CONFIRMACAO = "CONFIRMACAO", "Confirmação"
+        AGRADECIMENTO = "AGRADECIMENTO", "Agradecimento"
         LEMBRETE = "LEMBRETE", "Lembrete"
         CANCELAMENTO = "CANCELAMENTO", "Cancelamento"
+        REAGENDAMENTO = "REAGENDAMENTO", "Reagendamento"
+
+    class LembreteTipo(models.TextChoices):
+        # Recall: chama de volta quem fez um procedimento há mais de X meses.
+        RECALL = "RECALL", "Recall por procedimento"
+        # Aviso: avisa pacientes CONFIRMADOS X horas antes da consulta.
+        PRE_CONSULTA = "PRE_CONSULTA", "Aviso antes da consulta"
 
     tipo = models.CharField(max_length=20, choices=Tipo.choices)
     corpo = models.TextField(help_text="Variáveis: {{paciente}}, {{data}}, {{hora}}, {{dentista}}")
+
+    # --- Campos usados só quando tipo == LEMBRETE ---
+    lembrete_tipo = models.CharField(max_length=20, choices=LembreteTipo.choices, blank=True)
+    # RECALL: procedimento-alvo + intervalo (meses) desde a última vez.
+    procedimento = models.ForeignKey(
+        "procedimentos.Procedimento",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="templates_recall",
+    )
+    intervalo_meses = models.PositiveSmallIntegerField(null=True, blank=True)
+    # PRE_CONSULTA: quantas horas antes do início avisar o paciente confirmado.
+    horas_antes = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Template de mensagem"

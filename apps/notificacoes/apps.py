@@ -6,3 +6,6 @@ class NotificacoesConfig(AppConfig):
     name = "apps.notificacoes"
     label = "notificacoes"
     verbose_name = "Notificações"
+
+    def ready(self):
+        from . import signals  # noqa: F401

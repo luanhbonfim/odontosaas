@@ -8,7 +8,13 @@ from .base import *  # noqa: F401,F403
 DEBUG = False
 
 # Em produção, ALLOWED_HOSTS deve vir OBRIGATORIAMENTE do ambiente.
+# Dica multi-tenant: use ".seudominio.com.br" (ponto na frente) para casar
+# TODOS os subdomínios de clínica de uma vez.
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")  # noqa: F405
+
+# Origens confiáveis para CSRF (admin do Django atrás de HTTPS). Aceita curinga
+# de subdomínio: ex.: "https://*.seudominio.com.br".
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])  # noqa: F405
 
 # --------------------------------------------------------------------------
 # Segurança HTTPS

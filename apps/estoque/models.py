@@ -106,11 +106,25 @@ class MovimentacaoEstoque(ModeloBase):
         on_delete=models.SET_NULL,
         related_name="movimentacoes_estoque",
     )
+    # Consumo específico que gerou esta SAÍDA (permite ajustar/reverter por consumo).
+    consumo = models.ForeignKey(
+        "ConsumoInsumo",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="movimentacoes",
+    )
 
     class Meta:
         verbose_name = "Movimentação de estoque"
         verbose_name_plural = "Movimentações de estoque"
         ordering = ["-criado_em"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantidade__gt=0),
+                name="movimentacao_quantidade_positiva",
+            )
+        ]
 
     def __str__(self):
         return f"{self.get_tipo_display()} {self.quantidade} - {self.insumo.nome}"
@@ -132,6 +146,12 @@ class ConsumoInsumo(ModeloBase):
         verbose_name = "Consumo de insumo"
         verbose_name_plural = "Consumos de insumo"
         ordering = ["-criado_em"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantidade__gt=0),
+                name="consumo_quantidade_positiva",
+            )
+        ]
 
     def __str__(self):
         return f"{self.quantidade} x {self.insumo.nome} (consulta {self.consulta_id})"

@@ -23,7 +23,9 @@ def _criar_clinica(schema, dominio):
 # --- Configuração (sem banco) ---
 def test_agenda_evento_config():
     assert issubclass(AgendaEvento, ModeloBase)
-    assert AgendaEvento._meta.get_field("consulta").one_to_one is True
+    # Multi-agenda: 1 evento por (consulta, credencial) -> consulta é FK, não O2O.
+    assert AgendaEvento._meta.get_field("consulta").many_to_one is True
+    assert AgendaEvento._meta.get_field("credencial").many_to_one is True
     status = {c[0] for c in AgendaEvento._meta.get_field("status_sync").choices}
     assert status == {"PENDENTE", "SINCRONIZADO", "ERRO"}
 
@@ -51,6 +53,6 @@ def test_criar_agenda_evento():
                 consulta=consulta, google_event_id="ev-123", calendar_id="primary"
             )
             assert evento.status_sync == "PENDENTE"
-            assert consulta.evento_google == evento  # related_name O2O
+            assert consulta.eventos_google.first() == evento  # related_name (FK)
     finally:
         clinica.delete(force_drop=True)

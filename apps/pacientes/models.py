@@ -21,6 +21,23 @@ class Paciente(ModeloBase):
     telefone_whatsapp = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     endereco = models.CharField(max_length=255, blank=True)
+    # Dentista responsável (escopo row-level): o DENTISTA vê só os pacientes onde é
+    # o responsável, está compartilhado, OU tem consulta. Gerente/Recepção/Admin veem
+    # todos. O responsável faz as tratativas; os compartilhados apenas atendem.
+    dentista_responsavel = models.ForeignKey(
+        "dentistas.Dentista",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="pacientes_responsavel",
+    )
+    # Dentistas com quem o paciente é compartilhado (ex.: responsável de férias/agenda
+    # cheia). Enxergam e atendem, mas não são os responsáveis.
+    dentistas_compartilhados = models.ManyToManyField(
+        "dentistas.Dentista",
+        blank=True,
+        related_name="pacientes_compartilhados",
+    )
 
     class Meta:
         verbose_name = "Paciente"
@@ -57,6 +74,15 @@ class PlanoOdontologico(ModeloBase):
         CANCELADO = "CANCELADO", "Cancelado"
 
     paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE, related_name="planos")
+    # Convênio do catálogo da clínica (fonte da `operadora`). Opcional no banco por
+    # compatibilidade; a API preenche `operadora` a partir dele quando informado.
+    convenio = models.ForeignKey(
+        "convenios.Convenio",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="planos",
+    )
     operadora = models.CharField(max_length=100)  # ex.: Amil Dental, Uniodonto
     numero_carteirinha = models.CharField(max_length=50, blank=True)
     validade = models.DateField(null=True, blank=True)
@@ -97,6 +123,9 @@ class Guia(ModeloBase):
     numero_guia = models.CharField(max_length=50)
     procedimento = models.CharField(max_length=255)  # descrição / código TUSS
     valor = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Procedimentos por dente (odontograma), notação FDI.
+    # Ex.: [{"dente": 44, "procedimento": "Restauração"}, {"dente": 22, "procedimento": "Canal"}].
+    dentes = models.JSONField(default=list, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.EMITIDA)
 
     class Meta:

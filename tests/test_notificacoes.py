@@ -35,7 +35,7 @@ def test_models_config():
     assert issubclass(TemplateMensagem, ModeloBase)
     assert issubclass(LogNotificacao, ModeloBase)
     tipos = {c[0] for c in TemplateMensagem._meta.get_field("tipo").choices}
-    assert tipos == {"CONFIRMACAO", "LEMBRETE", "CANCELAMENTO"}
+    assert tipos == {"CONFIRMACAO", "AGRADECIMENTO", "LEMBRETE", "CANCELAMENTO", "REAGENDAMENTO"}
     status = {c[0] for c in LogNotificacao._meta.get_field("status").choices}
     assert status == {"ENFILEIRADA", "ENVIADA", "ENTREGUE", "LIDA", "RESPONDIDA", "ERRO"}
 

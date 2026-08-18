@@ -5,15 +5,27 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.core.mixins import FiltraPorPacienteMixin
+
 from .models import Anamnese, Consulta
 from .serializers import AnamneseSerializer, ConsultaSerializer
 
 
-class ConsultaViewSet(viewsets.ModelViewSet):
-    """CRUD de consultas (opera no schema do tenant da requisição)."""
+class ConsultaViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
+    """CRUD de consultas (opera no schema do tenant). Filtra por `?paciente=`."""
 
     queryset = Consulta.objects.all()
     serializer_class = ConsultaSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        """Só consultas AGENDADA podem ser excluídas; realizadas usam a action 'estornar'."""
+        consulta = self.get_object()
+        if consulta.status != Consulta.Status.AGENDADA:
+            return Response(
+                {"detail": "Só é possível excluir uma consulta agendada."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)
 
     def _transicionar(self, request, novo_status, acao):
         consulta = self.get_object()
@@ -36,9 +48,23 @@ class ConsultaViewSet(viewsets.ModelViewSet):
         """EM_ATENDIMENTO -> REALIZADA."""
         return self._transicionar(request, Consulta.Status.REALIZADA, "finalizar")
 
+    @action(detail=True, methods=["post"])
+    def estornar(self, request, pk=None):
+        """Estorna uma consulta REALIZADA lançada por engano: volta para CANCELADA,
+        revertendo a baixa de estoque e a conta a receber (via signals)."""
+        consulta = self.get_object()
+        if consulta.status != Consulta.Status.REALIZADA:
+            return Response(
+                {"detail": "Só é possível estornar uma consulta realizada."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        consulta.status = Consulta.Status.CANCELADA
+        consulta.save(update_fields=["status", "atualizado_em"])
+        return Response(self.get_serializer(consulta).data)
 
-class AnamneseViewSet(viewsets.ModelViewSet):
-    """CRUD de anamneses (vinculadas a paciente e, opcionalmente, a consulta)."""
+
+class AnamneseViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
+    """CRUD de anamneses (paciente e, opcionalmente, consulta). Filtra por `?paciente=`."""
 
     queryset = Anamnese.objects.all()
     serializer_class = AnamneseSerializer

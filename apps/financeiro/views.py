@@ -39,8 +39,27 @@ class LancamentoFinanceiroViewSet(viewsets.ModelViewSet):
     def quitar(self, request, pk=None):
         """Baixa manual: marca o lançamento como PAGO/RECEBIDO com a data atual."""
         lancamento = self.get_object()
+        if lancamento.status == LancamentoFinanceiro.Status.CANCELADO:
+            return Response(
+                {"detail": "Não é possível quitar um lançamento cancelado."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
         lancamento.status = LancamentoFinanceiro.Status.PAGO
         lancamento.pago_em = timezone.now()
+        lancamento.save(update_fields=["status", "pago_em", "atualizado_em"])
+        return Response(self.get_serializer(lancamento).data)
+
+    @action(detail=True, methods=["post"])
+    def estornar(self, request, pk=None):
+        """Desfaz a quitação: um lançamento PAGO volta a PENDENTE (limpa a data)."""
+        lancamento = self.get_object()
+        if lancamento.status != LancamentoFinanceiro.Status.PAGO:
+            return Response(
+                {"detail": "Só é possível estornar um lançamento pago."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        lancamento.status = LancamentoFinanceiro.Status.PENDENTE
+        lancamento.pago_em = None
         lancamento.save(update_fields=["status", "pago_em", "atualizado_em"])
         return Response(self.get_serializer(lancamento).data)
 

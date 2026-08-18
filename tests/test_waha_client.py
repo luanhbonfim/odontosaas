@@ -41,13 +41,46 @@ def test_enviar_texto_erro_http():
 
 @responses.activate
 def test_garantir_sessao_cria():
-    url = f"{settings.WAHA_API_URL}/api/sessions"
-    responses.add(responses.POST, url, json={"name": "s"}, status=201)
+    # Sessão inexistente (404 -> STOPPED) -> cria e inicia.
+    responses.add(responses.GET, f"{settings.WAHA_API_URL}/api/sessions/s", status=404)
+    responses.add(responses.POST, f"{settings.WAHA_API_URL}/api/sessions", json={"name": "s"}, status=201)
     assert garantir_sessao("s") is True
 
 
 @responses.activate
-def test_garantir_sessao_ja_existe():
-    url = f"{settings.WAHA_API_URL}/api/sessions"
-    responses.add(responses.POST, url, status=422)  # já provisionada
+def test_garantir_sessao_ja_pronta():
+    # Já em estado utilizável: nada a fazer (sem POST).
+    responses.add(
+        responses.GET,
+        f"{settings.WAHA_API_URL}/api/sessions/s",
+        json={"status": "WORKING"},
+        status=200,
+    )
+    assert garantir_sessao("s") is True
+
+
+@responses.activate
+def test_garantir_sessao_failed_reinicia():
+    # Sessão FAILED (ex.: após reinício do WAHA) -> reinicia para voltar ao QR.
+    responses.add(
+        responses.GET,
+        f"{settings.WAHA_API_URL}/api/sessions/s",
+        json={"status": "FAILED"},
+        status=200,
+    )
+    responses.add(responses.POST, f"{settings.WAHA_API_URL}/api/sessions/s/restart", status=201)
+    assert garantir_sessao("s") is True
+
+
+@responses.activate
+def test_garantir_sessao_parada_reinicia():
+    # Existe mas parada: POST /api/sessions devolve 422 -> reinicia.
+    responses.add(
+        responses.GET,
+        f"{settings.WAHA_API_URL}/api/sessions/s",
+        json={"status": "STOPPED"},
+        status=200,
+    )
+    responses.add(responses.POST, f"{settings.WAHA_API_URL}/api/sessions", status=422)
+    responses.add(responses.POST, f"{settings.WAHA_API_URL}/api/sessions/s/restart", status=201)
     assert garantir_sessao("s") is True

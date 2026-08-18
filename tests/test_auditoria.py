@@ -32,9 +32,11 @@ def test_middleware_captura_e_limpa_usuario():
 
     class UsuarioLogado:
         is_authenticated = True
+        pk = 1
 
     class Anonimo:
         is_authenticated = False
+        pk = None
 
     def get_response(request):
         capturado["u"] = usuario_atual()
@@ -97,6 +99,21 @@ def test_registro_guarda_usuario_responsavel():
                 modelo="Paciente", acao="CRIACAO", objeto_id=str(paciente.id)
             )
             assert registro.usuario_id == user.id
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_audita_usuario_e_guia():
+    """N18: gestão de usuários e movimentações sensíveis também entram na trilha."""
+    clinica = _criar_clinica("aud_ext_tenant", "audext.localhost")
+    try:
+        with schema_context(clinica.schema_name):
+            u = Usuario.objects.create_user(email="x@c.com", password="Senha12345")
+            assert RegistroAuditoria.objects.filter(
+                modelo="Usuario", acao="CRIACAO", objeto_id=str(u.id)
+            ).exists()
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)

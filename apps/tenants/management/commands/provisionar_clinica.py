@@ -54,16 +54,26 @@ class Command(BaseCommand):
             )
         )
 
+        from apps.usuarios.models import Usuario
+        from apps.usuarios.perfis import sincronizar_grupos
+
         email = options.get("admin_email")
         senha = options.get("admin_senha")
-        if email and senha:
-            from apps.usuarios.models import Usuario
+        from apps.notificacoes.defaults import semear_templates_padrao
 
-            with schema_context(schema):
+        with schema_context(schema):
+            # Semeia os grupos de perfis padrão no schema recém-criado.
+            sincronizar_grupos()
+            # Semeia os templates de WhatsApp padrão (confirmação/cancelamento/agradecimento).
+            semear_templates_padrao()
+            if email and senha:
+                # O signal post_save vincula o usuário ao grupo do seu papel.
                 Usuario.objects.create_user(
                     email=email,
                     password=senha,
                     papel=Usuario.Papel.ADMIN,
                     is_staff=True,
                 )
+        self.stdout.write(self.style.SUCCESS("Grupos de perfis semeados no tenant."))
+        if email and senha:
             self.stdout.write(self.style.SUCCESS(f"Usuário ADMIN '{email}' criado no tenant."))

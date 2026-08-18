@@ -16,11 +16,23 @@ def _on_delete(sender, instance, **kwargs):
 
 
 def conectar():
-    """Liga os signals aos modelos com dados pessoais/sensíveis (LGPD)."""
-    from apps.agenda.models import Anamnese
-    from apps.pacientes.models import Paciente
+    """Liga os signals aos modelos com dados pessoais/sensíveis (LGPD) e às
+    mutações críticas: gestão de usuários e movimentações financeiras (N18)."""
+    from django.contrib.auth import get_user_model
 
-    for modelo in (Paciente, Anamnese):
+    from apps.agenda.models import Anamnese
+    from apps.financeiro.models import Fatura, LancamentoFinanceiro
+    from apps.pacientes.models import Guia, Paciente
+
+    modelos = (
+        Paciente,
+        Anamnese,
+        Guia,
+        LancamentoFinanceiro,
+        Fatura,
+        get_user_model(),  # gestão de usuários (criar/bloquear/trocar papel/senha)
+    )
+    for modelo in modelos:
         nome = modelo.__name__
         post_save.connect(_on_save, sender=modelo, dispatch_uid=f"auditoria_save_{nome}")
         post_delete.connect(_on_delete, sender=modelo, dispatch_uid=f"auditoria_delete_{nome}")

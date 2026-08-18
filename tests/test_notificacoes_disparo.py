@@ -1,6 +1,6 @@
 """Testes da task de disparo de pedidos de confirmação (Beat)."""
 
-from datetime import timedelta
+from datetime import time, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -30,8 +30,10 @@ def _criar_clinica(schema, dominio):
 
 def _preparar_consulta(dias=1):
     """Config + template + consulta na janela de antecedência. Requer schema ativo."""
+    # horario_envio=00:00 para o teste ser determinístico (a task só dispara a
+    # partir do horário configurado; à meia-noite qualquer hora atual já passou).
     ConfiguracaoNotificacao.objects.create(
-        dias_antecedencia=dias, waha_session="clinica-x", ativo=True
+        dias_antecedencia=dias, horario_envio=time(0, 0), waha_session="clinica-x", ativo=True
     )
     TemplateMensagem.objects.create(
         tipo=TemplateMensagem.Tipo.CONFIRMACAO,
@@ -110,6 +112,56 @@ def test_erro_no_envio_gera_log_erro():
             log = LogNotificacao.objects.get(consulta_id=cid)
             assert log.status == "ERRO"
             assert "falha WAHA" in log.payload_provedor["erro"]
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_erro_no_envio_e_reenviado_na_proxima():
+    """N9: um envio que falhou (log ERRO) NÃO suprime o reenvio no disparo seguinte."""
+    clinica = _criar_clinica("disparo_retry_tenant", "disparoretry.localhost")
+    try:
+        with schema_context(clinica.schema_name):
+            _preparar_consulta()
+
+        with (
+            patch(
+                "apps.notificacoes.tasks.enviar_texto",
+                side_effect=RequestException("falha"),
+            ),
+            patch("apps.notificacoes.tasks.garantir_sessao", return_value=True),
+        ):
+            assert disparar_lembretes_todos_tenants() == 0  # falhou
+
+        # Próximo disparo reenvia (só ERRO antes) e agora envia com sucesso
+        with (
+            patch("apps.notificacoes.tasks.enviar_texto", return_value={"id": "m2"}) as mock_send,
+            patch("apps.notificacoes.tasks.garantir_sessao", return_value=True),
+        ):
+            assert disparar_lembretes_todos_tenants() == 1
+            mock_send.assert_called_once()
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_paciente_inativo_nao_recebe_lembrete():
+    """N12: paciente inativado não entra na lista de lembretes."""
+    clinica = _criar_clinica("disparo_inativo_tenant", "disparoinativo.localhost")
+    try:
+        with schema_context(clinica.schema_name):
+            consulta = _preparar_consulta()
+            consulta.paciente.ativo = False
+            consulta.paciente.save(update_fields=["ativo"])
+
+        with (
+            patch("apps.notificacoes.tasks.enviar_texto") as mock_send,
+            patch("apps.notificacoes.tasks.garantir_sessao"),
+        ):
+            assert disparar_lembretes_todos_tenants() == 0
+            mock_send.assert_not_called()
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)

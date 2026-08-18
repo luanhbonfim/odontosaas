@@ -44,9 +44,9 @@ class Usuario(AbstractUser):
 
     class Papel(models.TextChoices):
         ADMIN = "ADMIN", "Administrador(a)"
+        DENTISTA_GERENTE = "DENTISTA_GERENTE", "Dentista Gerente"
         DENTISTA = "DENTISTA", "Dentista"
         RECEPCAO = "RECEPCAO", "Recepção"
-        FINANCEIRO = "FINANCEIRO", "Financeiro"
 
     # Removemos o username; o login é feito pelo e-mail.
     username = None

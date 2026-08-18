@@ -9,6 +9,7 @@ Multi-tenant via django-tenants (schema-per-tenant): SHARED_APPS no schema
 adiante na Sprint 1.
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -64,6 +65,8 @@ TENANT_APPS = [
     "django.contrib.messages",
     "rest_framework",
     "apps.dentistas",  # gestão de dentistas (Sprint 2)
+    "apps.convenios",  # catálogo de convênios da clínica (Sprint 3.6)
+    "apps.procedimentos",  # catálogo de procedimentos + recall (Sprint 10)
     "apps.pacientes",  # gestão de pacientes (Sprint 3)
     "apps.agenda",  # agenda / atendimento (Sprint 4)
     "apps.integracoes",  # integrações externas (Google Calendar) (Sprint 5)
@@ -84,12 +87,44 @@ AUTH_USER_MODEL = "usuarios.Usuario"
 # --------------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Autenticação por JWT (Bearer). Login por e-mail (USERNAME_FIELD do Usuario).
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    # Por padrão: autenticado + permissão de model por perfil (grupos do Django).
+    # Views sem model (ex.: /api/auth/me/) exigem só autenticação (ver PermissaoModulo).
+    "DEFAULT_PERMISSION_CLASSES": [
+        "apps.usuarios.perfis.PermissaoModulo",
+    ],
 }
+
+# Tokens JWT (djangorestframework-simplejwt).
+# Sessão de 24h a partir do login: o refresh vale 1 dia; o access (curto) é
+# renovado automaticamente pelo frontend enquanto o refresh estiver válido.
+# Após 24h o refresh expira e o login é encerrado (exige novo login).
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(hours=24),
+}
+
+# --------------------------------------------------------------------------
+# Cache (Redis) — compartilhado entre workers. Usado, entre outros, pelo
+# contador de tentativas de login (bloqueio por força bruta em LoginView).
+# --------------------------------------------------------------------------
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env("REDIS_CACHE_URL", default="redis://redis:6379/2"),
+    }
+}
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "OdontoSaaS API",
     "DESCRIPTION": "API do sistema multi-tenant de gestão de clínicas odontológicas.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # O schema e o Swagger/ReDoc ficam públicos (facilita a integração do frontend).
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 
 # --------------------------------------------------------------------------
@@ -179,6 +214,23 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.notificacoes.tasks.disparar_lembretes_todos_tenants",
         "schedule": 3600.0,  # de hora em hora (varre a janela de antecedência)
     },
+    # Reconciliação por ID com o Google (cria/atualiza/remove + regra não-confirmada).
+    # Roda a cada 5 min; cada clínica só reconcilia quando seu intervalo vence.
+    "reconciliar-google": {
+        "task": "apps.integracoes.tasks.reconciliar_google_todos_tenants",
+        "schedule": 300.0,
+    },
+    # Aviso antes da consulta (confirmados): checa a cada 1 min para sair na hora
+    # exata configurada (ex.: 1h antes = às 20h para uma consulta das 21h).
+    "processar-avisos": {
+        "task": "apps.notificacoes.tasks.processar_avisos_todos_tenants",
+        "schedule": 60.0,
+    },
+    # Recall por procedimento: não precisa de horário exato -> a cada 6 horas.
+    "processar-recall": {
+        "task": "apps.notificacoes.tasks.processar_recall_todos_tenants",
+        "schedule": 21600.0,
+    },
 }
 
 # --------------------------------------------------------------------------
@@ -190,6 +242,12 @@ GOOGLE_OAUTH_REDIRECT_URI = env(
     "GOOGLE_OAUTH_REDIRECT_URI",
     default="http://localhost:8000/integracoes/google/callback",
 )
+# Base do frontend (SPA) para onde o callback OAuth volta. Vazio = redirect
+# relativo (produção same-origin). Em dev, aponte para o Vite (ex.: http://demo.localhost:5173).
+GOOGLE_OAUTH_FRONTEND_URL = env("GOOGLE_OAUTH_FRONTEND_URL", default="")
+# Base pública do app para montar links (ex.: link de confirmação por WhatsApp).
+# Vazio = usa o domínio primário do tenant. Em dev, aponte para o Vite.
+APP_BASE_URL = env("APP_BASE_URL", default="")
 
 # --------------------------------------------------------------------------
 # WAHA (WhatsApp HTTP API)

@@ -6,6 +6,9 @@
 .env
 .env.*
 !.env.example
+!deploy/.env.prod.example
+# Configuração local do Claude Code (permissões da máquina) — não versionar.
+.claude/settings.local.json
 *.pem
 *.key
 secrets/

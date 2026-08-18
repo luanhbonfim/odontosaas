@@ -23,7 +23,10 @@ class AuditoriaMiddleware:
 
     def __call__(self, request):
         usuario = getattr(request, "user", None)
-        _estado.usuario = usuario if getattr(usuario, "is_authenticated", False) else None
+        # Só guarda usuários autenticados E persistidos (com pk) — a FK da auditoria
+        # aponta para um Usuario real.
+        autenticado = getattr(usuario, "is_authenticated", False)
+        _estado.usuario = usuario if (autenticado and getattr(usuario, "pk", None)) else None
         try:
             return self.get_response(request)
         finally:

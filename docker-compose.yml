@@ -167,7 +167,8 @@ services:
     restart: unless-stopped
     # Apenas as vars do WAHA (menor privilégio; sem env_file).
     environment:
-      WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-NOWEB}
+      # GOWS (engine Go/whatsmeow) é mais estável no pareamento que o NOWEB.
+      WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-GOWS}
       # Protege os endpoints do WAHA (header X-Api-Key)
       WAHA_API_KEY: ${WAHA_API_KEY}
       # Webhook global: WAHA chama o Django ao receber mensagens

@@ -43,3 +43,27 @@ class CredencialGoogleCalendar(ModeloBase):
     def __str__(self):
         alvo = self.dentista.nome_completo if self.dentista else "Clínica"
         return f"Google Calendar ({alvo})"
+
+
+class ConfiguracaoSincronizacao(ModeloBase):
+    """Config da sincronização periódica com o Google (uma por clínica/tenant)."""
+
+    # De quanto em quanto tempo a reconciliação roda para esta clínica.
+    intervalo_minutos = models.PositiveIntegerField(default=30)
+    # Carimbos para o informativo (última rodada) e para decidir se já é hora.
+    ultima_sincronizacao = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Configuração de sincronização"
+        verbose_name_plural = "Configurações de sincronização"
+
+    def __str__(self):
+        return f"Sync a cada {self.intervalo_minutos} min"
+
+    @property
+    def proxima_sincronizacao(self):
+        from datetime import timedelta
+
+        if self.ultima_sincronizacao is None:
+            return None
+        return self.ultima_sincronizacao + timedelta(minutes=self.intervalo_minutos)

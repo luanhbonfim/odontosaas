@@ -48,7 +48,7 @@ def test_crud_guia():
             HTTP_HOST=host,
         ).json()
 
-        # CREATE guia (status default EMITIDA)
+        # CREATE guia (status default EMITIDA) com dentes do odontograma
         resp = client.post(
             "/api/guias/",
             {
@@ -56,12 +56,20 @@ def test_crud_guia():
                 "numero_guia": "G-2024-1",
                 "procedimento": "Restauração",
                 "valor": "150.00",
+                "dentes": [
+                    {"dente": 11, "procedimento": "Restauração"},
+                    {"dente": 46, "procedimento": "Extração"},
+                ],
             },
             format="json",
             HTTP_HOST=host,
         )
         assert resp.status_code == 201, resp.content
         assert resp.json()["status"] == "EMITIDA"
+        assert resp.json()["dentes"] == [
+            {"dente": 11, "procedimento": "Restauração"},
+            {"dente": 46, "procedimento": "Extração"},
+        ]
         guia_id = resp.json()["id"]
 
         # LIST

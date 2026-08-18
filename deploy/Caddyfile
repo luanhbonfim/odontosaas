@@ -1,0 +1,38 @@
+# ==========================================================================
+# OdontoSaaS — Caddy (proxy reverso + HTTPS automático via Let's Encrypt)
+#
+# O Caddy é o ÚNICO serviço exposto à internet (80/443). Ele:
+#   1) emite e renova o certificado HTTPS sozinho (grátis, automático);
+#   2) entrega o app React (SPA) em /srv;
+#   3) faz proxy do backend Django (web:8000) nas rotas de API/admin/OAuth.
+#
+# Postgres, Redis, Django e WAHA ficam na rede interna do Docker — sem porta
+# pública. Ninguém de fora os alcança.
+#
+# SITE_ADDRESS e ACME_EMAIL vêm do .env (ex.: SITE_ADDRESS=clinica.seudominio.com.br).
+# Vários subdomínios: separe por espaço (ex.: "a.dominio.com.br b.dominio.com.br").
+# ==========================================================================
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# --- Backend Django (tudo o mais é o app React) ---
+	@backend path /api/* /admin /admin/* /static/* /media/* /health /health/* /integracoes/* /notificacoes/*
+	handle @backend {
+		reverse_proxy web:8000
+	}
+
+	# --- SPA (React/Vite): arquivos estáticos + fallback p/ index.html (React Router) ---
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	# Não revela o software do servidor.
+	header -Server
+}

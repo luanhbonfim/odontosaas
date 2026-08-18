@@ -1,0 +1,6 @@
+dist
+node_modules
+coverage
+
+# Código gerado (tipos do OpenAPI)
+src/lib/api/schema.d.ts
