@@ -62,6 +62,11 @@ COPY --from=builder /opt/venv /opt/venv
 # Copia o código da aplicação com dono correto
 COPY --chown=django:django . .
 
+# Pastas de estáticos/mídia com dono `django`. Assim, ao montar um volume nomeado
+# nesses caminhos, ele herda a permissão do usuário (senão o collectstatic, que
+# roda como `django`, bate em Permission denied no volume criado como root).
+RUN mkdir -p /app/staticfiles /app/media && chown -R django:django /app/staticfiles /app/media
+
 # Executa como usuário sem privilégios
 USER django
 
