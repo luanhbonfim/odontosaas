@@ -32,7 +32,8 @@ DEST="$BACKUP_DIR/odonto-$STAMP.dump"
 mkdir -p "$BACKUP_DIR"
 
 echo "[$(date -Is)] backup -> $DEST"
-docker exec -t odonto_db pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc > "$DEST"
+# Sem -t/-i: em cron não há TTY, e o pseudo-TTY corromperia o dump binário (-Fc).
+docker exec odonto_db pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc > "$DEST"
 
 # Poda dumps mais antigos que a retenção.
 find "$BACKUP_DIR" -name 'odonto-*.dump' -mtime "+$RETENTION_DAYS" -delete
