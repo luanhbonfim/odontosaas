@@ -59,6 +59,7 @@ class Command(BaseCommand):
 
         email = options.get("admin_email")
         senha = options.get("admin_senha")
+        from apps.dentistas.defaults import semear_especialidades_padrao
         from apps.notificacoes.defaults import semear_templates_padrao
 
         with schema_context(schema):
@@ -66,6 +67,8 @@ class Command(BaseCommand):
             sincronizar_grupos()
             # Semeia os templates de WhatsApp padrão (confirmação/cancelamento/agradecimento).
             semear_templates_padrao()
+            # Semeia as especialidades odontológicas padrão (CFO + Clínico Geral).
+            semear_especialidades_padrao()
             if email and senha:
                 # O signal post_save vincula o usuário ao grupo do seu papel.
                 Usuario.objects.create_user(
