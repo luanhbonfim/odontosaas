@@ -146,7 +146,11 @@ services:
       WHATSAPP_SWAGGER_PASSWORD: ${WHATSAPP_SWAGGER_PASSWORD}
     volumes:
       - odonto_wahadata:/app/.sessions
-    # SEM `ports`: o app fala com o WAHA internamente (WAHA_API_URL=http://waha:3000).
+    # Publicado APENAS no loopback do host (127.0.0.1): invisível da internet, mas
+    # acessível via túnel SSH para abrir o dashboard do WAHA quando necessário.
+    # O app continua falando com o WAHA internamente (WAHA_API_URL=http://waha:3000).
+    ports:
+      - "127.0.0.1:3000:3000"
     healthcheck:
       test:
         - CMD
