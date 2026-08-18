@@ -51,10 +51,10 @@ export function useSessao() {
     retry: false,
   })
 
-  // Título da aba: "NomeClínica - Pró Clínica" (ou só "Pró Clínica" deslogado).
+  // Título da aba: "NomeClínica - ProClínica" (ou só "ProClínica" deslogado).
   const nomeClinica = query.data?.clinica.nomeFantasia
   useEffect(() => {
-    document.title = nomeClinica ? `${nomeClinica} - Pró Clínica` : 'Pró Clínica'
+    document.title = nomeClinica ? `${nomeClinica} - ProClínica` : 'ProClínica'
   }, [nomeClinica])
 
   return {
