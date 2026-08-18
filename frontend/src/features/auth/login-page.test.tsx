@@ -6,6 +6,9 @@ import type { ErroApi } from '@/lib/api/client'
 
 import { LoginPage } from './login-page'
 
+// Nome do tenant vem de um hook com useQuery; mock evita precisar de provider.
+vi.mock('./use-clinica-atual', () => ({ useClinicaAtual: () => ({ data: 'Clínica Teste' }) }))
+
 describe('LoginPage', () => {
   it('mostra erros inline quando os campos estão vazios', async () => {
     const user = userEvent.setup()

@@ -19,8 +19,8 @@ export type PacienteEntrada = {
   ativo?: boolean
 }
 
-/** Tamanho de página do servidor (espelha `PaginacaoPadrao.page_size`). */
-export const TAMANHO_PAGINA = 20
+/** Tamanho de página: 10 pacientes por página (depois, paginação). */
+export const TAMANHO_PAGINA = 10
 
 export type FiltrosPacientes = {
   pagina: number
@@ -48,6 +48,7 @@ export function usePacientes({
       const { data } = await api.get<PaginaPacientes>('/pacientes/', {
         params: {
           page: pagina,
+          page_size: TAMANHO_PAGINA,
           search: busca || undefined,
           ordering: ordenacao || undefined,
           ativo: ativo || undefined,
@@ -66,6 +67,15 @@ export function useCriarPaciente() {
   return useMutation({
     mutationFn: async (dados: PacienteEntrada) =>
       (await api.post<Paciente>('/pacientes/', dados)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pacientes'] }),
+  })
+}
+
+/** Exclui um paciente (só permitido se não tiver registros). Invalida a listagem. */
+export function useExcluirPaciente() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => (await api.delete(`/pacientes/${id}/`)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['pacientes'] }),
   })
 }

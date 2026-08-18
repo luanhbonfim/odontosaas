@@ -10,16 +10,23 @@ import { PacientesPage } from './pacientes-page'
 const renderRota = (ui: ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>)
 
 const { pacientesMock } = vi.hoisted(() => ({ pacientesMock: vi.fn() }))
-// Mantém TAMANHO_PAGINA real; só troca o hook de dados.
+// Mantém TAMANHO_PAGINA real; troca o hook de dados e o de exclusão (evita o
+// useQueryClient real, que exigiria um QueryClientProvider no teste).
 vi.mock('./use-pacientes', async (importOriginal) => {
   const real = await importOriginal<typeof import('./use-pacientes')>()
-  return { ...real, usePacientes: pacientesMock }
+  return {
+    ...real,
+    usePacientes: pacientesMock,
+    useExcluirPaciente: () => ({ mutateAsync: vi.fn() }),
+  }
 })
 // Debounce identidade: a busca reflete imediatamente no teste.
 vi.mock('@/lib/hooks/use-debounce', () => ({ useDebounce: (valor: unknown) => valor }))
 vi.mock('@/features/dentistas/use-dentistas', () => ({
   useDentistas: () => ({ data: [{ id: 3, nome_completo: 'Dra. Ana' }] }),
 }))
+// Sem usuário no contexto -> sem coluna de exclusão (não afeta as asserções base).
+vi.mock('@/features/auth/use-sessao', () => ({ useSessao: () => ({ usuario: null }) }))
 
 const AMOSTRA = [
   {

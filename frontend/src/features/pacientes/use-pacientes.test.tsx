@@ -32,7 +32,9 @@ describe('hooks de pacientes', () => {
     })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(api.get).toHaveBeenCalledWith('/pacientes/', { params: { page: 2, search: 'jo' } })
+    expect(api.get).toHaveBeenCalledWith('/pacientes/', {
+      params: { page: 2, page_size: 10, search: 'jo' },
+    })
     expect(result.current.data?.results).toHaveLength(1)
   })
 
@@ -42,7 +44,9 @@ describe('hooks de pacientes', () => {
     renderHook(() => usePacientes({ pagina: 1, busca: '' }), { wrapper: Wrapper })
 
     await waitFor(() => expect(api.get).toHaveBeenCalled())
-    expect(api.get).toHaveBeenCalledWith('/pacientes/', { params: { page: 1, search: undefined } })
+    expect(api.get).toHaveBeenCalledWith('/pacientes/', {
+      params: { page: 1, page_size: 10, search: undefined },
+    })
   })
 
   it('useCriarPaciente posta e invalida a listagem', async () => {

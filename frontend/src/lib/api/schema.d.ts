@@ -1007,6 +1007,9 @@ export interface paths {
          *
          *     **Escopo row-level:** o DENTISTA vê só os pacientes onde é o responsável **ou**
          *     tem consulta; Gerente/Recepção/Admin veem todos.
+         *
+         *     **Exclusão:** só é permitida se o paciente NÃO tiver nenhum registro
+         *     (consultas, planos ou anamneses). Caso tenha, retorna 400 com mensagem clara.
          */
         get: operations["pacientes_list"];
         put?: never;
@@ -1018,6 +1021,9 @@ export interface paths {
          *
          *     **Escopo row-level:** o DENTISTA vê só os pacientes onde é o responsável **ou**
          *     tem consulta; Gerente/Recepção/Admin veem todos.
+         *
+         *     **Exclusão:** só é permitida se o paciente NÃO tiver nenhum registro
+         *     (consultas, planos ou anamneses). Caso tenha, retorna 400 com mensagem clara.
          */
         post: operations["pacientes_create"];
         delete?: never;
@@ -1041,6 +1047,9 @@ export interface paths {
          *
          *     **Escopo row-level:** o DENTISTA vê só os pacientes onde é o responsável **ou**
          *     tem consulta; Gerente/Recepção/Admin veem todos.
+         *
+         *     **Exclusão:** só é permitida se o paciente NÃO tiver nenhum registro
+         *     (consultas, planos ou anamneses). Caso tenha, retorna 400 com mensagem clara.
          */
         get: operations["pacientes_retrieve"];
         /**
@@ -1051,6 +1060,9 @@ export interface paths {
          *
          *     **Escopo row-level:** o DENTISTA vê só os pacientes onde é o responsável **ou**
          *     tem consulta; Gerente/Recepção/Admin veem todos.
+         *
+         *     **Exclusão:** só é permitida se o paciente NÃO tiver nenhum registro
+         *     (consultas, planos ou anamneses). Caso tenha, retorna 400 com mensagem clara.
          */
         put: operations["pacientes_update"];
         post?: never;
@@ -1062,6 +1074,9 @@ export interface paths {
          *
          *     **Escopo row-level:** o DENTISTA vê só os pacientes onde é o responsável **ou**
          *     tem consulta; Gerente/Recepção/Admin veem todos.
+         *
+         *     **Exclusão:** só é permitida se o paciente NÃO tiver nenhum registro
+         *     (consultas, planos ou anamneses). Caso tenha, retorna 400 com mensagem clara.
          */
         delete: operations["pacientes_destroy"];
         options?: never;
@@ -1074,6 +1089,9 @@ export interface paths {
          *
          *     **Escopo row-level:** o DENTISTA vê só os pacientes onde é o responsável **ou**
          *     tem consulta; Gerente/Recepção/Admin veem todos.
+         *
+         *     **Exclusão:** só é permitida se o paciente NÃO tiver nenhum registro
+         *     (consultas, planos ou anamneses). Caso tenha, retorna 400 com mensagem clara.
          */
         patch: operations["pacientes_partial_update"];
         trace?: never;
@@ -1610,6 +1628,13 @@ export interface components {
             dentistas_compartilhados?: number[];
             readonly dentistas_compartilhados_nomes: string[];
             ativo?: boolean;
+            /**
+             * @description True se o paciente NÃO tem registros (consultas/planos/anamneses).
+             *
+             *     Usa as anotações `_tem_*` (Exists) quando presentes (lista paginada, sem
+             *     N+1); senão cai no `.exists()` por relação (detalhe/criação — 1 objeto).
+             */
+            readonly pode_excluir: boolean;
             /** Format: date-time */
             readonly criado_em: string;
             /** Format: date-time */
@@ -1869,6 +1894,13 @@ export interface components {
             dentistas_compartilhados?: number[];
             readonly dentistas_compartilhados_nomes?: string[];
             ativo?: boolean;
+            /**
+             * @description True se o paciente NÃO tem registros (consultas/planos/anamneses).
+             *
+             *     Usa as anotações `_tem_*` (Exists) quando presentes (lista paginada, sem
+             *     N+1); senão cai no `.exists()` por relação (detalhe/criação — 1 objeto).
+             */
+            readonly pode_excluir?: boolean;
             /** Format: date-time */
             readonly criado_em?: string;
             /** Format: date-time */

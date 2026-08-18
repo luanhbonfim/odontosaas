@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { ErroApi } from '@/lib/api/client'
 
+import { useClinicaAtual } from './use-clinica-atual'
+
 const schema = z.object({
   email: z.string().min(1, 'Informe o e-mail').email('E-mail inválido'),
   senha: z.string().min(1, 'Informe a senha'),
@@ -25,6 +27,7 @@ type LoginPageProps = {
 export function LoginPage({ aoEntrar }: LoginPageProps) {
   const [verSenha, setVerSenha] = useState(false)
   const [erroServidor, setErroServidor] = useState<string | null>(null)
+  const { data: nomeClinica } = useClinicaAtual()
 
   const {
     register,
@@ -57,7 +60,8 @@ export function LoginPage({ aoEntrar }: LoginPageProps) {
     <div className="flex min-h-svh items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
-          <div className="text-2xl font-semibold text-primary">PróClinica</div>
+          <img src="/logo.png" alt="PróClínica" className="mx-auto h-40 w-auto" />
+          {nomeClinica && <p className="text-lg font-semibold text-foreground">{nomeClinica}</p>}
           <CardTitle className="text-base font-normal text-muted-foreground">
             Acesse sua clínica
           </CardTitle>

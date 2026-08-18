@@ -1,8 +1,10 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Plus, Users } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Plus, Trash2, Users } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { DataTable } from '@/components/common/data-table'
 import { EmptyState } from '@/components/common/empty-state'
 import { Cpf, PhoneText } from '@/components/common/formato'
@@ -10,15 +12,17 @@ import { StatusBadge } from '@/components/common/status-badge'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useSessao } from '@/features/auth/use-sessao'
 import { useDentistas } from '@/features/dentistas/use-dentistas'
+import type { ErroApi } from '@/lib/api/client'
 import { useDebounce } from '@/lib/hooks/use-debounce'
 
-import { type Paciente, TAMANHO_PAGINA, usePacientes } from './use-pacientes'
+import { type Paciente, TAMANHO_PAGINA, useExcluirPaciente, usePacientes } from './use-pacientes'
 
 const traco = <span className="text-muted-foreground">—</span>
 
 // `id` das colunas ordenáveis = campo aceito pelo backend em `?ordering=`.
-const colunas: ColumnDef<Paciente, unknown>[] = [
+const COLUNAS_BASE: ColumnDef<Paciente, unknown>[] = [
   {
     accessorKey: 'nome_completo',
     header: 'Nome',
@@ -74,6 +78,86 @@ export function PacientesPage() {
   const buscaDebounced = useDebounce(busca.trim(), 300)
 
   const { data: dentistas } = useDentistas()
+  const { usuario } = useSessao()
+  const excluir = useExcluirPaciente()
+  // Dentista não exclui paciente (só gestão/recepção/admin). Backend também barra.
+  const podeExcluir = usuario ? usuario.papel !== 'DENTISTA' : false
+
+  async function excluirPaciente(p: Paciente) {
+    try {
+      await excluir.mutateAsync(p.id)
+      toast.success('Paciente excluído.')
+    } catch (erro) {
+      toast.error((erro as ErroApi).mensagem ?? 'Não foi possível excluir.')
+    }
+  }
+
+  // Lixeira no fim da linha (só para quem pode excluir). O backend só permite se
+  // o paciente não tiver nenhum registro (consultas, planos ou anamneses).
+  const colunas = useMemo<ColumnDef<Paciente, unknown>[]>(() => {
+    if (!podeExcluir) return COLUNAS_BASE
+    return [
+      ...COLUNAS_BASE,
+      {
+        id: 'acoes',
+        header: '',
+        enableSorting: false,
+        cell: ({ row }) => {
+          const p = row.original
+          // Sem registros -> lixeira ativa (vermelha) com confirmação.
+          // Com registros -> lixeira cinza/desabilitada + tooltip no hover.
+          if (!p.pode_excluir) {
+            const motivo =
+              'Não é possível excluir: este paciente já tem registros (consultas, planos ou anamneses).'
+            return (
+              <div className="flex justify-end">
+                <div className="group relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Excluir ${p.nome_completo} (indisponível)`}
+                    className="cursor-not-allowed"
+                    onClick={() => toast.info(motivo)}
+                  >
+                    <Trash2 className="text-muted-foreground" />
+                  </Button>
+                  {/* Tooltip estilizado (CSS puro): aparece à esquerda no hover. */}
+                  <span
+                    role="tooltip"
+                    className="pointer-events-none absolute top-1/2 right-full z-30 mr-2 w-56 -translate-y-1/2 rounded-lg border bg-popover px-3 py-2 text-xs leading-snug text-popover-foreground opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
+                  >
+                    {motivo}
+                  </span>
+                </div>
+              </div>
+            )
+          }
+          return (
+            <div className="flex justify-end">
+              <ConfirmDialog
+                titulo="Excluir paciente?"
+                descricao={`Remove ${p.nome_completo}. Esta ação não pode ser desfeita.`}
+                rotuloConfirmar="Excluir"
+                destrutivo
+                onConfirmar={() => excluirPaciente(p)}
+                trigger={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Excluir paciente"
+                    aria-label={`Excluir ${p.nome_completo}`}
+                  >
+                    <Trash2 className="text-destructive" />
+                  </Button>
+                }
+              />
+            </div>
+          )
+        },
+      },
+    ]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [podeExcluir])
 
   // Qualquer mudança de busca/filtro/ordenação reinicia na primeira página.
   useEffect(() => setPagina(1), [buscaDebounced, ordenacao, ativo, dentistaResponsavel])

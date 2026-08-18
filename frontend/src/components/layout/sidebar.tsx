@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils'
 import { gruposNavPorPapel } from '@/routes/nav'
 import { ehDesktop, useUI } from '@/stores/ui'
 
-// Marca do produto (SaaS) exibida no menu.
+// Marca do produto (SaaS) exibida no rodapé do menu.
 const NOME_SAAS = 'PróClínica'
-const ASSINATURA = 'by BonfSystem'
-// Dente (coroa + duas raízes) — logo da marca. viewBox 0 0 32 32.
+const ASSINATURA = 'By Bytefim'
+// Dente (coroa + duas raízes) — ícone da marca no header. viewBox 0 0 32 32.
 const CAMINHO_DENTE =
   'M16 4C11 4 7.5 6.8 7.5 11c0 2.6.7 4.6 1.6 8.2.6 2.4 1 5.3 1.7 6.6.4.8 1 1.2 1.6 1.2 ' +
   '1.2 0 1.6-1.6 2-4.2.3-2 .8-3.4 1.6-3.4s1.3 1.4 1.6 3.4c.4 2.6.8 4.2 2 4.2.6 0 1.2-.4 ' +

@@ -52,7 +52,7 @@ from apps.pacientes.views import (
     PlanoOdontologicoViewSet,
 )
 from apps.procedimentos.views import ProcedimentoViewSet
-from apps.usuarios.views import LoginView, MeView, UsuarioViewSet
+from apps.usuarios.views import LoginView, MeView, TenantAtualView, UsuarioViewSet
 
 router = DefaultRouter()
 router.register("dentistas", DentistaViewSet, basename="dentista")
@@ -87,6 +87,8 @@ urlpatterns = [
     path("api/auth/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     # Usuário logado (nome, papel, clínica) — base do contexto de sessão do frontend
     path("api/auth/me/", MeView.as_view(), name="auth_me"),
+    # Nome da clínica do subdomínio (público) — exibido na tela de login
+    path("api/tenant-atual/", TenantAtualView.as_view(), name="tenant_atual"),
     # Confirmação pública por link (WhatsApp) — sem autenticação
     path(
         "api/confirmacao/<uuid:token>/",

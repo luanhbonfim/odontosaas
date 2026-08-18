@@ -13,6 +13,7 @@ from django.db import connection
 from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
 from rest_framework.exceptions import APIException, PermissionDenied, Throttled
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -23,6 +24,19 @@ from apps.usuarios.serializers import UsuarioMeSerializer, UsuarioSerializer
 # 5 tentativas com senha errada -> bloqueia por 15 minutos.
 LOGIN_FALHAS_MAX = 5
 LOGIN_BLOQUEIO_SEGUNDOS = 15 * 60
+
+
+class TenantAtualView(APIView):
+    """Nome da clínica (tenant) do host atual — PÚBLICO (usado na tela de login,
+    antes de autenticar). Resolvido pelo subdomínio via django-tenants."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(exclude=True)
+    def get(self, request):
+        tenant = getattr(request, "tenant", None)
+        return Response({"nome_fantasia": getattr(tenant, "nome_fantasia", "") or ""})
 LOGIN_BLOQUEIO_MINUTOS = LOGIN_BLOQUEIO_SEGUNDOS // 60
 
 

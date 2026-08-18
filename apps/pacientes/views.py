@@ -1,7 +1,10 @@
 """Views (API REST) do app pacientes."""
 
-from rest_framework import filters, viewsets
+from django.db.models import Exists, OuterRef
+from rest_framework import filters, status, viewsets
+from rest_framework.response import Response
 
+from apps.agenda.models import Anamnese, Consulta
 from apps.core.mixins import ExclusaoProtegidaMixin, FiltraPorPacienteMixin, escopo_dentista_q
 from apps.core.pagination import PaginacaoPadrao
 
@@ -9,7 +12,7 @@ from .models import Guia, Paciente, PlanoOdontologico
 from .serializers import GuiaSerializer, PacienteSerializer, PlanoOdontologicoSerializer
 
 
-class PacienteViewSet(viewsets.ModelViewSet):
+class PacienteViewSet(ExclusaoProtegidaMixin, viewsets.ModelViewSet):
     """CRUD de pacientes (opera no schema do tenant da requisição).
 
     Lista **paginada** (`?page`) com **busca** (`?search=` por nome/CPF) e
@@ -17,6 +20,9 @@ class PacienteViewSet(viewsets.ModelViewSet):
 
     **Escopo row-level:** o DENTISTA vê só os pacientes onde é o responsável **ou**
     tem consulta; Gerente/Recepção/Admin veem todos.
+
+    **Exclusão:** só é permitida se o paciente NÃO tiver nenhum registro
+    (consultas, planos ou anamneses). Caso tenha, retorna 400 com mensagem clara.
     """
 
     queryset = Paciente.objects.all()
@@ -35,6 +41,12 @@ class PacienteViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        # Anota se tem registros (para `pode_excluir` no serializer, sem N+1).
+        queryset = queryset.annotate(
+            _tem_consultas=Exists(Consulta.objects.filter(paciente=OuterRef("pk"))),
+            _tem_planos=Exists(PlanoOdontologico.objects.filter(paciente=OuterRef("pk"))),
+            _tem_anamneses=Exists(Anamnese.objects.filter(paciente=OuterRef("pk"))),
+        )
         usuario = self.request.user
         if getattr(usuario, "papel", None) == "DENTISTA":
             # Fail-closed: dentista sem cadastro vinculado não vê nenhum paciente.
@@ -63,6 +75,26 @@ class PacienteViewSet(viewsets.ModelViewSet):
             serializer.save(dentista_responsavel=dentista)
         else:
             serializer.save()
+
+    def destroy(self, request, *args, **kwargs):
+        # Só exclui paciente "limpo": sem consultas, planos ou anamneses. `planos`
+        # é CASCADE (não estoura ProtectedError), por isso a checagem explícita.
+        paciente = self.get_object()
+        if (
+            paciente.consultas.exists()
+            or paciente.planos.exists()
+            or paciente.anamneses.exists()
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "Não é possível excluir: o paciente tem registros "
+                        "(consultas, planos ou anamneses)."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 class PlanoOdontologicoViewSet(

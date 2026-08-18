@@ -10,6 +10,9 @@ class PacienteSerializer(serializers.ModelSerializer):
     dentista_responsavel_nome = serializers.SerializerMethodField()
     dentistas_compartilhados_nomes = serializers.SerializerMethodField()
     idade = serializers.SerializerMethodField()
+    # Só pode excluir paciente "limpo" (sem consultas/planos/anamneses). Usado
+    # pela UI para desabilitar a lixeira e explicar no tooltip.
+    pode_excluir = serializers.SerializerMethodField()
 
     class Meta:
         model = Paciente
@@ -27,6 +30,7 @@ class PacienteSerializer(serializers.ModelSerializer):
             "dentistas_compartilhados",
             "dentistas_compartilhados_nomes",
             "ativo",
+            "pode_excluir",
             "criado_em",
             "atualizado_em",
         ]
@@ -45,6 +49,18 @@ class PacienteSerializer(serializers.ModelSerializer):
         if request and getattr(request.user, "papel", None) == "DENTISTA":
             self.fields["dentista_responsavel"].read_only = True
             self.fields["dentistas_compartilhados"].read_only = True
+
+    def get_pode_excluir(self, obj) -> bool:
+        """True se o paciente NÃO tem registros (consultas/planos/anamneses).
+
+        Usa as anotações `_tem_*` (Exists) quando presentes (lista paginada, sem
+        N+1); senão cai no `.exists()` por relação (detalhe/criação — 1 objeto).
+        """
+        if hasattr(obj, "_tem_consultas"):
+            tem = obj._tem_consultas or obj._tem_planos or obj._tem_anamneses
+        else:
+            tem = obj.consultas.exists() or obj.planos.exists() or obj.anamneses.exists()
+        return not tem
 
     def get_idade(self, obj) -> int | None:
         """Idade em anos completos a partir de data_nascimento (ou None)."""
