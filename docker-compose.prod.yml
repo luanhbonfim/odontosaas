@@ -105,7 +105,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - odonto_pgdata:/var/lib/postgresql/data
-    # SEM `ports`: o banco não é acessível de fora do servidor.
+    # Publicado APENAS no loopback do host (127.0.0.1): invisível da internet, mas
+    # acessível via túnel SSH (ex.: DBeaver) para inspeção/administração do banco.
+    ports:
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
