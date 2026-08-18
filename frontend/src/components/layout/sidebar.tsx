@@ -8,7 +8,7 @@ import { gruposNavPorPapel } from '@/routes/nav'
 import { ehDesktop, useUI } from '@/stores/ui'
 
 // Marca do produto (SaaS) exibida no menu.
-const NOME_SAAS = 'PróClinica'
+const NOME_SAAS = 'PróClínica'
 const ASSINATURA = 'by BonfSystem'
 // Dente (coroa + duas raízes) — logo da marca. viewBox 0 0 32 32.
 const CAMINHO_DENTE =
