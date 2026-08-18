@@ -11,7 +11,9 @@
 FROM node:22-slim AS build
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+# --legacy-peer-deps: ignora o conflito de peer (typescript 6 x openapi-typescript
+# que pede ^5). O build funciona; é só o npm ci sendo estrito num install limpo.
+RUN npm ci --legacy-peer-deps
 COPY frontend/ ./
 RUN npm run build
 
