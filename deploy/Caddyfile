@@ -17,6 +17,16 @@
 	email {$ACME_EMAIL}
 }
 
+# --- Apex/institucional: página "em breve" (futuro site de vendas do produto) ---
+# Domínios fixos (não usam env) para não haver risco de bloco vazio derrubar o
+# Caddy inteiro. As clínicas sempre entram pelo SEU subdomínio (bloco abaixo).
+proclinica.cloud, www.proclinica.cloud {
+	encode zstd gzip
+	root * /srv-landing
+	file_server
+	header -Server
+}
+
 {$SITE_ADDRESS} {
 	encode zstd gzip
 

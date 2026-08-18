@@ -20,4 +20,6 @@ RUN npm run build
 # --- Stage 2: Caddy servindo o SPA + proxy do Django ---
 FROM caddy:2-alpine
 COPY --from=build /app/dist /srv
+# Página "em breve" do apex (site institucional/vendas — futuro).
+COPY deploy/landing /srv-landing
 COPY deploy/Caddyfile /etc/caddy/Caddyfile

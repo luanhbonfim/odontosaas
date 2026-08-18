@@ -30,6 +30,19 @@ Decisão final na hora da implementação (não trava nada agora).
   para o gateway avisar pagamento aprovado/falho. Não muda a escolha de VPS.
 - Segredos do gateway entram no `.env` de produção (nunca no git).
 
+## Site de vendas (domínio apex `proclinica.cloud`)
+O **apex** do domínio é o lugar do **site institucional / página de vendas** do
+produto "Pró Clínica" — onde as clínicas vão conhecer o sistema e **se cadastrar/
+assinar** (conecta com `apps.plataforma` + o gateway de pagamento).
+
+- **Hoje:** o apex serve uma página **"Pró Clínica — em breve"** (estática, com
+  HTTPS válido) — ver `deploy/landing/index.html` e o bloco `proclinica.cloud`,
+  `www.proclinica.cloud` no `deploy/Caddyfile`.
+- **Futuro:** substituir a "em breve" pela **landing de vendas** (planos, preços,
+  formulário de contato/assinatura) e pelo fluxo de **onboarding de novas clínicas**
+  (criar tenant + cobrança). Cada clínica cliente continua entrando pelo **seu
+  subdomínio** (`clinica.proclinica.cloud`).
+
 ## Fora de escopo do piloto
 Na fase de teste (consultório da parceira), **não há cobrança** — o foco é validar
 o produto. Pagamentos entram na preparação para comercialização.
