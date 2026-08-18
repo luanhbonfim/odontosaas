@@ -142,6 +142,13 @@ class AgendaEvento(ModeloBase):
         SINCRONIZADO = "SINCRONIZADO", "Sincronizado"
         ERRO = "ERRO", "Erro"
 
+    class Origem(models.TextChoices):
+        # Evento criado PELO sistema no Google (podemos atualizar/remover).
+        SISTEMA = "SISTEMA", "Criado pelo sistema"
+        # Evento que já existia no Google (a clínica criou à mão) e nós apenas
+        # importamos/lemos. NUNCA atualizamos nem removemos esses no Google.
+        IMPORTADO = "IMPORTADO", "Importado do Google"
+
     # Um evento por (consulta, credencial): a mesma consulta pode ir para a agenda
     # da clínica (vê todos) E para a do dentista (vê só os seus). `credencial` nulo
     # = registros legados (antes do multi-agenda).
@@ -166,6 +173,9 @@ class AgendaEvento(ModeloBase):
     status_sync = models.CharField(
         max_length=20, choices=StatusSync.choices, default=StatusSync.PENDENTE
     )
+    # De onde veio o evento. Só mexemos no Google em eventos SISTEMA; IMPORTADO
+    # (criado pela clínica no Google) é intocável (não atualiza, não remove).
+    origem = models.CharField(max_length=20, choices=Origem.choices, default=Origem.SISTEMA)
 
     class Meta:
         verbose_name = "Evento de agenda (Google)"

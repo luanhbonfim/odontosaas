@@ -49,6 +49,47 @@ def _mock_service(event_id="gid-1", etag="etag-1"):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_evento_importado_nunca_e_tocado():
+    """Blindagem: evento IMPORTADO (manual da clínica) nunca é atualizado nem
+    removido do Google — nem quando a consulta sai de escopo (cancelada)."""
+    clinica = _criar_clinica("imp_tenant", "imp.localhost")
+    try:
+        with schema_context(clinica.schema_name):
+            from apps.integracoes.google_calendar import (
+                reconciliar_google,
+                sincronizar_consulta,
+            )
+
+            consulta = _consulta(dentista_cred=False)  # credencial da clínica (vê todas)
+            cred = CredencialGoogleCalendar.objects.filter(dentista__isnull=True).first()
+            AgendaEvento.objects.create(
+                consulta=consulta,
+                credencial=cred,
+                google_event_id="manual-1",
+                calendar_id="primary",
+                origem=AgendaEvento.Origem.IMPORTADO,
+            )
+            service, events = _mock_service()
+            with patch("apps.integracoes.google_calendar.build", return_value=service):
+                # (1) não atualiza/insere um evento importado
+                sincronizar_consulta(consulta, cred)
+                assert not events.update.called
+                assert not events.insert.called
+
+                # (2) consulta fora de escopo (cancelada) NÃO apaga o evento manual
+                consulta.status = Consulta.Status.CANCELADA
+                consulta.save(update_fields=["status"])
+                reconciliar_google(aplicar_cancelamento=False)
+                assert not events.delete.called
+                assert AgendaEvento.objects.filter(google_event_id="manual-1").exists()
+    finally:
+        from django.db import connection
+
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
 def test_sincronizar_insert_e_update():
     clinica = _criar_clinica("sync_tenant", "sync.localhost")
     try:

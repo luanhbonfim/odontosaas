@@ -40,8 +40,13 @@ def enfileirar_remocao_no_google(sender, instance, **kwargs):
 
     Não remove na hora: a próxima reconciliação apaga por ID (evita chamadas
     imediatas à API e mantém tudo pelo fluxo de sincronização).
+
+    Só enfileira eventos SISTEMA (criados por nós). Evento IMPORTADO (a clínica
+    criou à mão no Google) NUNCA é removido — mesmo excluindo a consulta aqui.
     """
-    for evento in AgendaEvento.objects.filter(consulta=instance):
+    for evento in AgendaEvento.objects.filter(
+        consulta=instance, origem=AgendaEvento.Origem.SISTEMA
+    ):
         if evento.google_event_id:
             EventoGoogleRemovido.objects.create(
                 credencial=evento.credencial,

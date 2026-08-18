@@ -117,6 +117,11 @@ def sincronizar_consulta(consulta, credencial=None):
         defaults={"calendar_id": credencial.calendar_id},
     )
 
+    # Evento IMPORTADO (a clínica criou à mão no Google) é intocável: não
+    # atualizamos nem sobrescrevemos no Google.
+    if evento.origem == AgendaEvento.Origem.IMPORTADO:
+        return evento
+
     service = build_service(credencial)
     body = _event_body(consulta)
     events = service.events()
@@ -176,6 +181,10 @@ def remover_evento(consulta):
         return False
 
     for evento in eventos:
+        # Evento IMPORTADO (manual da clínica) é intocável: não remove do Google
+        # nem apaga o espelho.
+        if evento.origem != AgendaEvento.Origem.SISTEMA:
+            continue
         credencial = evento.credencial or _credencial_para(consulta)
         if credencial is not None and evento.google_event_id:
             service = build_service(credencial)
@@ -253,11 +262,14 @@ def _importar_evento(item, credencial):
     )
     AgendaEvento.objects.create(
         consulta=consulta,
+        credencial=credencial,
         google_event_id=item.get("id", ""),
         calendar_id=credencial.calendar_id,
         etag=item.get("etag", ""),
         status_sync=AgendaEvento.StatusSync.SINCRONIZADO,
         ultima_sincronizacao=timezone.now(),
+        # Evento nasceu no Google (clínica criou à mão) -> intocável por nós.
+        origem=AgendaEvento.Origem.IMPORTADO,
     )
     return consulta
 
@@ -423,6 +435,11 @@ def reconciliar_google(credenciais=None, aplicar_cancelamento=True):
             evento = AgendaEvento.objects.filter(
                 consulta=consulta, credencial=credencial
             ).first()
+            # Evento IMPORTADO (a clínica criou à mão no Google) é intocável: não
+            # empurramos atualização. Fica no escopo (não vira "obsoleto" a apagar).
+            if evento is not None and evento.origem == AgendaEvento.Origem.IMPORTADO:
+                alvo_ids.add(consulta.id)
+                continue
             assinatura = _assinatura(consulta)
             # Snapshot/diff: só cria (novo) ou atualiza (mudou de fato); o que já
             # está igual no Google é ignorado (não conta como "atualizado").
@@ -442,6 +459,10 @@ def reconciliar_google(credenciais=None, aplicar_cancelamento=True):
             consulta_id__in=alvo_ids
         )
         for evento in obsoletos:
+            # NUNCA toca em evento IMPORTADO (manual da clínica): não remove do
+            # Google nem apaga o espelho (evita re-importar em loop).
+            if evento.origem != AgendaEvento.Origem.SISTEMA:
+                continue
             if evento.google_event_id:
                 with contextlib.suppress(HttpError):
                     build_service(credencial).events().delete(
