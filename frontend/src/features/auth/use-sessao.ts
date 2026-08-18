@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 
 import { api } from '@/lib/api/client'
 import { tokenStore } from '@/lib/api/token-store'
@@ -49,6 +50,12 @@ export function useSessao() {
     staleTime: 5 * 60_000,
     retry: false,
   })
+
+  // Título da aba: "NomeClínica - Pró Clínica" (ou só "Pró Clínica" deslogado).
+  const nomeClinica = query.data?.clinica.nomeFantasia
+  useEffect(() => {
+    document.title = nomeClinica ? `${nomeClinica} - Pró Clínica` : 'Pró Clínica'
+  }, [nomeClinica])
 
   return {
     usuario: query.data ?? null,
