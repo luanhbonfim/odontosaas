@@ -60,9 +60,12 @@ LOGIN_BLOQUEIO_MINUTOS = LOGIN_BLOQUEIO_SEGUNDOS // 60
 
 
 def _ip_cliente(request) -> str:
+    # Atrás do Caddy, o IP REAL do cliente é o ÚLTIMO item do X-Forwarded-For
+    # (o proxy anexa o IP que observou). Ler o primeiro seria spoofável: o cliente
+    # mandaria um XFF forjado e escaparia do bloqueio por força bruta.
     encaminhado = request.META.get("HTTP_X_FORWARDED_FOR")
     if encaminhado:
-        return encaminhado.split(",")[0].strip()
+        return encaminhado.split(",")[-1].strip()
     return request.META.get("REMOTE_ADDR", "sem-ip")
 
 

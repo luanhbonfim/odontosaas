@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 logger = logging.getLogger(__name__)
 
+from apps.core.throttling import ImpersonateThrottle, VendorLoginThrottle
 from apps.plataforma.models import PlanoAssinatura
 from apps.plataforma_admin.models import RegistroAuditoriaVendor
 from apps.plataforma_admin.permissions import IsVendorHost, IsVendorStaff, IsVendorSuperAdmin
@@ -239,7 +240,7 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-    @action(detail=True, methods=["post"], url_path="impersonate")
+    @action(detail=True, methods=["post"], url_path="impersonate", throttle_classes=[ImpersonateThrottle])
     def impersonate(self, request, pk=None):
         """Emite token de suporte de curta duração para impersonation."""
         clinica = self.get_object()
@@ -841,9 +842,11 @@ VENDOR_LOGIN_BLOQUEIO_MINUTOS = VENDOR_LOGIN_BLOQUEIO_SEGUNDOS // 60
 
 
 def _vendor_ip_cliente(request) -> str:
+    # IP real = ÚLTIMO item do X-Forwarded-For (anexado pelo Caddy). Ler o primeiro
+    # seria spoofável e permitiria burlar o lockout por força bruta do login vendor.
     encaminhado = request.META.get("HTTP_X_FORWARDED_FOR")
     if encaminhado:
-        return encaminhado.split(",")[0].strip()
+        return encaminhado.split(",")[-1].strip()
     return request.META.get("REMOTE_ADDR", "sem-ip")
 
 
@@ -860,6 +863,7 @@ class VendorLoginView(APIView):
 
     permission_classes = [IsVendorHost]
     authentication_classes = []
+    throttle_classes = [VendorLoginThrottle]
 
     def post(self, request):
         from django.core.cache import cache

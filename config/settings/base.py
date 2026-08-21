@@ -102,6 +102,13 @@ REST_FRAMEWORK = {
     ],
     # Captura automática de exceções e registro de erros operacionais no Vendor Admin
     "EXCEPTION_HANDLER": "apps.core.handlers.custom_exception_handler",
+    # Taxas dos throttles por-escopo (aplicados só nos endpoints sensíveis via
+    # throttle_classes — ver apps/core/throttling.py). Ajustáveis por ambiente.
+    "DEFAULT_THROTTLE_RATES": {
+        "vendor_login": env("THROTTLE_VENDOR_LOGIN", default="30/min"),  # noqa: F405
+        "impersonate": env("THROTTLE_IMPERSONATE", default="30/min"),  # noqa: F405
+        "studio": env("THROTTLE_STUDIO", default="60/min"),  # noqa: F405
+    },
 }
 
 # Tokens JWT (djangorestframework-simplejwt).

@@ -136,3 +136,55 @@ def test_studio_bloqueia_funcoes_administrativas_e_procedimentos(sql_perigoso):
                 modo="RW",
                 justificativa="Justificativa longa para teste de segurança da plataforma",
             )
+
+
+# -----------------------------------------------------------------------------
+# 4. Hardening: IP real (anti-spoof do X-Forwarded-For) e Rate-Limiting (throttle)
+# -----------------------------------------------------------------------------
+def test_ip_cliente_usa_ultimo_hop_do_xff():
+    """
+    O IP usado no lockout deve ser o ÚLTIMO hop do X-Forwarded-For (o que o Caddy
+    anexa), não o primeiro — que o cliente pode forjar para burlar o bloqueio.
+    """
+    from apps.plataforma_admin.views import _vendor_ip_cliente
+    from apps.usuarios.views import _ip_cliente
+
+    req = MagicMock()
+    # Cliente forja "1.1.1.1"; o Caddy anexa o IP real "9.9.9.9" ao final.
+    req.META = {
+        "HTTP_X_FORWARDED_FOR": "1.1.1.1, 2.2.2.2, 9.9.9.9",
+        "REMOTE_ADDR": "10.0.0.1",
+    }
+    assert _ip_cliente(req) == "9.9.9.9"
+    assert _vendor_ip_cliente(req) == "9.9.9.9"
+
+    # Sem XFF, cai no REMOTE_ADDR.
+    req2 = MagicMock()
+    req2.META = {"REMOTE_ADDR": "10.0.0.1"}
+    assert _ip_cliente(req2) == "10.0.0.1"
+
+
+def test_throttle_bloqueia_apos_limite():
+    """
+    O throttle por-escopo devolve 429 ao exceder a taxa: com 1/min, a 2ª requisição
+    do mesmo operador é barrada.
+    """
+    from apps.core.throttling import StudioThrottle
+
+    cache.clear()
+    req = APIRequestFactory().get("/api/plataforma-admin/studio/schemas/")
+    req.user = MagicMock(pk=4242, is_authenticated=True)
+    view = MagicMock()
+
+    with patch.object(StudioThrottle, "get_rate", return_value="1/min"):
+        assert StudioThrottle().allow_request(req, view) is True   # 1ª passa
+        assert StudioThrottle().allow_request(req, view) is False  # 2ª barrada (429)
+
+
+def test_views_sensiveis_tem_throttle_configurado():
+    """Garante que os endpoints sensíveis têm throttle aplicado (wiring)."""
+    from apps.core.throttling import StudioThrottle, VendorLoginThrottle
+    from apps.plataforma_admin.views_studio import StudioViewSet
+
+    assert VendorLoginThrottle in VendorLoginView.throttle_classes
+    assert StudioThrottle in StudioViewSet.throttle_classes

@@ -6,6 +6,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.core.throttling import StudioThrottle
 from apps.plataforma_admin.permissions import IsVendorStaff
 from apps.plataforma_admin.serializers import StudioExecuteInputSerializer
 from apps.plataforma_admin.studio import (
@@ -22,6 +23,7 @@ class StudioViewSet(viewsets.ViewSet):
     """
 
     permission_classes = [IsVendorStaff]
+    throttle_classes = [StudioThrottle]
 
     @action(detail=False, methods=["get"], url_path="schemas")
     def schemas(self, request):

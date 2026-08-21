@@ -63,3 +63,17 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+
+# --------------------------------------------------------------------------
+# Hardening de produção
+# --------------------------------------------------------------------------
+# Atrás do Caddy (1 proxy): faz o DRF resolver o IP real do cliente (último hop
+# do X-Forwarded-For) para a identidade dos throttles.
+REST_FRAMEWORK = {**REST_FRAMEWORK, "NUM_PROXIES": 1}  # noqa: F405
+
+# Swagger/ReDoc e o schema OpenAPI ficam restritos a staff em produção
+# (não expõem o mapa completo da API para anônimos).
+SPECTACULAR_SETTINGS = {  # noqa: F405
+    **SPECTACULAR_SETTINGS,  # noqa: F405
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+}

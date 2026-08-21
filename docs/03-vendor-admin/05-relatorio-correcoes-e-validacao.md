@@ -184,6 +184,12 @@ Os dois bloqueadores (H1 webhook e H3 segredos) foram **fechados no código/conf
 2. **Rotacionar** o que já foi semeado com defaults: a senha Master (`ProClinica@2026`) via tela *Acesso Master Global*, e — como a chave Fernet default é pública — **reconectar as contas Google** após trocar `FIELD_ENCRYPTION_KEY` (tokens antigos ficam ilegíveis com a chave nova).
 3. `docker compose -f docker-compose.prod.yml up -d --build` e rodar as migrações. O WAHA recria com a hook URL contendo o token.
 
-**Recomendado logo após (não bloqueia o go-live):** throttling nos endpoints públicos/vendor; corrigir origem do IP no lockout (`X-Forwarded-For`); allowlist no Studio RW; fechar Swagger em produção.
+**Hardening adicional implementado (rodada 5):**
+- **Throttling (rate-limit)** por-escopo nos endpoints sensíveis: login do vendor (`30/min`), impersonate (`30/min`) e Database Studio (`60/min`) — taxas configuráveis por env (`THROTTLE_*`). `apps/core/throttling.py`.
+- **IP real no lockout**: `_ip_cliente`/`_vendor_ip_cliente` passam a usar o ÚLTIMO hop do `X-Forwarded-For` (o que o Caddy anexa) em vez do primeiro (spoofável) + `NUM_PROXIES=1` em prod para o DRF resolver o IP do throttle.
+- **Swagger/ReDoc restritos a staff em produção** (`SERVE_PERMISSIONS = IsAdminUser` em `prod.py`).
+- Testes: `test_ip_cliente_usa_ultimo_hop_do_xff`, `test_throttle_bloqueia_apos_limite`, `test_views_sensiveis_tem_throttle_configurado`.
+
+**Ainda recomendado (não bloqueia):** migrar o Studio RW de denylist para allowlist (abuso por SuperAdmin de confiança); provisionar a role `odonto_studio_ro` por ops (não via app).
 
 **Veredito:** com o checklist de segredos aplicado, **liberado para produção**. Sem os segredos, o sistema recusa subir (fail-closed) — proteção intencional, não um bug.
