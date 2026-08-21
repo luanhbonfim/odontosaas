@@ -65,6 +65,87 @@ describe('camada de API', () => {
     expect(tokenStore.access).toBeNull()
   })
 
+  it('unifica chamadas concorrentes de refresh evitando race conditions', async () => {
+    tokenStore.definir({ access: 'velho', refresh: 'r1' })
+    let refreshCalls = 0
+
+    server.use(
+      http.get('/api/paralelo-1/', ({ request }) => {
+        if (request.headers.get('authorization') === 'Bearer novo-concorrente') {
+          return HttpResponse.json({ ok: 1 })
+        }
+        return new HttpResponse(null, { status: 401 })
+      }),
+      http.get('/api/paralelo-2/', ({ request }) => {
+        if (request.headers.get('authorization') === 'Bearer novo-concorrente') {
+          return HttpResponse.json({ ok: 2 })
+        }
+        return new HttpResponse(null, { status: 401 })
+      }),
+      http.post('/api/auth/token/refresh/', async () => {
+        refreshCalls += 1
+        return HttpResponse.json({ access: 'novo-concorrente' })
+      }),
+    )
+
+    const [resp1, resp2] = await Promise.all([
+      api.get('/paralelo-1/'),
+      api.get('/paralelo-2/'),
+    ])
+
+    expect(resp1.data).toEqual({ ok: 1 })
+    expect(resp2.data).toEqual({ ok: 2 })
+    expect(refreshCalls).toBe(1)
+    expect(tokenStore.access).toBe('novo-concorrente')
+  })
+
+  it('desloga imediatamente e dispara sessao-expirada quando o tenant é suspenso (403)', async () => {
+    tokenStore.definir({ access: 'valido', refresh: 'valido' })
+    let sessaoExpiradaDisparada = false
+    const ouvinte = () => {
+      sessaoExpiradaDisparada = true
+    }
+    window.addEventListener('sessao-expirada', ouvinte)
+
+    server.use(
+      http.get('/api/protegido-tenant/', () =>
+        HttpResponse.json({ erro: 'Acesso suspenso.', motivo: 'inadimplente' }, { status: 403 }),
+      ),
+    )
+
+    await expect(api.get('/protegido-tenant/')).rejects.toMatchObject({
+      status: 403,
+      mensagem: 'Acesso suspenso.',
+    })
+
+    expect(tokenStore.access).toBeNull()
+    expect(tokenStore.refresh).toBeNull()
+    expect(sessaoExpiradaDisparada).toBe(true)
+    window.removeEventListener('sessao-expirada', ouvinte)
+  })
+
+  it('não dispara sessao-expirada em 401 na rota de login com senha incorreta', async () => {
+    let sessaoExpiradaDisparada = false
+    const ouvinte = () => {
+      sessaoExpiradaDisparada = true
+    }
+    window.addEventListener('sessao-expirada', ouvinte)
+
+    server.use(
+      http.post('/api/auth/token/', () =>
+        HttpResponse.json({ detail: 'No active account found with the given credentials' }, { status: 401 }),
+      ),
+    )
+
+    await expect(api.post('/auth/token/', { email: 'x@y.com', password: 'errada' })).rejects.toMatchObject({
+      status: 401,
+      mensagem: 'No active account found with the given credentials',
+    })
+
+    expect(sessaoExpiradaDisparada).toBe(false)
+    window.removeEventListener('sessao-expirada', ouvinte)
+  })
+
   it('normalizarErro: usa "detail" como mensagem', () => {
     const erro = new AxiosError('x')
     erro.response = { status: 403, data: { detail: 'Sem permissão.' } } as never

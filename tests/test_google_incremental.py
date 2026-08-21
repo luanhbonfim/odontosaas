@@ -61,8 +61,10 @@ def _rodar_incremental(cred, itens):
         return sincronizar_incremental(cred)
 
 
-def test_beat_schedule_registrado(settings):
-    assert "sincronizar-google-incremental" in settings.CELERY_BEAT_SCHEDULE
+def test_beat_schedule_registrado():
+    from apps.plataforma_admin.celery_manager import TAREFAS_PADRAO
+    nomes = [t["name"] for t in TAREFAS_PADRAO]
+    assert "sincronizar-google-incremental" in nomes
 
 
 @pytest.mark.django_db(transaction=True)

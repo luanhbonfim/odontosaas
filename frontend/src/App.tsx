@@ -6,7 +6,7 @@ import { EmConstrucao } from '@/components/common/em-construcao'
 import { AppShell } from '@/components/layout/app-shell'
 import { AgendaPage } from '@/features/agenda/agenda-page'
 import { LoginPage } from '@/features/auth/login-page'
-import { RequireAuth, SomenteVisitante } from '@/features/auth/require-auth'
+import { RequireAuth, RequireModulo, SomenteVisitante } from '@/features/auth/require-auth'
 import { ConfirmacaoPage } from '@/features/confirmacao/confirmacao-page'
 import { useAuth } from '@/features/auth/use-auth'
 import { DashboardPage } from '@/features/dashboard/dashboard-page'
@@ -23,28 +23,75 @@ import { UsuariosPage } from '@/features/usuarios/usuarios-page'
 import { queryClient } from '@/lib/api/query-client'
 import { aplicarTema, useTema } from '@/stores/tema'
 
+import { MeuPlanoPage } from '@/features/plano/meu-plano-page'
+import { VENDOR_BASE_PATH } from '@/features/vendor-admin/constants'
+import { VendorDashboardPage } from '@/features/vendor-admin/vendor-dashboard-page'
+import { VendorLoginPage } from '@/features/vendor-admin/vendor-login-page'
+import { VendorRequireAuth, VendorSomenteVisitante } from '@/features/vendor-admin/vendor-require-auth'
+import { VendorShell } from '@/features/vendor-admin/vendor-shell'
+import { PlanosPage } from '@/features/vendor-admin/planos/planos-page'
+import { TenantsPage } from '@/features/vendor-admin/tenants/tenants-page'
+import { TenantDetalhesPage } from '@/features/vendor-admin/tenants/tenant-detalhes-page'
+import { MasterAdminPage } from '@/features/vendor-admin/master-admin/master-admin-page'
+import { DatabaseStudioPage } from '@/features/vendor-admin/studio/database-studio-page'
+import { CeleryMonitorPage } from '@/features/vendor-admin/celery/celery-monitor-page'
+
+import { Navigate } from 'react-router-dom'
+import { PaginaPublicaPlataforma } from '@/features/public/pagina-publica-plataforma'
+import { useClinicaAtual } from '@/features/auth/use-clinica-atual'
+import { NaoEncontradaPage } from '@/features/error/nao-encontrada-page'
+
 function LoginRoute() {
   const { entrar } = useAuth()
   return <LoginPage aoEntrar={entrar} />
 }
 
-/** Ao expirar a sessão (falha no refresh), limpa o cache e vai para o login. */
+function RootRouter() {
+  const { data: infoClinica, isLoading } = useClinicaAtual()
+  if (isLoading) return null
+
+  // No host público (sem tenant), exibe a página institucional/vendas
+  if (infoClinica?.is_public) {
+    return <PaginaPublicaPlataforma />
+  }
+
+  // No subdomínio de uma clínica: redireciona para o dashboard da clínica
+  return <Navigate to="/dashboard" replace />
+}
+
+/** Ao expirar a sessão ou suspensão de tenant, limpa o cache e redireciona para o login contextual. */
 function SessaoWatcher() {
   const navegar = useNavigate()
   useEffect(() => {
-    function aoExpirar() {
+    const tratarSessaoExpirada = () => {
+      // Se a navegação estiver no Vendor Admin, não interfere com o operador
+      if (window.location.pathname.startsWith(VENDOR_BASE_PATH)) {
+        return
+      }
       queryClient.clear()
-      toast.error('Sua sessão expirou. Faça login novamente.')
+      toast.error('Sessão encerrada ou acesso suspenso. Faça login novamente.')
       navegar('/login', { replace: true })
     }
-    window.addEventListener('sessao-expirada', aoExpirar)
-    return () => window.removeEventListener('sessao-expirada', aoExpirar)
+
+    const tratarVendorSessaoExpirada = () => {
+      queryClient.clear()
+      toast.error('Sessão do operador expirada. Faça login novamente.')
+      navegar(`${VENDOR_BASE_PATH}/login`, { replace: true })
+    }
+
+    window.addEventListener('sessao-expirada', tratarSessaoExpirada)
+    window.addEventListener('vendor-sessao-expirada', tratarVendorSessaoExpirada)
+
+    return () => {
+      window.removeEventListener('sessao-expirada', tratarSessaoExpirada)
+      window.removeEventListener('vendor-sessao-expirada', tratarVendorSessaoExpirada)
+    }
   }, [navegar])
   return null
 }
 
-function App() {
-  const tema = useTema((s) => s.tema)
+export function App() {
+  const tema = useTema((estado) => estado.tema)
 
   useEffect(() => {
     aplicarTema(tema)
@@ -54,16 +101,39 @@ function App() {
     <BrowserRouter>
       <SessaoWatcher />
       <Routes>
+        {/* Rota Raiz */}
+        <Route path="/" element={<RootRouter />} />
+
         {/* Pública (paciente): confirmação de consulta por link do WhatsApp */}
         <Route path="/c/:token" element={<ConfirmacaoPage />} />
-        {/* Pública, só para quem não está logado */}
+        
+        {/* Pública, só para quem não está logado no subdomínio do Tenant */}
         <Route element={<SomenteVisitante />}>
           <Route path="/login" element={<LoginRoute />} />
         </Route>
-        {/* Protegidas: exigem sessão válida (guarda em cada navegação) */}
+
+        {/* Rotas do Vendor Admin (Plataforma Global) */}
+        <Route element={<VendorSomenteVisitante />}>
+          <Route path={`${VENDOR_BASE_PATH}/login`} element={<VendorLoginPage />} />
+        </Route>
+
+        <Route element={<VendorRequireAuth />}>
+          <Route path={VENDOR_BASE_PATH} element={<VendorShell />}>
+            <Route index element={<VendorDashboardPage />} />
+            <Route path="tenants" element={<TenantsPage />} />
+            <Route path="tenants/:id" element={<TenantDetalhesPage />} />
+            <Route path="planos" element={<PlanosPage />} />
+            <Route path="admin-master" element={<MasterAdminPage />} />
+            <Route path="studio" element={<DatabaseStudioPage />} />
+            <Route path="celery" element={<CeleryMonitorPage />} />
+            <Route path="auditoria" element={<EmConstrucao titulo="Trilha de Auditoria do Vendor" />} />
+          </Route>
+        </Route>
+
+        {/* Protegidas do Tenant da Clínica: exigem sessão válida (guarda em cada navegação) */}
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>
-            <Route index element={<DashboardPage />} />
+            <Route path="dashboard" element={<DashboardPage />} />
             <Route path="agenda" element={<AgendaPage />} />
             <Route path="pacientes" element={<PacientesPage />} />
             <Route path="pacientes/novo" element={<PacienteDetalhePage />} />
@@ -74,13 +144,30 @@ function App() {
             <Route path="dentistas" element={<DentistasPage />} />
             <Route path="convenios" element={<ConveniosPage />} />
             <Route path="procedimentos" element={<ProcedimentosPage />} />
-            <Route path="estoque" element={<EmConstrucao titulo="Estoque" />} />
-            <Route path="financeiro" element={<EmConstrucao titulo="Financeiro" />} />
-            <Route path="notificacoes" element={<NotificacoesPage />} />
-            <Route path="integracoes" element={<IntegracoesPage />} />
+            {/* Módulos contratáveis/opcionais via plano */}
+            <Route element={<RequireModulo modulo="estoque" />}>
+              <Route path="estoque" element={<EmConstrucao titulo="Estoque" />} />
+            </Route>
+
+            <Route element={<RequireModulo modulo="financeiro" />}>
+              <Route path="financeiro" element={<EmConstrucao titulo="Financeiro" />} />
+            </Route>
+
+            <Route element={<RequireModulo modulo="whatsapp" />}>
+              <Route path="notificacoes" element={<NotificacoesPage />} />
+            </Route>
+
+            <Route element={<RequireModulo modulo="google_calendar" />}>
+              <Route path="integracoes" element={<IntegracoesPage />} />
+            </Route>
+
             <Route path="equipe" element={<UsuariosPage />} />
+            <Route path="meu-plano" element={<MeuPlanoPage />} />
           </Route>
         </Route>
+
+        {/* 404 / Página não encontrada para qualquer rota inexistente */}
+        <Route path="*" element={<NaoEncontradaPage />} />
       </Routes>
       <Toaster richColors closeButton theme={tema === 'escuro' ? 'dark' : 'light'} />
     </BrowserRouter>

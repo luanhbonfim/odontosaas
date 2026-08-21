@@ -67,3 +67,41 @@ def test_fluxo_jwt_completo():
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)
+
+
+@pytest.mark.no_auto_auth
+@pytest.mark.django_db(transaction=True)
+def test_cross_tenant_token_rejeitado():
+    """Garante que um token emitido para o tenant A seja rejeitado ao acessar o tenant B."""
+    host_a = "tenant-a.localhost"
+    host_b = "tenant-b.localhost"
+    clinica_a = _criar_clinica("tenant_a_tok", host_a)
+    clinica_b = _criar_clinica("tenant_b_tok", host_b)
+    try:
+        with schema_context("tenant_a_tok"):
+            sincronizar_grupos()
+            Usuario.objects.create_user(email="user@a.com", password="Senha12345")
+
+        with schema_context("tenant_b_tok"):
+            sincronizar_grupos()
+            Usuario.objects.create_user(email="user@b.com", password="Senha12345")
+
+        client = APIClient()
+        resp_a = client.post(
+            "/api/auth/token/",
+            {"email": "user@a.com", "password": "Senha12345"},
+            format="json",
+            HTTP_HOST=host_a,
+        )
+        assert resp_a.status_code == 200
+        token_a = resp_a.json()["access"]
+
+        # Tenta usar o token do Tenant A no Tenant B
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {token_a}")
+        resp_b = client.get("/api/pacientes/", HTTP_HOST=host_b)
+        assert resp_b.status_code in (401, 403)
+    finally:
+        connection.set_schema_to_public()
+        clinica_a.delete(force_drop=True)
+        clinica_b.delete(force_drop=True)
+

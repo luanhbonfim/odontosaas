@@ -1,7 +1,10 @@
 """Views do app notificacoes (API REST + webhook do WAHA)."""
 
+import hmac
 import json
+import logging
 
+from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse
 from django.utils import timezone
@@ -22,6 +25,8 @@ from .serializers import (
     LogNotificacaoSerializer,
     TemplateMensagemSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _motivo_falha_envio(payload):
@@ -256,22 +261,43 @@ def waha_webhook(request):
     """
     Recebe os eventos do WAHA (resposta do paciente). Resolve o tenant pela
     `session` do payload e registra a resposta no schema correto.
+
+    Autenticação inbound: o endpoint é público via proxy, então exigimos um segredo
+    compartilhado (`WAHA_WEBHOOK_TOKEN`) enviado pelo WAHA em `?token=` (ou no header
+    `X-Webhook-Token`). Sem isso, um terceiro poderia forjar respostas e confirmar/
+    cancelar consultas de qualquer clínica (o schema vem do corpo `session`).
+    Quando `WAHA_WEBHOOK_TOKEN` está vazio (dev/piloto), a verificação é ignorada.
     """
+    esperado = getattr(settings, "WAHA_WEBHOOK_TOKEN", "") or ""
+    if esperado:
+        recebido = request.GET.get("token") or request.headers.get("X-Webhook-Token") or ""
+        if not hmac.compare_digest(str(recebido), str(esperado)):
+            logger.warning("Webhook WAHA rejeitado: token ausente/inválido.")
+            return HttpResponse(status=401)
+
     try:
         data = json.loads(request.body or b"{}")
     except json.JSONDecodeError:
         return HttpResponse(status=400)
 
-    if data.get("event") != "message":
+    if not isinstance(data, dict) or data.get("event") != "message":
         return HttpResponse(status=200)
 
-    payload = data.get("payload", {})
+    # `payload` pode chegar ausente OU explicitamente null (`"payload": null`);
+    # `.get("payload", {})` só cobre o caso ausente, então normalizamos aqui para
+    # nunca chamar `.get` em None (evita 500 e a tempestade de retries do WAHA).
+    payload = data.get("payload") or {}
+    if not isinstance(payload, dict):
+        return HttpResponse(status=200)
     if payload.get("fromMe"):
         return HttpResponse(status=200)  # ignora o que nós mesmos enviamos
 
-    schema = schema_da_sessao(data.get("session", ""))
-    if schema:
-        with schema_context(schema):
-            registrar_resposta(schema, payload)
+    try:
+        schema = schema_da_sessao(data.get("session", ""))
+        if schema:
+            with schema_context(schema):
+                registrar_resposta(schema, payload)
+    except Exception:  # noqa: BLE001 — webhook público: nunca devolver 5xx (evita retry storm)
+        logger.exception("Falha ao processar webhook WAHA (session=%s)", data.get("session"))
 
     return HttpResponse(status=200)

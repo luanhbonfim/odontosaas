@@ -65,7 +65,17 @@ def schema_da_sessao(session):
     """Descobre o schema do tenant dono da `session` do WAHA."""
     from apps.tenants.models import Clinica
 
+    # 1. Busca direta O(1): na convenção padrão a sessão é igual ao schema_name
+    clinica_direta = Clinica.objects.filter(schema_name=session).first()
+    if clinica_direta and clinica_direta.schema_name != "public":
+        if hasattr(clinica_direta, "recurso_habilitado") and not clinica_direta.recurso_habilitado("whatsapp"):
+            return None
+        return clinica_direta.schema_name
+
+    # 2. Fallback caso a sessão seja customizada
     for clinica in Clinica.objects.exclude(schema_name="public"):
+        if hasattr(clinica, "recurso_habilitado") and not clinica.recurso_habilitado("whatsapp"):
+            continue
         with schema_context(clinica.schema_name):
             if ConfiguracaoNotificacao.objects.filter(waha_session=session).exists():
                 return clinica.schema_name

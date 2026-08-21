@@ -7,6 +7,8 @@ Fluxo OAuth2 do Google Calendar (por clínica/dentista).
 Roda no schema do tenant da requisição; a credencial é gravada no tenant.
 """
 
+import contextlib
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -45,6 +47,10 @@ def get_flow(state=None):
 
 def google_authorize(request):
     """Redireciona para a tela de consentimento do Google."""
+    tenant = getattr(request, "tenant", None)
+    if tenant and hasattr(tenant, "recurso_habilitado") and not tenant.recurso_habilitado("google_calendar"):
+        return HttpResponse("Módulo Google Calendar desabilitado pelo plano da clínica.", status=403)
+
     flow = get_flow()
     auth_url, state = flow.authorization_url(
         access_type="offline", include_granted_scopes="true", prompt="consent"
@@ -64,6 +70,10 @@ def _redirect_integracoes(status):
 
 def google_callback(request):
     """Recebe o code do Google, troca por tokens, salva a credencial e volta à SPA."""
+    tenant = getattr(request, "tenant", None)
+    if tenant and hasattr(tenant, "recurso_habilitado") and not tenant.recurso_habilitado("google_calendar"):
+        return _redirect_integracoes("desabilitado")
+
     try:
         flow = get_flow(state=request.session.get("google_oauth_state"))
         flow.fetch_token(code=request.GET.get("code"))
@@ -72,14 +82,30 @@ def google_callback(request):
         dentista_id = request.session.get("google_oauth_dentista")
         dentista = Dentista.objects.filter(pk=dentista_id).first() if dentista_id else None
 
+        defaults = {
+            "access_token": creds.token or "",
+            "refresh_token": creds.refresh_token or "",
+            "token_expiry": creds.expiry,
+            "scope": " ".join(creds.scopes or []),
+        }
+
+        # Tenta obter o e-mail da conta Google conectada via events list
+        with contextlib.suppress(Exception):
+            from apps.integracoes.google_calendar import build_service
+            temp_cred = CredencialGoogleCalendar(
+                access_token=creds.token or "",
+                refresh_token=creds.refresh_token or "",
+                scope=" ".join(creds.scopes or []),
+            )
+            srv = build_service(temp_cred)
+            events_info = srv.events().list(calendarId="primary", maxResults=1).execute()
+            sum_email = events_info.get("summary")
+            if sum_email and "@" in sum_email:
+                defaults["calendar_id"] = sum_email
+
         CredencialGoogleCalendar.objects.update_or_create(
             dentista=dentista,
-            defaults={
-                "access_token": creds.token or "",
-                "refresh_token": creds.refresh_token or "",
-                "token_expiry": creds.expiry,
-                "scope": " ".join(creds.scopes or []),
-            },
+            defaults=defaults,
         )
     except Exception:  # noqa: BLE001 — qualquer falha na troca de token vira "erro" na UI
         return _redirect_integracoes("erro")
@@ -213,6 +239,10 @@ def google_webhook(request):
     Recebe as push notifications do Google Calendar (roda no schema do tenant,
     resolvido pelo domínio da requisição) e dispara a sincronização incremental.
     """
+    tenant = getattr(request, "tenant", None)
+    if tenant and hasattr(tenant, "recurso_habilitado") and not tenant.recurso_habilitado("google_calendar"):
+        return HttpResponse("Sincronização com Google Agenda pausada pelo plano.", status=200)
+
     estado = request.headers.get("X-Goog-Resource-State", "")
     channel_id = request.headers.get("X-Goog-Channel-ID", "")
 

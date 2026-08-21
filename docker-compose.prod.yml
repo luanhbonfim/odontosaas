@@ -140,7 +140,10 @@ services:
     environment:
       WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-GOWS}
       WAHA_API_KEY: ${WAHA_API_KEY}
-      WHATSAPP_HOOK_URL: ${WHATSAPP_HOOK_URL:-http://web:8000/notificacoes/whatsapp/webhook}
+      # O token (`?token=...`) é anexado por interpolação de nível superior a partir da
+      # MESMA variável que o Django verifica (WAHA_WEBHOOK_TOKEN) — os dois lados usam o
+      # mesmo segredo, sem janela de mismatch. NÃO defina WHATSAPP_HOOK_URL com query string.
+      WHATSAPP_HOOK_URL: ${WHATSAPP_HOOK_URL:-http://web:8000/notificacoes/whatsapp/webhook}?token=${WAHA_WEBHOOK_TOKEN:-}
       WHATSAPP_HOOK_EVENTS: ${WHATSAPP_HOOK_EVENTS:-message}
       WAHA_LOCAL_STORE_BASE_DIR: ${WAHA_LOCAL_STORE_BASE_DIR:-/app/.sessions}
       WAHA_DASHBOARD_USERNAME: ${WAHA_DASHBOARD_USERNAME:-admin}

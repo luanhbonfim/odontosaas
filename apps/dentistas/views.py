@@ -25,6 +25,43 @@ class DentistaViewSet(viewsets.ModelViewSet):
     queryset = Dentista.objects.all()
     serializer_class = DentistaSerializer
 
+    def create(self, request, *args, **kwargs):
+        """Valida o limite de dentistas ativos do plano antes de criar."""
+        tenant = getattr(request, "tenant", None)
+        if tenant and hasattr(tenant, "get_limite_dentistas"):
+            limite = tenant.get_limite_dentistas()
+            if limite is not None:
+                total_ativos = Dentista.objects.filter(ativo=True).count()
+                if total_ativos >= limite:
+                    return Response(
+                        {
+                            "detail": (
+                                f"Limite de dentistas ativos atingido para o plano desta clínica "
+                                f"(máximo {limite}). Entre em contato com a administração para realizar upgrade."
+                            ),
+                            "limite": limite,
+                            "atual": total_ativos,
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+        return super().create(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        """Bloqueia reativação se o limite estiver esgotado."""
+        tenant = getattr(self.request, "tenant", None)
+        if tenant and hasattr(tenant, "get_limite_dentistas"):
+            limite = tenant.get_limite_dentistas()
+            if limite is not None and serializer.validated_data.get("ativo") is True:
+                instancia = serializer.instance
+                if not instancia.ativo:
+                    total_ativos = Dentista.objects.filter(ativo=True).count()
+                    if total_ativos >= limite:
+                        from rest_framework.exceptions import ValidationError
+                        raise ValidationError(
+                            f"Não é possível reativar o profissional: o limite de {limite} dentistas ativos do plano da clínica foi atingido."
+                        )
+        serializer.save()
+
     def destroy(self, request, *args, **kwargs):
         """Exclui o dentista; bloqueia (400) se ainda houver pacientes ou consultas vinculados."""
         dentista = self.get_object()

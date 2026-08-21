@@ -420,3 +420,52 @@ def test_task_remover_evento_google():
 
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_sync_google_pausada_quando_modulo_desabilitado():
+    clinica = _criar_clinica("pause_sync_tenant", "pausesync.localhost")
+    try:
+        from apps.plataforma.models import PlanoAssinatura
+        from apps.integracoes.tasks import reconciliar_google, reconciliar_google_todos_tenants
+
+        plano = PlanoAssinatura.objects.create(
+            nome="Plano Básico Sem Google",
+            preco_mensal=99.00,
+            sync_google_ativo=False,
+        )
+        clinica.plano_assinatura = plano
+        clinica.save()
+
+        with schema_context(clinica.schema_name):
+            consulta = _consulta(dentista_cred=True)
+            cid = consulta.id
+
+        # 1. sincronizar_evento_google deve retornar None (pausado) sem chamar API
+        with patch("apps.integracoes.google_calendar.sincronizar_consulta") as mock_sync:
+            resultado = sincronizar_evento_google(clinica.schema_name, cid)
+            assert resultado is None
+            mock_sync.assert_not_called()
+
+        # 2. reconciliar_google deve retornar status pausado
+        resumo = reconciliar_google(clinica.schema_name)
+        assert resumo.get("pausado") is True
+
+        # 3. reconciliar_google_todos_tenants deve pular a clínica
+        reconciliadas = reconciliar_google_todos_tenants()
+        assert reconciliadas == 0
+
+        # 4. Ao habilitar por override, a sincronização retoma normalmente
+        clinica.override_recursos = {"google_calendar": True}
+        clinica.save()
+
+        service, _ = _mock_service(event_id="gid-retomado")
+        with patch("apps.integracoes.google_calendar.build", return_value=service):
+            gid = sincronizar_evento_google(clinica.schema_name, cid)
+            assert gid == "gid-retomado"
+    finally:
+        from django.db import connection
+
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+

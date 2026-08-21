@@ -24,9 +24,9 @@ export function Sidebar() {
   const fecharSidebar = useUI((estado) => estado.fecharSidebar)
   const { usuario } = useSessao()
 
-  // Menu agrupado por seção conforme o papel (espelha a matriz); enquanto
-  // carrega, oculta os módulos restritos.
-  const grupos = gruposNavPorPapel(usuario?.papel ?? null)
+  // Menu agrupado por seção conforme o papel e módulos ativos do plano;
+  // enquanto carrega, oculta os módulos restritos ou desabilitados.
+  const grupos = gruposNavPorPapel(usuario?.papel ?? null, usuario?.clinica?.modulos)
 
   // No mobile, clicar num item fecha o drawer; no desktop mantém o menu aberto.
   function aoNavegar() {

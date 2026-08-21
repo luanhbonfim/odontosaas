@@ -52,7 +52,7 @@ from apps.pacientes.views import (
     PlanoOdontologicoViewSet,
 )
 from apps.procedimentos.views import ProcedimentoViewSet
-from apps.usuarios.views import LoginView, MeView, TenantAtualView, UsuarioViewSet
+from apps.usuarios.views import EncerrarSuporteTenantView, LoginView, MeView, TenantAtualView, UsuarioViewSet
 
 router = DefaultRouter()
 router.register("dentistas", DentistaViewSet, basename="dentista")
@@ -78,15 +78,20 @@ router.register("faturas", FaturaViewSet, basename="fatura")
 router.register("auditoria", RegistroAuditoriaViewSet, basename="auditoria")
 router.register("usuarios", UsuarioViewSet, basename="usuario")
 
+from apps.plataforma.views import MeuPlanoView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
+    path("api/plataforma-admin/", include("apps.plataforma_admin.urls")),
+    path("api/meu-plano/", MeuPlanoView.as_view(), name="meu_plano"),
     # Autenticação JWT (login por e-mail → access/refresh)
     path("api/auth/token/", LoginView.as_view(), name="token_obtain_pair"),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/auth/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     # Usuário logado (nome, papel, clínica) — base do contexto de sessão do frontend
     path("api/auth/me/", MeView.as_view(), name="auth_me"),
+    path("api/auth/encerrar-suporte/", EncerrarSuporteTenantView.as_view(), name="encerrar_suporte_tenant"),
     # Nome da clínica do subdomínio (público) — exibido na tela de login
     path("api/tenant-atual/", TenantAtualView.as_view(), name="tenant_atual"),
     # Confirmação pública por link (WhatsApp) — sem autenticação
@@ -122,3 +127,18 @@ urlpatterns = [
     path("integracoes/google/webhook", google_webhook, name="google_webhook"),
     path("notificacoes/whatsapp/webhook", waha_webhook, name="waha_webhook"),
 ]
+
+from django.http import JsonResponse
+
+
+def custom_page_not_found(request, exception=None):
+    return JsonResponse({"detail": "Endpoint ou recurso não encontrado."}, status=404)
+
+
+def custom_server_error(request):
+    return JsonResponse({"detail": "Erro interno do servidor."}, status=500)
+
+
+handler404 = "config.urls.custom_page_not_found"
+handler500 = "config.urls.custom_server_error"
+

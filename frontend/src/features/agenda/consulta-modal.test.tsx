@@ -56,6 +56,21 @@ vi.mock('@/features/pacientes/use-paciente-detalhe', () => ({
   usePlanosDoPaciente: planosMock,
   usePaciente: pacienteMock,
 }))
+vi.mock('@/features/auth/use-sessao', () => ({
+  useSessao: () => ({
+    usuario: {
+      id: 1,
+      papel: 'ADMIN',
+      clinica: {
+        schema: 'demo',
+        nomeFantasia: 'Demo',
+        modulos: { whatsapp: true, google_calendar: true },
+      },
+    },
+    carregando: false,
+    erro: false,
+  }),
+}))
 
 describe('ConsultaModal', () => {
   // Por padrão o paciente não tem vínculo -> libera todos os dentistas.

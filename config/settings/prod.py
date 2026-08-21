@@ -3,9 +3,30 @@ Configurações de PRODUÇÃO.
 Herdam de base.py e reforçam segurança. Espera variáveis de ambiente reais.
 """
 
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import *  # noqa: F401,F403
 
 DEBUG = False
+
+# --------------------------------------------------------------------------
+# Fail-closed dos segredos críticos em produção.
+# Os defaults de `base.py` existem só para dev/CI. Se o operador esquecer de
+# definir estas variáveis, o processo NÃO deve subir com chaves públicas
+# (SECRET_KEY → forja de JWT/sessão; FIELD_ENCRYPTION_KEY → tokens Google do
+# banco viram texto decifrável por qualquer um com acesso ao repo).
+# --------------------------------------------------------------------------
+_SECRET_KEY_DEV = "unsafe-dev-key-troque-me"
+_FERNET_KEY_DEV = "7bfL4XTjSO_rOvwylRpwinUaaB-e2N_Q4mQG2eV8-68="
+
+if not SECRET_KEY or SECRET_KEY == _SECRET_KEY_DEV:  # noqa: F405
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY é obrigatória em produção (o default de desenvolvimento é inseguro/público)."
+    )
+if not FIELD_ENCRYPTION_KEY or FIELD_ENCRYPTION_KEY == _FERNET_KEY_DEV:  # noqa: F405
+    raise ImproperlyConfigured(
+        "FIELD_ENCRYPTION_KEY é obrigatória em produção (o default de desenvolvimento é inseguro/público)."
+    )
 
 # Em produção, ALLOWED_HOSTS deve vir OBRIGATORIAMENTE do ambiente.
 # Dica multi-tenant: use ".seudominio.com.br" (ponto na frente) para casar
@@ -31,6 +52,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 # --------------------------------------------------------------------------
 # Arquivos estáticos servidos pelo WhiteNoise
 # --------------------------------------------------------------------------
+MIDDLEWARE = list(MIDDLEWARE)
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
 
 STORAGES = {

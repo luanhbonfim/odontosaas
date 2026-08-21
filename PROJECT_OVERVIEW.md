@@ -6,11 +6,12 @@
 > Ao mexer no projeto, **valide sempre contra o código** — nada aqui deve ser
 > assumido sem conferir o arquivo citado.
 >
-> Documentos complementares:
-> `docs/01-ARQUITETURA.md`, `docs/02-MODELAGEM-DADOS.md`,
-> `docs/03-BACKLOG-SPRINTS.md`, `docs/04-OBSERVACOES-PAINEL-ADMIN.md`,
-> `docs/05-PLANOS-PAGAMENTOS.md`, `docs/06-AMBIENTES-E-FLUXO.md`,
-> `docs/07-GOOGLE-OAUTH-MULTITENANT.md`, e `docs/frontend/01..04`.
+> Documentos complementares em `docs/`:
+> - `docs/01-arquitetura/` (Arquitetura, Modelagem, Ambientes, Google OAuth)
+> - `docs/02-backlog-tenants/` (Backlog Backend/Frontend dos Tenants, Planos)
+> - `docs/03-vendor-admin/` (Especificação, Backlog de Sprints V1..V10, RBAC)
+> - `docs/04-frontend-design-system/` (Design System, UI/UX, Diretrizes, FormKit)
+> - `docs/README.md` (Índice central)
 
 ---
 

@@ -32,7 +32,16 @@ describe('useSessao', () => {
         nome_completo: 'Dra. Ana',
         papel: 'DENTISTA',
         papel_display: 'Dentista',
-        clinica: { schema: 'demo', nome_fantasia: 'Clínica Sorriso' },
+        clinica: {
+          schema: 'demo',
+          nome_fantasia: 'Clínica Sorriso',
+          modulos: {
+            google_calendar: true,
+            whatsapp: true,
+            financeiro: true,
+            estoque: true,
+          },
+        },
       },
     })
 
@@ -46,7 +55,16 @@ describe('useSessao', () => {
       nomeCompleto: 'Dra. Ana',
       papel: 'DENTISTA',
       papelExibicao: 'Dentista',
-      clinica: { schema: 'demo', nomeFantasia: 'Clínica Sorriso' },
+      clinica: {
+        schema: 'demo',
+        nomeFantasia: 'Clínica Sorriso',
+        modulos: {
+          google_calendar: true,
+          whatsapp: true,
+          financeiro: true,
+          estoque: true,
+        },
+      },
     })
   })
 

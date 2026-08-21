@@ -52,8 +52,10 @@ def _preparar_consulta(dias=1):
     )
 
 
-def test_beat_schedule_disparo_registrado(settings):
-    assert "disparar-lembretes-whatsapp" in settings.CELERY_BEAT_SCHEDULE
+def test_beat_schedule_disparo_registrado():
+    from apps.plataforma_admin.celery_manager import TAREFAS_PADRAO
+    nomes = [t["name"] for t in TAREFAS_PADRAO]
+    assert "disparar-lembretes-whatsapp" in nomes
 
 
 @pytest.mark.django_db(transaction=True)

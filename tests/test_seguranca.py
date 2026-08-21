@@ -4,17 +4,21 @@ import os
 import subprocess
 import sys
 
+from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.management.utils import get_random_secret_key
 
 
 def test_check_deploy_producao_sem_avisos():
     """`manage.py check --deploy` (settings de produção) não pode emitir avisos."""
+    # Produção agora falha-fechado sem segredos reais (SECRET_KEY/FIELD_ENCRYPTION_KEY),
+    # então o cenário de prod do teste precisa fornecê-los.
     env = {
         **os.environ,
         "DJANGO_SETTINGS_MODULE": "config.settings.prod",
         "DJANGO_ALLOWED_HOSTS": "exemplo.com",
         "DJANGO_SECRET_KEY": get_random_secret_key(),
+        "FIELD_ENCRYPTION_KEY": Fernet.generate_key().decode(),
     }
     resultado = subprocess.run(
         [sys.executable, "manage.py", "check", "--deploy", "--fail-level", "WARNING"],

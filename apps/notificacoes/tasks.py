@@ -147,9 +147,16 @@ def enviar_cancelamento(consulta):
     )
 
 
-@shared_task
+@shared_task(autoretry_for=(Exception,), max_retries=3, default_retry_delay=60, retry_backoff=True)
 def enviar_cancelamento_task(schema_name, consulta_id):
     """Envia a mensagem de cancelamento no schema do tenant (disparado por signal)."""
+    # Respeita o módulo de WhatsApp do plano/override (EXTRA-V7.25): clínica com o
+    # módulo desligado não dispara mensagens, sem apagar as configurações salvas.
+    from apps.tenants.models import Clinica
+
+    clinica = Clinica.objects.filter(schema_name=schema_name).first()
+    if clinica and hasattr(clinica, "recurso_habilitado") and not clinica.recurso_habilitado("whatsapp"):
+        return
     with schema_context(schema_name):
         consulta = (
             Consulta.objects.select_related("paciente", "dentista")
@@ -227,13 +234,7 @@ def _disparar_lembretes_do_tenant():
 @shared_task
 def disparar_lembretes_todos_tenants():
     """Beat: varre as clínicas e dispara os pedidos de confirmação pendentes."""
-    from apps.tenants.models import Clinica
-
-    total = 0
-    for clinica in Clinica.objects.exclude(schema_name="public"):
-        with schema_context(clinica.schema_name):
-            total += _disparar_lembretes_do_tenant()
-    return total
+    return _para_cada_tenant(_disparar_lembretes_do_tenant)
 
 
 # --- Lembretes/Recall (templates LEMBRETE) -----------------------------------
@@ -446,12 +447,28 @@ def _processar_lembretes_do_tenant():
 
 
 def _para_cada_tenant(funcao):
+    import logging
+    from django.db import close_old_connections
     from apps.tenants.models import Clinica
 
+    logger = logging.getLogger(__name__)
     total = 0
     for clinica in Clinica.objects.exclude(schema_name="public"):
-        with schema_context(clinica.schema_name):
-            total += funcao()
+        try:
+            # Gate de módulo dentro do try: erro ao resolvê-lo não pode abortar o loop
+            # inteiro (isolamento por tenant — VULN-06).
+            if hasattr(clinica, "recurso_habilitado") and not clinica.recurso_habilitado("whatsapp"):
+                continue
+            with schema_context(clinica.schema_name):
+                total += funcao()
+        except Exception as exc:
+            logger.warning(
+                "Falha ao executar rotina de notificações para o tenant '%s': %s",
+                clinica.schema_name,
+                exc,
+            )
+        finally:
+            close_old_connections()
     return total
 
 
@@ -565,35 +582,34 @@ def fila_pendente():
 
     # 3) Avisos de reagendamento (consultas remarcadas ainda não avisadas) — saem
     # no próximo minuto (Beat de 1 min).
-    if config.enviar_reagendamento and TemplateMensagem.objects.filter(
-        tipo=TemplateMensagem.Tipo.REAGENDAMENTO, ativo=True
-    ).exists():
-        template = TemplateMensagem.objects.get(
+    if config.enviar_reagendamento:
+        template = TemplateMensagem.objects.filter(
             tipo=TemplateMensagem.Tipo.REAGENDAMENTO, ativo=True
-        )
-        remarcadas = Consulta.objects.filter(
-            status=Consulta.Status.AGENDADA,
-            status_confirmacao=Consulta.StatusConfirmacao.CONFIRMADA,
-            reagendada_em__isnull=False,
-            inicio__gte=agora,
-            paciente__ativo=True,
-        ).select_related("paciente", "dentista")
-        atraso = timedelta(minutes=config.reagendamento_minutos)
-        for consulta in remarcadas:
-            if _ja_avisou_reagendamento(template, consulta):
-                continue
-            previsto = consulta.reagendada_em + atraso
-            itens.append(
-                {
-                    "tipo": TemplateMensagem.Tipo.REAGENDAMENTO,
-                    "consulta": consulta.id,
-                    "paciente_nome": consulta.paciente.nome_completo,
-                    "consulta_inicio": consulta.inicio,
-                    "previsto_para": previsto,
-                    "atrasado": previsto < agora,
-                    "telefone_ok": numero_valido(consulta.paciente.telefone_whatsapp),
-                }
-            )
+        ).first()
+        if template:
+            remarcadas = Consulta.objects.filter(
+                status=Consulta.Status.AGENDADA,
+                status_confirmacao=Consulta.StatusConfirmacao.CONFIRMADA,
+                reagendada_em__isnull=False,
+                inicio__gte=agora,
+                paciente__ativo=True,
+            ).select_related("paciente", "dentista")
+            atraso = timedelta(minutes=config.reagendamento_minutos)
+            for consulta in remarcadas:
+                if _ja_avisou_reagendamento(template, consulta):
+                    continue
+                previsto = consulta.reagendada_em + atraso
+                itens.append(
+                    {
+                        "tipo": TemplateMensagem.Tipo.REAGENDAMENTO,
+                        "consulta": consulta.id,
+                        "paciente_nome": consulta.paciente.nome_completo,
+                        "consulta_inicio": consulta.inicio,
+                        "previsto_para": previsto,
+                        "atrasado": previsto < agora,
+                        "telefone_ok": numero_valido(consulta.paciente.telefone_whatsapp),
+                    }
+                )
 
     itens.sort(key=lambda item: item["previsto_para"])
     return itens

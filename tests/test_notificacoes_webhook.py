@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 from django.db import connection
-from django.test import Client
+from django.test import Client, override_settings
 from django.utils import timezone
 from django_tenants.utils import schema_context
 
@@ -163,6 +163,59 @@ def test_webhook_ignora_eventos_e_respostas_avulsas():
 
         with schema_context(clinica.schema_name):
             assert LogNotificacao.objects.filter(direcao="RECEBIDA").count() == 0
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+@override_settings(WAHA_WEBHOOK_TOKEN="segredo-teste")
+def test_webhook_exige_token_quando_configurado():
+    """Com WAHA_WEBHOOK_TOKEN definido, o webhook rejeita (401) sem o token correto
+    e processa (200) com o token — fecha o vetor de forja de respostas cross-tenant."""
+    clinica = _criar_clinica("wahain4_tenant", "wahain4.localhost")
+    try:
+        with schema_context(clinica.schema_name):
+            _preparar(session="clinica-wahain4")
+
+        client = Client()
+        host = "wahain4.localhost"
+        corpo = json.dumps(
+            {
+                "event": "message",
+                "session": "clinica-wahain4",
+                "payload": {
+                    "from": "5511999998888@c.us",
+                    "body": "sim",
+                    "fromMe": False,
+                    "replyTo": MSG_ID,
+                },
+            }
+        )
+        with (
+            patch("apps.notificacoes.inbound.sincronizar_evento_google"),
+            patch("apps.notificacoes.inbound.enviar_texto"),
+        ):
+            # Sem token -> 401 (não processa)
+            assert _post_webhook(client, host, "clinica-wahain4", "sim").status_code == 401
+            # Token errado -> 401
+            assert client.post(
+                "/notificacoes/whatsapp/webhook?token=errado",
+                data=corpo,
+                content_type="application/json",
+                HTTP_HOST=host,
+            ).status_code == 401
+            # Token correto (query string) -> 200 e processa
+            assert client.post(
+                "/notificacoes/whatsapp/webhook?token=segredo-teste",
+                data=corpo,
+                content_type="application/json",
+                HTTP_HOST=host,
+            ).status_code == 200
+
+        # Só a chamada autenticada registrou a resposta.
+        with schema_context(clinica.schema_name):
+            assert LogNotificacao.objects.filter(direcao="RECEBIDA").count() == 1
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)

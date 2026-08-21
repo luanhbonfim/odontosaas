@@ -22,6 +22,7 @@ class ClinicaResumoSerializer(serializers.Serializer):
 
     schema = serializers.CharField()
     nome_fantasia = serializers.CharField()
+    modulos = serializers.DictField(child=serializers.BooleanField(), required=False)
 
 
 class UsuarioMeSerializer(serializers.ModelSerializer):
@@ -41,7 +42,23 @@ class UsuarioMeSerializer(serializers.ModelSerializer):
     @extend_schema_field(ClinicaResumoSerializer)
     def get_clinica(self, obj):
         tenant = self.context["request"].tenant
-        return {"schema": tenant.schema_name, "nome_fantasia": tenant.nome_fantasia}
+        modulos = (
+            tenant.get_modulos_efetivos()
+            if hasattr(tenant, "get_modulos_efetivos")
+            else {
+                "google_calendar": True,
+                "sync_google": True,
+                "whatsapp": True,
+                "whatsapp_waha": True,
+                "financeiro": True,
+                "estoque": True,
+            }
+        )
+        return {
+            "schema": tenant.schema_name,
+            "nome_fantasia": tenant.nome_fantasia,
+            "modulos": modulos,
+        }
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -137,3 +154,71 @@ class UsuarioSerializer(serializers.ModelSerializer):
         if vincular:
             self._vincular_dentista(instance, dentista)
         return instance
+
+
+class MultiTenantTokenObtainPairSerializer(serializers.Serializer):
+    """
+    Serializer de obtenção de token JWT compatível com multi-tenancy.
+    - Se a requisição chega no schema público (host do Vendor), autentica o operador
+      localizando seu cadastro em um tenant ativo onde possua flag is_staff ou is_superuser.
+    - Se a requisição chega no subdomínio do tenant, autentica normalmente no schema local.
+    """
+
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        from django.db import connection
+        from django_tenants.utils import schema_context
+        from rest_framework import exceptions
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        from apps.tenants.models import Clinica
+
+        email = attrs.get("email", "").strip()
+        password = attrs.get("password", "")
+
+        user = None
+
+        request = self.context.get("request") if hasattr(self, "context") else None
+        tenant = getattr(request, "tenant", None) if request else None
+        schema_name = getattr(tenant, "schema_name", None) or connection.schema_name
+
+        if schema_name == "public":
+            # O schema public é exclusivo da plataforma / vendor. Não permite login de tenant de clínica.
+            raise exceptions.AuthenticationFailed(
+                "O login de clínicas deve ser realizado através do endereço exclusivo do seu consultório (ex: sua-clinica.proclinica.com.br)."
+            )
+        else:
+            # Usuário da clínica acessando no schema do tenant
+            try:
+                u = Usuario.objects.get(email__iexact=email)
+                if u.check_password(password):
+                    user = u
+            except Usuario.DoesNotExist:
+                user = None
+
+        if not user or not user.is_active:
+            raise exceptions.AuthenticationFailed("E-mail ou senha inválidos.")
+
+        refresh = RefreshToken.for_user(user)
+        schema_atual = connection.schema_name
+        # Injeta claims de isolamento multi-tenant e dados do usuário
+        refresh["schema_name"] = schema_atual
+        refresh["is_staff"] = user.is_staff
+        refresh["is_superuser"] = user.is_superuser
+        refresh["email"] = user.email
+        refresh["nome"] = user.nome_completo or user.email
+
+        access_token = refresh.access_token
+        access_token["schema_name"] = schema_atual
+        access_token["is_staff"] = user.is_staff
+        access_token["is_superuser"] = user.is_superuser
+        access_token["email"] = user.email
+        access_token["nome"] = user.nome_completo or user.email
+
+        return {
+            "refresh": str(refresh),
+            "access": str(access_token),
+        }
+

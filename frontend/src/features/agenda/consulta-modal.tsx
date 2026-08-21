@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { useDentistas } from '@/features/dentistas/use-dentistas'
 import { useEnviarConfirmacao } from '@/features/notificacoes/use-notificacoes'
 import { useProcedimentos } from '@/features/procedimentos/use-procedimentos'
+import { useSessao } from '@/features/auth/use-sessao'
 import {
   type Plano,
   usePaciente,
@@ -230,6 +231,10 @@ function VisualizacaoConsulta({
 }
 
 function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () => void }) {
+  const { usuario } = useSessao()
+  const modulos = usuario?.clinica?.modulos
+  const whatsappHabilitado = modulos ? (modulos.whatsapp ?? modulos.whatsapp_waha ?? true) : true
+
   const criar = useCriarConsulta()
   const atualizar = useAtualizarConsulta()
   const remover = useRemoverConsulta()
@@ -374,8 +379,9 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <Label>Paciente</Label>
-              {/* Enviar confirmação: só p/ consultas AGENDADA ainda PENDENTES. */}
+              {/* Enviar confirmação: só p/ consultas AGENDADA ainda PENDENTES e se WhatsApp habilitado no plano. */}
               {editando &&
+                whatsappHabilitado &&
                 consulta?.status === 'AGENDADA' &&
                 consulta?.status_confirmacao === 'PENDENTE' && (
                   <Button

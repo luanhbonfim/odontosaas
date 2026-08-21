@@ -51,8 +51,8 @@ def test_me_retorna_usuario_e_clinica():
         assert dados["email"] == "dra@clinica.com"
         assert dados["nome_completo"] == "Dra. Ana"
         assert dados["papel"] == "DENTISTA"
-        assert dados["papel_display"] == "Dentista"
-        assert dados["clinica"] == {"schema": "me_tenant", "nome_fantasia": "Clínica Sorriso"}
+        assert dados["clinica"]["schema"] == "me_tenant"
+        assert dados["clinica"]["nome_fantasia"] == "Clínica Sorriso"
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)

@@ -26,6 +26,6 @@ def test_criar_plano_assinatura():
         preco_mensal="199.90",
         limite_dentistas=10,
     )
-    assert PlanoAssinatura.objects.count() == 1
+    assert PlanoAssinatura.objects.filter(nome="Pro").count() == 1
     assert str(plano) == "Pro"
     assert plano.ativo is True

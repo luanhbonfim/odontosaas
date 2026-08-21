@@ -110,7 +110,8 @@ def sincronizar_grupos():
 class PermissaoModulo(DjangoModelPermissions):
     """Permissão global: exige permissão de model nos viewsets (view p/ GET,
     add/change/delete p/ escrita) e apenas autenticação nas views sem model
-    (ex.: `/api/auth/me/`)."""
+    (ex.: `/api/auth/me/`). Além disso, bloqueia endpoints de módulos que estejam
+    desabilitados no plano/override da clínica."""
 
     perms_map = {
         "GET": ["%(app_label)s.view_%(model_name)s"],
@@ -123,7 +124,37 @@ class PermissaoModulo(DjangoModelPermissions):
     }
 
     def has_permission(self, request, view):
+        from rest_framework.exceptions import PermissionDenied
+
         autenticado = bool(request.user and request.user.is_authenticated)
+        if not autenticado:
+            return False
+
+        # Valida se o módulo correspondente está habilitado para o tenant
+        tenant = getattr(request, "tenant", None)
+        if tenant and getattr(tenant, "schema_name", "public") != "public":
+            caminho = getattr(request, "path", "")
+            if "/api/integracoes/" in caminho:
+                if hasattr(tenant, "recurso_habilitado") and not tenant.recurso_habilitado("google_calendar"):
+                    raise PermissionDenied(
+                        "O módulo de integração com Google Calendar está desabilitado para esta clínica pelo plano contratado."
+                    )
+            elif "/api/notificacoes/" in caminho or "/api/config-notificacao/" in caminho:
+                if hasattr(tenant, "recurso_habilitado") and not tenant.recurso_habilitado("whatsapp"):
+                    raise PermissionDenied(
+                        "O módulo de notificações e automações por WhatsApp está desabilitado para esta clínica pelo plano contratado."
+                    )
+            elif "/api/financeiro/" in caminho:
+                if hasattr(tenant, "recurso_habilitado") and not tenant.recurso_habilitado("financeiro"):
+                    raise PermissionDenied(
+                        "O módulo financeiro está desabilitado para esta clínica pelo plano contratado."
+                    )
+            elif "/api/estoque/" in caminho:
+                if hasattr(tenant, "recurso_habilitado") and not tenant.recurso_habilitado("estoque"):
+                    raise PermissionDenied(
+                        "O módulo de estoque está desabilitado para esta clínica pelo plano contratado."
+                    )
+
         tem_model = getattr(view, "queryset", None) is not None or hasattr(view, "get_queryset")
         if not tem_model:
             return autenticado

@@ -64,4 +64,33 @@ describe('Sidebar (menu por papel)', () => {
     expect(screen.queryByRole('link', { name: 'Financeiro' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
   })
+
+  it('ADMIN não vê Integrações nem WhatsApp quando desabilitados no plano da clínica', () => {
+    sessaoMock.mockReturnValue({
+      usuario: {
+        papel: 'ADMIN',
+        clinica: {
+          schema: 'demo',
+          nomeFantasia: 'Demo',
+          modulos: {
+            google_calendar: false,
+            whatsapp: false,
+            financeiro: true,
+            estoque: true,
+          },
+        },
+      },
+      carregando: false,
+      erro: false,
+    })
+    render(
+      <MemoryRouter>
+        <Sidebar />
+      </MemoryRouter>,
+    )
+    expect(screen.queryByRole('link', { name: 'Integrações' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'WhatsApp' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Financeiro' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Estoque' })).toBeInTheDocument()
+  })
 })

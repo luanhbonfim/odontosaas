@@ -8,12 +8,15 @@ import {
   MessageSquare,
   Package,
   Plug,
+  Sparkles,
   Stethoscope,
   Users,
   UsersRound,
 } from 'lucide-react'
 
-import type { Papel } from '@/features/auth/use-sessao'
+import type { ModulosAtivos, Papel } from '@/features/auth/use-sessao'
+
+export type ModuloRecurso = 'google_calendar' | 'whatsapp' | 'financeiro' | 'estoque'
 
 export type ItemNav = {
   rotulo: string
@@ -21,6 +24,8 @@ export type ItemNav = {
   icone: LucideIcon
   /** Papéis que enxergam o item. Ausente = visível a todos. Espelha a matriz. */
   papeis?: Papel[]
+  /** Módulo do SaaS atrelado ao item. Se desabilitado no plano, oculta o menu. */
+  modulo?: ModuloRecurso
 }
 
 /** Um bloco do menu. `titulo` ausente = grupo sem cabeçalho (topo). */
@@ -58,12 +63,18 @@ export const gruposNav: GrupoNav[] = [
     titulo: 'Financeiro',
     itens: [
       { rotulo: 'Convênios', para: '/convenios', icone: BadgeCheck, papeis: RECEPCAO_MAIS },
-      { rotulo: 'Financeiro', para: '/financeiro', icone: DollarSign, papeis: RH },
+      {
+        rotulo: 'Financeiro',
+        para: '/financeiro',
+        icone: DollarSign,
+        papeis: RH,
+        modulo: 'financeiro',
+      },
     ],
   },
   {
     titulo: 'Operação',
-    itens: [{ rotulo: 'Estoque', para: '/estoque', icone: Package }],
+    itens: [{ rotulo: 'Estoque', para: '/estoque', icone: Package, modulo: 'estoque' }],
   },
   {
     titulo: 'Administração',
@@ -72,12 +83,25 @@ export const gruposNav: GrupoNav[] = [
   {
     titulo: 'Configurações',
     itens: [
-      { rotulo: 'Integrações', para: '/integracoes', icone: Plug, papeis: DENTISTA_MAIS },
+      {
+        rotulo: 'Integrações',
+        para: '/integracoes',
+        icone: Plug,
+        papeis: DENTISTA_MAIS,
+        modulo: 'google_calendar',
+      },
       {
         rotulo: 'WhatsApp',
         para: '/notificacoes',
         icone: MessageSquare,
         papeis: RECEPCAO_MAIS,
+        modulo: 'whatsapp',
+      },
+      {
+        rotulo: 'Meu Plano',
+        para: '/meu-plano',
+        icone: Sparkles,
+        papeis: RH,
       },
     ],
   },
@@ -86,21 +110,48 @@ export const gruposNav: GrupoNav[] = [
 /** Lista achatada (ordem de exibição), útil p/ testes e navegação genérica. */
 export const itensNav: ItemNav[] = gruposNav.flatMap((g) => g.itens)
 
-function itemVisivel(item: ItemNav, papel: Papel | null): boolean {
-  return !item.papeis || (papel !== null && item.papeis.includes(papel))
+function itemVisivel(
+  item: ItemNav,
+  papel: Papel | null,
+  modulos?: ModulosAtivos,
+): boolean {
+  if (item.papeis && (papel === null || !item.papeis.includes(papel))) {
+    return false
+  }
+
+  if (item.modulo && modulos) {
+    let habilitado: boolean | undefined = modulos[item.modulo]
+    if (habilitado === undefined) {
+      if (item.modulo === 'google_calendar') habilitado = modulos.sync_google
+      if (item.modulo === 'whatsapp') habilitado = modulos.whatsapp_waha
+    }
+    if (habilitado === false) {
+      return false
+    }
+  }
+
+  return true
 }
 
-/** Filtra os itens de menu conforme o papel do usuário (null = ainda carregando). */
-export function itensNavPorPapel(papel: Papel | null): ItemNav[] {
-  return itensNav.filter((item) => itemVisivel(item, papel))
+/** Filtra os itens de menu conforme o papel do usuário e módulos habilitados. */
+export function itensNavPorPapel(
+  papel: Papel | null,
+  modulos?: ModulosAtivos,
+): ItemNav[] {
+  return itensNav.filter((item) => itemVisivel(item, papel, modulos))
 }
 
 /**
- * Grupos visíveis para o papel: filtra os itens e descarta grupos que ficaram
- * vazios (null = sessão ainda carregando, esconde os restritos).
+ * Grupos visíveis para o papel e módulos ativos: filtra os itens e descarta grupos que ficaram vazios.
  */
-export function gruposNavPorPapel(papel: Papel | null): GrupoNav[] {
+export function gruposNavPorPapel(
+  papel: Papel | null,
+  modulos?: ModulosAtivos,
+): GrupoNav[] {
   return gruposNav
-    .map((grupo) => ({ ...grupo, itens: grupo.itens.filter((item) => itemVisivel(item, papel)) }))
+    .map((grupo) => ({
+      ...grupo,
+      itens: grupo.itens.filter((item) => itemVisivel(item, papel, modulos)),
+    }))
     .filter((grupo) => grupo.itens.length > 0)
 }

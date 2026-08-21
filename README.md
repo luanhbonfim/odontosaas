@@ -13,11 +13,14 @@ Docker · GitHub Actions.
 
 ## Documentação
 
-| Documento | Conteúdo |
+A documentação do projeto está categorizada em [`docs/`](docs/README.md):
+
+| Categoria | Conteúdo |
 |---|---|
-| [docs/01-ARQUITETURA.md](docs/01-ARQUITETURA.md) | Visão geral, multi-tenant, async, Google, WhatsApp, CI/CD, segurança |
-| [docs/02-MODELAGEM-DADOS.md](docs/02-MODELAGEM-DADOS.md) | Models por schema/app, ERD, relacionamentos |
-| [docs/03-BACKLOG-SPRINTS.md](docs/03-BACKLOG-SPRINTS.md) | Backlog em checklist (fonte de verdade do desenvolvimento) |
+| [docs/01-arquitetura/](docs/01-arquitetura/) | Arquitetura geral, multi-tenancy, modelagem de dados, ambientes e Google OAuth |
+| [docs/02-backlog-tenants/](docs/02-backlog-tenants/) | Backlog de sprints e planos de pagamento das clínicas (tenants) |
+| [docs/03-vendor-admin/](docs/03-vendor-admin/) | Especificação e backlog de sprints do painel de governança da plataforma |
+| [docs/04-frontend-design-system/](docs/04-frontend-design-system/) | Design system oficial, diretrizes de UI/UX e catálogo de formulários |
 
 ## Módulos
 

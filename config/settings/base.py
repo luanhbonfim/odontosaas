@@ -41,6 +41,9 @@ FIELD_ENCRYPTION_KEY = env(
     default="7bfL4XTjSO_rOvwylRpwinUaaB-e2N_Q4mQG2eV8-68=",
 )
 
+# Silencia avisos cosméticos de geração de schema OpenAPI no system check
+SILENCED_SYSTEM_CHECKS = ["drf_spectacular.W001", "drf_spectacular.W002", "drf_spectacular.W003"]
+
 # --------------------------------------------------------------------------
 # Aplicações (django-tenants)
 #   SHARED_APPS  -> schema `public` (dados da plataforma, comuns a todas)
@@ -51,6 +54,7 @@ SHARED_APPS = [
     "apps.core",  # abstrações compartilhadas (ModeloBase)
     "apps.tenants",  # model do tenant (Clinica) e de domínio (Dominio)
     "apps.plataforma",  # planos de assinatura do SaaS
+    "apps.plataforma_admin",  # governança e administração da plataforma (Vendor Admin)
     "django_celery_beat",  # agenda global de tarefas periódicas (schema public)
     "drf_spectacular",  # documentação de API (OpenAPI / Swagger / ReDoc)
     "django.contrib.contenttypes",
@@ -87,15 +91,17 @@ AUTH_USER_MODEL = "usuarios.Usuario"
 # --------------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Autenticação por JWT (Bearer). Login por e-mail (USERNAME_FIELD do Usuario).
+    # Autenticação por JWT (Bearer) compatível com multi-tenancy e schema public.
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "apps.usuarios.authentication.MultiTenantJWTAuthentication",
     ],
     # Por padrão: autenticado + permissão de model por perfil (grupos do Django).
     # Views sem model (ex.: /api/auth/me/) exigem só autenticação (ver PermissaoModulo).
     "DEFAULT_PERMISSION_CLASSES": [
         "apps.usuarios.perfis.PermissaoModulo",
     ],
+    # Captura automática de exceções e registro de erros operacionais no Vendor Admin
+    "EXCEPTION_HANDLER": "apps.core.handlers.custom_exception_handler",
 }
 
 # Tokens JWT (djangorestframework-simplejwt).
@@ -136,6 +142,8 @@ MIDDLEWARE = [
     "config.middleware.HealthCheckMiddleware",
     # Resolve o tenant a partir do domínio da requisição (deve vir cedo).
     "django_tenants.middleware.main.TenantMainMiddleware",
+    # Intercepta e bloqueia clínicas inativas ou inadimplentes (403 Forbidden).
+    "config.middleware.TenantStatusMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -143,6 +151,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     # Captura o usuário autenticado para a trilha de auditoria (após o auth).
     "apps.auditoria.middleware.AuditoriaMiddleware",
+    # Bloqueia mutações (POST/PUT/PATCH/DELETE) em sessões de suporte read-only.
+    "config.middleware.ImpersonateReadOnlyMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -204,34 +214,11 @@ CELERY_TIMEZONE = "America/Sao_Paulo"  # espelha TIME_ZONE (definido abaixo)
 # Agenda periódica persistida no banco (permite configurar por clínica sem redeploy).
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
-# Agenda padrão (o DatabaseScheduler sincroniza estas entradas para o banco).
-CELERY_BEAT_SCHEDULE = {
-    "sincronizar-google-incremental": {
-        "task": "apps.integracoes.tasks.sincronizar_incremental_todos_tenants",
-        "schedule": 900.0,  # a cada 15 minutos
-    },
-    "disparar-lembretes-whatsapp": {
-        "task": "apps.notificacoes.tasks.disparar_lembretes_todos_tenants",
-        "schedule": 3600.0,  # de hora em hora (varre a janela de antecedência)
-    },
-    # Reconciliação por ID com o Google (cria/atualiza/remove + regra não-confirmada).
-    # Roda a cada 5 min; cada clínica só reconcilia quando seu intervalo vence.
-    "reconciliar-google": {
-        "task": "apps.integracoes.tasks.reconciliar_google_todos_tenants",
-        "schedule": 300.0,
-    },
-    # Aviso antes da consulta (confirmados): checa a cada 1 min para sair na hora
-    # exata configurada (ex.: 1h antes = às 20h para uma consulta das 21h).
-    "processar-avisos": {
-        "task": "apps.notificacoes.tasks.processar_avisos_todos_tenants",
-        "schedule": 60.0,
-    },
-    # Recall por procedimento: não precisa de horário exato -> a cada 6 horas.
-    "processar-recall": {
-        "task": "apps.notificacoes.tasks.processar_recall_todos_tenants",
-        "schedule": 21600.0,
-    },
-}
+# Agenda de tarefas periódicas gerenciada 100% dinamicamente via django-celery-beat (banco de dados).
+# Mantido vazio para impedir que o DatabaseScheduler sobrescreva alterações de intervalo/cron
+# feitas em runtime pelos operadores do vendor através do painel administrativo.
+CELERY_BEAT_SCHEDULE = {}
+
 
 # --------------------------------------------------------------------------
 # Google Calendar (OAuth2)
@@ -254,6 +241,11 @@ APP_BASE_URL = env("APP_BASE_URL", default="")
 # --------------------------------------------------------------------------
 WAHA_API_URL = env("WAHA_API_URL", default="http://waha:3000")
 WAHA_API_KEY = env("WAHA_API_KEY", default="")
+# Segredo compartilhado que autentica o webhook INBOUND do WAHA (WAHA -> Django).
+# Quando definido, o endpoint /notificacoes/whatsapp/webhook exige `?token=<este valor>`
+# (a mesma variável monta a WHATSAPP_HOOK_URL do container WAHA — ver docker-compose.prod
+# e .env.prod.example). Vazio = sem verificação (apenas dev; em produção defina sempre).
+WAHA_WEBHOOK_TOKEN = env("WAHA_WEBHOOK_TOKEN", default="")
 
 # --------------------------------------------------------------------------
 # Validação de senhas
