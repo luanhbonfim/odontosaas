@@ -1,12 +1,31 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { SlidersHorizontal } from 'lucide-react'
+import { Info, SlidersHorizontal } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { type ConfigLogin, useConfigLogin, useSalvarConfigLogin } from './use-config-login'
 
 const inputCls =
   'w-full h-9 rounded-md bg-[#0B132B]/80 border border-[#1E2D56] px-3 text-xs text-white focus:outline-none focus:border-[#D4AF37]'
+
+/** Ícone "ⓘ" com tooltip explicativo no hover/foco (Tailwind puro, sem dependência). */
+function InfoDica({ texto }: { texto: string }) {
+  return (
+    <span className="group/dica relative inline-flex align-middle">
+      <Info
+        tabIndex={0}
+        aria-label={texto}
+        className="size-3.5 shrink-0 cursor-help text-slate-500 outline-none transition-colors hover:text-[#D4AF37] focus-visible:text-[#D4AF37]"
+      />
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 w-56 -translate-x-1/2 rounded-md border border-[#1E2D56] bg-[#0B132B] px-2.5 py-1.5 text-[11px] leading-snug text-slate-200 opacity-0 shadow-lg transition-opacity duration-150 group-hover/dica:opacity-100 group-focus-within/dica:opacity-100"
+      >
+        {texto}
+      </span>
+    </span>
+  )
+}
 
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
@@ -27,7 +46,10 @@ function CampoNum(props: {
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-slate-200 font-medium">{props.label}</label>
+      <div className="flex items-center gap-1.5">
+        <label className="text-xs text-slate-200 font-medium">{props.label}</label>
+        {props.dica && <InfoDica texto={props.dica} />}
+      </div>
       <input
         type="number"
         className={inputCls}
@@ -36,7 +58,6 @@ function CampoNum(props: {
         max={props.max}
         onChange={(e) => props.onChange(Number(e.target.value))}
       />
-      {props.dica && <p className="text-[10px] text-slate-500">{props.dica}</p>}
     </div>
   )
 }
@@ -44,27 +65,29 @@ function CampoNum(props: {
 function CampoTexto(props: { label: string; valor: string; onChange: (v: string) => void; dica?: string }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-slate-200 font-medium">{props.label}</label>
+      <div className="flex items-center gap-1.5">
+        <label className="text-xs text-slate-200 font-medium">{props.label}</label>
+        {props.dica && <InfoDica texto={props.dica} />}
+      </div>
       <input type="text" className={inputCls} value={props.valor} onChange={(e) => props.onChange(e.target.value)} />
-      {props.dica && <p className="text-[10px] text-slate-500">{props.dica}</p>}
     </div>
   )
 }
 
 function CampoBool(props: { label: string; valor: boolean; onChange: (v: boolean) => void; dica?: string }) {
   return (
-    <label className="flex items-start gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        className="mt-0.5 accent-[#D4AF37]"
-        checked={props.valor}
-        onChange={(e) => props.onChange(e.target.checked)}
-      />
-      <span>
+    <div className="flex items-center gap-2">
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          className="accent-[#D4AF37]"
+          checked={props.valor}
+          onChange={(e) => props.onChange(e.target.checked)}
+        />
         <span className="text-xs text-slate-200 font-medium">{props.label}</span>
-        {props.dica && <span className="block text-[10px] text-slate-500">{props.dica}</span>}
-      </span>
-    </label>
+      </label>
+      {props.dica && <InfoDica texto={props.dica} />}
+    </div>
   )
 }
 
@@ -113,7 +136,7 @@ export function ConfiguracoesLoginPage() {
           onChange={(v) => set('access_token_min', v)}
           min={5}
           max={240}
-          dica="Renovação automática. 5–240."
+          dica="Por quanto tempo o token de acesso vale antes de ser renovado automaticamente em segundo plano, sem o operador perceber. Valores menores = mais seguro. Faixa: 5 a 240 minutos."
         />
         <CampoNum
           label="Duração da sessão / refresh (horas)"
@@ -121,13 +144,13 @@ export function ConfiguracoesLoginPage() {
           onChange={(v) => set('refresh_token_horas', v)}
           min={1}
           max={720}
-          dica="Após isso, exige novo login. 1–720h."
+          dica="Tempo máximo que o operador fica logado sem digitar a senha de novo. Passado esse prazo, a sessão expira e exige novo login no painel. Faixa: 1 a 720 horas (30 dias)."
         />
         <CampoBool
           label="Rotacionar refresh a cada uso"
           valor={form.rotacionar_refresh}
           onChange={(v) => set('rotacionar_refresh', v)}
-          dica="Mais seguro (requer blacklist do SimpleJWT)."
+          dica="Emite um novo token de refresh a cada renovação e invalida o anterior. Dificulta o reúso de um token roubado, mas exige a blacklist do SimpleJWT habilitada. Deixe desligado se não tiver certeza."
         />
       </Secao>
 
@@ -138,7 +161,7 @@ export function ConfiguracoesLoginPage() {
           onChange={(v) => set('login_max_tentativas', v)}
           min={3}
           max={20}
-          dica="3–20. Aplica a clínica e painel."
+          dica="Quantas tentativas de login erradas o mesmo IP pode fazer antes de ser bloqueado temporariamente. Vale tanto para o login das clínicas quanto para o do painel. Faixa: 3 a 20."
         />
         <CampoNum
           label="Tempo de bloqueio (min)"
@@ -146,7 +169,7 @@ export function ConfiguracoesLoginPage() {
           onChange={(v) => set('login_bloqueio_min', v)}
           min={1}
           max={240}
-          dica="Após exceder as tentativas. 1–240."
+          dica="Depois de estourar o limite de tentativas, por quanto tempo o IP fica impedido de tentar logar novamente. Faixa: 1 a 240 minutos."
         />
       </Secao>
 
@@ -155,7 +178,7 @@ export function ConfiguracoesLoginPage() {
           label="Exigir 2FA de todos os operadores"
           valor={form.exigir_2fa_todos}
           onChange={(v) => set('exigir_2fa_todos', v)}
-          dica="Bloqueia login de operador sem 2FA configurado."
+          dica="Quando ligado, nenhum operador entra no painel sem ter o 2FA (autenticação em dois fatores por app, ex.: Google Authenticator) configurado. Operadores sem 2FA cadastrado ficam bloqueados até configurar. Configure o 2FA de um operador com o comando 'vendor_2fa' antes de ligar isto."
         />
       </Secao>
 
@@ -166,12 +189,13 @@ export function ConfiguracoesLoginPage() {
           onChange={(v) => set('impersonate_validade_min', v)}
           min={5}
           max={240}
-          dica="5–240."
+          dica="Duração do token de acesso de suporte, gerado quando um operador entra na conta de uma clínica para dar suporte (impersonate). Ao expirar, o acesso à clínica é encerrado. Faixa: 5 a 240 minutos."
         />
         <CampoBool
           label="Suporte inicia em somente-leitura"
           valor={form.impersonate_read_only_padrao}
           onChange={(v) => set('impersonate_read_only_padrao', v)}
+          dica="Quando ligado, a sessão de suporte começa sem permissão de alterar dados (só leitura): o operador vê tudo mas não consegue criar, editar ou apagar nada na clínica. É o padrão recomendado para proteger os dados do cliente."
         />
       </Secao>
 
@@ -180,19 +204,19 @@ export function ConfiguracoesLoginPage() {
           label="Login do painel"
           valor={form.throttle_vendor_login}
           onChange={(v) => set('throttle_vendor_login', v)}
-          dica="Ex.: 30/min"
+          dica="Máximo de requisições ao endpoint de login do painel por IP, no formato N/período (ex.: 30/min). É a segunda camada de defesa contra força bruta, além do bloqueio por tentativas. Não use 0 (bloquearia todo mundo, inclusive você). N entre 1 e 10000."
         />
         <CampoTexto
           label="Impersonate"
           valor={form.throttle_impersonate}
           onChange={(v) => set('throttle_impersonate', v)}
-          dica="Ex.: 30/min"
+          dica="Máximo de gerações de sessão de suporte (impersonate) por operador, no formato N/período (ex.: 30/min). Limita abuso da função de entrar em clínicas. N entre 1 e 10000."
         />
         <CampoTexto
           label="Database Studio"
           valor={form.throttle_studio}
           onChange={(v) => set('throttle_studio', v)}
-          dica="Ex.: 60/min"
+          dica="Máximo de execuções no console SQL (Database Studio) por operador, no formato N/período (ex.: 60/min). N entre 1 e 10000."
         />
       </Secao>
 
