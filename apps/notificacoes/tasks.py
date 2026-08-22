@@ -14,7 +14,25 @@ from apps.notificacoes.models import (
     LogNotificacao,
     TemplateMensagem,
 )
-from apps.notificacoes.waha import enviar_texto, garantir_sessao, id_da_mensagem, numero_valido
+from apps.notificacoes.waha import (
+    enviar_digitando,
+    enviar_texto,
+    garantir_sessao,
+    id_da_mensagem,
+    numero_valido,
+)
+
+
+def _enviar(config, numero, texto):
+    """Envia texto humanizando com 'digitando…' conforme a preferência da clínica.
+
+    Se `config.simular_digitacao` e `config.segundos_digitacao > 0`, mostra o presence
+    de digitação por esse tempo antes de enviar (best-effort). Referencia os nomes de
+    módulo `enviar_digitando`/`enviar_texto` para permanecer mockável nos testes.
+    """
+    if getattr(config, "simular_digitacao", False) and getattr(config, "segundos_digitacao", 0):
+        enviar_digitando(config.waha_session, numero, segundos=config.segundos_digitacao)
+    return enviar_texto(config.waha_session, numero, texto)
 
 
 def _renderizar(corpo, consulta, link=""):
@@ -89,7 +107,7 @@ def enviar_confirmacao_manual(consulta):
     garantir_sessao(config.waha_session)
     mensagem = _mensagem_confirmacao(template, consulta)
     try:
-        payload = enviar_texto(config.waha_session, consulta.paciente.telefone_whatsapp, mensagem)
+        payload = _enviar(config, consulta.paciente.telefone_whatsapp, mensagem)
         status = LogNotificacao.Status.ENVIADA
     except RequestException as exc:
         payload = {"erro": str(exc)}
@@ -129,7 +147,7 @@ def enviar_cancelamento(consulta):
 
     garantir_sessao(config.waha_session)
     try:
-        payload = enviar_texto(config.waha_session, consulta.paciente.telefone_whatsapp, mensagem)
+        payload = _enviar(config, consulta.paciente.telefone_whatsapp, mensagem)
         status = LogNotificacao.Status.ENVIADA
     except RequestException as exc:
         payload = {"erro": str(exc)}
@@ -208,9 +226,7 @@ def _disparar_lembretes_do_tenant():
     for consulta in consultas:
         mensagem = _mensagem_confirmacao(template, consulta)
         try:
-            payload = enviar_texto(
-                config.waha_session, consulta.paciente.telefone_whatsapp, mensagem
-            )
+            payload = _enviar(config, consulta.paciente.telefone_whatsapp, mensagem)
             status = LogNotificacao.Status.ENVIADA
         except RequestException as exc:
             payload = {"erro": str(exc)}
@@ -247,7 +263,7 @@ def _enviar_lembrete(config, template, consulta):
     garantir_sessao(config.waha_session)
     mensagem = _renderizar(template.corpo, consulta)
     try:
-        payload = enviar_texto(config.waha_session, consulta.paciente.telefone_whatsapp, mensagem)
+        payload = _enviar(config, consulta.paciente.telefone_whatsapp, mensagem)
         status = LogNotificacao.Status.ENVIADA
     except RequestException as exc:
         payload = {"erro": str(exc)}

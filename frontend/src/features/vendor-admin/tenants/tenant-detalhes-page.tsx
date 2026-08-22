@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/dialog'
 import { VENDOR_BASE_PATH } from '../constants'
 import { urlDaClinica } from '../url-clinica'
-import { mascararCnpj, mascararTelefone } from '@/lib/utils/mascaras'
+import { mascararCnpj, mascararCpf, mascararTelefone } from '@/lib/utils/mascaras'
 import { useVendorPlanos } from '../planos/use-vendor-planos'
 import {
   type ErroOperacional,
@@ -137,6 +137,8 @@ export function TenantDetalhesPage() {
 
   const [intervaloGoogle, setIntervaloGoogle] = useState<number>(15)
   const [reagendamentoMinutos, setReagendamentoMinutos] = useState<number>(1)
+  const [simularDigitacao, setSimularDigitacao] = useState<boolean>(true)
+  const [segundosDigitacao, setSegundosDigitacao] = useState<number>(4)
 
   // Sincroniza dados do Google e WhatsApp quando carregados da API
   useEffect(() => {
@@ -150,6 +152,15 @@ export function TenantDetalhesPage() {
       setReagendamentoMinutos(whatsapp.data.reagendamento_minutos)
     }
   }, [whatsapp.data?.reagendamento_minutos])
+
+  useEffect(() => {
+    if (whatsapp.data?.simular_digitacao !== undefined) {
+      setSimularDigitacao(whatsapp.data.simular_digitacao)
+    }
+    if (whatsapp.data?.segundos_digitacao !== undefined) {
+      setSegundosDigitacao(whatsapp.data.segundos_digitacao)
+    }
+  }, [whatsapp.data?.simular_digitacao, whatsapp.data?.segundos_digitacao])
 
   // Localiza a sessão ativa se houver
   const sessaoAtivaAtual = Array.isArray(suporteSessoes)
@@ -610,7 +621,10 @@ export function TenantDetalhesPage() {
                       </Label>
                       <Input
                         id="resp-cpf"
-                        {...formGeral.register('responsavel_cpf')}
+                        inputMode="numeric"
+                        {...formGeral.register('responsavel_cpf', {
+                          onChange: (e) => formGeral.setValue('responsavel_cpf', mascararCpf(e.target.value)),
+                        })}
                         placeholder="000.000.000-00"
                         className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
                       />
@@ -622,7 +636,10 @@ export function TenantDetalhesPage() {
                       </Label>
                       <Input
                         id="resp-tel"
-                        {...formGeral.register('responsavel_telefone')}
+                        inputMode="tel"
+                        {...formGeral.register('responsavel_telefone', {
+                          onChange: (e) => formGeral.setValue('responsavel_telefone', mascararTelefone(e.target.value)),
+                        })}
                         placeholder="(00) 00000-0000"
                         className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
                       />
@@ -1134,6 +1151,82 @@ export function TenantDetalhesPage() {
                   <Save className="size-3.5 mr-1.5" />
                   Salvar Intervalo de Reagendamento
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card: Simular digitação ("digitando…") antes de cada mensagem */}
+          <Card className={`border-[#1E2D56] bg-[#111D3B] text-slate-100 shadow-md ${!whatsappHabilitado ? 'opacity-80' : ''}`}>
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold text-white flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="size-4 text-[#D4AF37]" />
+                  Simular Digitação ("digitando…")
+                </div>
+                {!whatsappHabilitado && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
+                    NÃO APLICÁVEL
+                  </span>
+                )}
+              </CardTitle>
+              <CardDescription className="text-slate-400 text-xs">
+                Antes de cada mensagem, o WhatsApp mostra "digitando…" ao paciente por alguns segundos, deixando o envio mais humano. Defina o tempo por clínica.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                <label className="flex items-center gap-2 cursor-pointer w-fit">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-[#D4AF37] cursor-pointer disabled:cursor-not-allowed"
+                    checked={simularDigitacao}
+                    disabled={!whatsappHabilitado}
+                    onChange={(e) => setSimularDigitacao(e.target.checked)}
+                  />
+                  <span className="text-xs text-slate-200 font-medium">Ativar simulação de digitação</span>
+                </label>
+
+                <div className="flex flex-col sm:flex-row items-end gap-4">
+                  <div className="space-y-1.5 flex-1 max-w-xs">
+                    <Label htmlFor="waha-digitacao" className="text-xs text-slate-200 font-medium">
+                      Tempo de digitação (segundos)
+                    </Label>
+                    <Input
+                      id="waha-digitacao"
+                      type="number"
+                      min={0}
+                      max={30}
+                      value={segundosDigitacao}
+                      onChange={(e) => setSegundosDigitacao(Number(e.target.value))}
+                      disabled={!whatsappHabilitado || !simularDigitacao}
+                      className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <p className="text-[10px] text-slate-500">0–30s. Use 0 para não aguardar (efeito só visual).</p>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      if (!whatsappHabilitado) return
+                      try {
+                        await whatsapp.salvar.mutateAsync({
+                          simular_digitacao: simularDigitacao,
+                          segundos_digitacao: segundosDigitacao,
+                        })
+                        toast.success('Configuração de digitação salva com sucesso!')
+                      } catch {
+                        toast.error('Erro ao salvar a simulação de digitação.')
+                      }
+                    }}
+                    disabled={!whatsappHabilitado || whatsapp.salvar.isPending}
+                    className={`font-bold text-xs shadow-md ${
+                      !whatsappHabilitado
+                        ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60'
+                        : 'bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950 cursor-pointer'
+                    }`}
+                  >
+                    <Save className="size-3.5 mr-1.5" />
+                    Salvar Simulação de Digitação
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

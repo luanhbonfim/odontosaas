@@ -102,6 +102,8 @@ export type WhatsAppParams = {
   enviar_reagendamento: boolean
   reagendamento_minutos: number
   enviar_cancelamento: boolean
+  simular_digitacao: boolean
+  segundos_digitacao: number
 }
 
 export type MetricasOperacionais = {

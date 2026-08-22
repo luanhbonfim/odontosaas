@@ -73,3 +73,21 @@ def cancelamento_task_mock(monkeypatch):
     mock = MagicMock()
     monkeypatch.setattr("apps.notificacoes.tasks.enviar_cancelamento_task", mock)
     return mock
+
+
+@pytest.fixture(autouse=True)
+def sem_sleep_digitando(monkeypatch):
+    """Neutraliza a simulação de 'digitando…' nos testes.
+
+    A simulação faz um `time.sleep` (padrão do modelo: simular_digitacao=True, 4s) e
+    um POST best-effort ao WAHA antes de cada envio — nos testes isso só adiciona
+    lentidão. Substituímos por no-op nos módulos que a usam. Testes que precisam
+    verificar a chamada (ex.: reforço) fazem seu próprio patch local, que prevalece
+    no escopo do `with`.
+    """
+    for alvo in (
+        "apps.notificacoes.tasks.enviar_digitando",
+        "apps.notificacoes.inbound.enviar_digitando",
+        "apps.notificacoes.waha.enviar_digitando",
+    ):
+        monkeypatch.setattr(alvo, MagicMock())

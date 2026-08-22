@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -10,7 +10,10 @@ import {
   ScrollText,
   SlidersHorizontal,
   ShieldCheck,
+  Server,
+  ChevronDown,
   Menu,
+  type LucideIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -29,9 +32,15 @@ const CAMINHO_DENTE =
   '1.6-1.2.7-1.3 1.1-4.2 1.7-6.6.9-3.6 1.6-5.6 1.6-8.2C24.5 6.8 21 4 16 4Z'
 const BRILHO_DENTE = 'M11.4 9.8c.9-1 2.3-1.7 4.1-1.8'
 
-const GRUPOS_NAV = [
+type ItemVendor = { rotulo: string; icone: LucideIcon; para: string; fim?: boolean }
+type GrupoVendor = { titulo: string; icone?: LucideIcon; fixo?: boolean; itens: ItemVendor[] }
+
+// `fixo: true` = grupo sem recolher (links diretos no topo, ex.: Dashboard).
+// Demais grupos são módulos recolhíveis (accordion) com ícone próprio.
+const GRUPOS_NAV: GrupoVendor[] = [
   {
     titulo: 'Visão Geral',
+    fixo: true,
     itens: [
       {
         rotulo: 'Dashboard',
@@ -43,6 +52,7 @@ const GRUPOS_NAV = [
   },
   {
     titulo: 'Gestão Multi-Tenant',
+    icone: Building2,
     itens: [
       {
         rotulo: 'Clínicas / Tenants',
@@ -54,15 +64,32 @@ const GRUPOS_NAV = [
         icone: Package,
         para: `${VENDOR_BASE_PATH}/planos`,
       },
+    ],
+  },
+  {
+    titulo: 'Segurança & Acesso',
+    icone: ShieldCheck,
+    itens: [
       {
         rotulo: 'Acesso Master Global',
         icone: KeyRound,
         para: `${VENDOR_BASE_PATH}/admin-master`,
       },
+      {
+        rotulo: 'Config. de Login',
+        icone: SlidersHorizontal,
+        para: `${VENDOR_BASE_PATH}/configuracoes`,
+      },
+      {
+        rotulo: 'Autenticação 2FA',
+        icone: ShieldCheck,
+        para: `${VENDOR_BASE_PATH}/seguranca-2fa`,
+      },
     ],
   },
   {
     titulo: 'Infraestrutura & Automação',
+    icone: Server,
     itens: [
       {
         rotulo: 'Database Studio',
@@ -79,19 +106,14 @@ const GRUPOS_NAV = [
         icone: ScrollText,
         para: `${VENDOR_BASE_PATH}/auditoria`,
       },
-      {
-        rotulo: 'Config. de Login',
-        icone: SlidersHorizontal,
-        para: `${VENDOR_BASE_PATH}/configuracoes`,
-      },
-      {
-        rotulo: 'Autenticação 2FA',
-        icone: ShieldCheck,
-        para: `${VENDOR_BASE_PATH}/seguranca-2fa`,
-      },
     ],
   },
 ]
+
+/** Rota do item está ativa? (Dashboard casa exato; demais casam prefixo). */
+function itemVendorAtivo(pathname: string, para: string, fim?: boolean): boolean {
+  return fim ? pathname === para : pathname === para || pathname.startsWith(`${para}/`)
+}
 
 export function VendorShell() {
   const sidebarAberta = useUI((estado) => estado.sidebarAberta)
@@ -104,8 +126,53 @@ export function VendorShell() {
     document.title = 'Admin - PróClínica'
   }, [])
 
+  // Módulo (grupo recolhível) que contém a rota ativa — abre automaticamente.
+  const tituloAtivo = useMemo(
+    () =>
+      GRUPOS_NAV.find(
+        (g) => !g.fixo && g.itens.some((it) => itemVendorAtivo(location.pathname, it.para, it.fim)),
+      )?.titulo,
+    [location.pathname],
+  )
+
+  const [abertos, setAbertos] = useState<Set<string>>(() => new Set(tituloAtivo ? [tituloAtivo] : []))
+  useEffect(() => {
+    if (tituloAtivo) setAbertos((prev) => (prev.has(tituloAtivo) ? prev : new Set(prev).add(tituloAtivo)))
+  }, [tituloAtivo])
+
+  function alternarGrupo(titulo: string) {
+    setAbertos((prev) => {
+      const proximo = new Set(prev)
+      if (proximo.has(titulo)) proximo.delete(titulo)
+      else proximo.add(titulo)
+      return proximo
+    })
+  }
+
   function aoNavegar() {
     if (!ehDesktop()) fecharSidebar()
+  }
+
+  // Link de item (topo ou dentro de um módulo).
+  function LinkItem({ item, aninhado }: { item: ItemVendor; aninhado?: boolean }) {
+    const ativo = itemVendorAtivo(location.pathname, item.para, item.fim)
+    return (
+      <NavLink
+        key={item.para}
+        to={item.para}
+        onClick={aoNavegar}
+        className={cn(
+          'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+          aninhado && 'ml-3 border-l border-[#1C2C54] pl-4',
+          ativo
+            ? 'bg-[#19294F] text-white font-semibold shadow-xs'
+            : 'text-slate-400 hover:bg-[#152345] hover:text-slate-100',
+        )}
+      >
+        <item.icone className={cn('size-4', ativo ? 'text-[#D4AF37]' : 'text-slate-400')} />
+        {item.rotulo}
+      </NavLink>
+    )
   }
 
   return (
@@ -164,40 +231,56 @@ export function VendorShell() {
           </Button>
         </div>
 
-        {/* Navegação estruturada em grupos com tema Dark Navy */}
-        <nav className="flex-1 space-y-4 overflow-y-auto p-3">
-          {GRUPOS_NAV.map((grupo, i) => (
-            <div key={grupo.titulo ?? `grupo-${i}`} className="space-y-1">
-              {grupo.titulo && (
-                <p className="px-3 pt-1 pb-0.5 text-[11px] font-semibold tracking-wide text-slate-400/80 uppercase">
-                  {grupo.titulo}
-                </p>
-              )}
-              {grupo.itens.map((item) => {
-                const fim = 'fim' in item ? Boolean(item.fim) : false
-                const ativo = fim
-                  ? location.pathname === item.para
-                  : location.pathname.startsWith(item.para)
+        {/* Navegação em módulos recolhíveis (accordion) — tema Dark Navy */}
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          {GRUPOS_NAV.map((grupo) => {
+            // Grupo fixo (Visão Geral): links diretos no topo, sem recolher.
+            if (grupo.fixo) {
+              return grupo.itens.map((item) => <LinkItem key={item.para} item={item} />)
+            }
 
-                return (
-                  <NavLink
-                    key={item.para}
-                    to={item.para}
-                    onClick={aoNavegar}
-                    className={cn(
-                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                      ativo
-                        ? 'bg-[#19294F] text-white font-semibold shadow-xs'
-                        : 'text-slate-400 hover:bg-[#152345] hover:text-slate-100',
-                    )}
-                  >
-                    <item.icone className={cn('size-4', ativo ? 'text-[#D4AF37]' : 'text-slate-400')} />
-                    {item.rotulo}
-                  </NavLink>
-                )
-              })}
-            </div>
-          ))}
+            const aberto = abertos.has(grupo.titulo)
+            const contemAtivo = grupo.titulo === tituloAtivo
+            const IconeGrupo = grupo.icone
+
+            return (
+              <div key={grupo.titulo}>
+                <button
+                  type="button"
+                  onClick={() => alternarGrupo(grupo.titulo)}
+                  aria-expanded={aberto}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors',
+                    contemAtivo ? 'text-white' : 'text-slate-400 hover:text-slate-100',
+                    'hover:bg-[#152345]',
+                  )}
+                >
+                  {IconeGrupo && (
+                    <IconeGrupo className={cn('size-4 shrink-0', contemAtivo ? 'text-[#D4AF37]' : 'text-slate-400')} />
+                  )}
+                  <span className="flex-1 text-left">{grupo.titulo}</span>
+                  <ChevronDown
+                    className={cn('size-4 shrink-0 transition-transform duration-200', aberto && 'rotate-180')}
+                  />
+                </button>
+
+                <div
+                  className={cn(
+                    'grid transition-all duration-200 ease-in-out',
+                    aberto ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+                  )}
+                >
+                  <div className="overflow-hidden">
+                    <div className="mt-1 space-y-1 pb-1">
+                      {grupo.itens.map((item) => (
+                        <LinkItem key={item.para} item={item} aninhado />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </nav>
 
         {/* Rodapé da Sidebar */}

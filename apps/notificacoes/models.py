@@ -47,6 +47,11 @@ class ConfiguracaoNotificacao(ModeloBase):
         blank=True,
         help_text="Vazio = texto padrão ('Por favor, responda apenas com SIM ou NÃO.').",
     )
+    # Humanização do envio: antes de cada mensagem, mostra "digitando…" ao paciente
+    # por `segundos_digitacao` segundos (efeito best-effort). Configurável por clínica
+    # (também pelo Vendor Admin). 0 desliga a espera mesmo com simular_digitacao=True.
+    simular_digitacao = models.BooleanField(default=True)
+    segundos_digitacao = models.PositiveSmallIntegerField(default=4)
 
     class Meta:
         verbose_name = "Configuração de notificação"

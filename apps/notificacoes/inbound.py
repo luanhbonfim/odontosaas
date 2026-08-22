@@ -28,6 +28,18 @@ from apps.notificacoes.waha import (
     numero_valido,
 )
 
+
+def _enviar(config, numero, texto):
+    """Envia texto humanizando com 'digitando…' conforme a preferência da clínica.
+
+    Espelha o helper de `tasks.py`; referencia os nomes de módulo para permanecer
+    mockável nos testes (`inbound.enviar_texto` / `inbound.enviar_digitando`).
+    """
+    if getattr(config, "simular_digitacao", False) and getattr(config, "segundos_digitacao", 0):
+        enviar_digitando(config.waha_session, numero, segundos=config.segundos_digitacao)
+    return enviar_texto(config.waha_session, numero, texto)
+
+
 _CONFIRMA = {"sim", "s", "1", "confirmo", "confirmar", "ok"}
 _RECUSA = {"nao", "n", "2", "cancelar", "cancela", "recuso"}
 # Uma confirmação enviada há mais que isso não é mais casada com um "sim" avulso.
@@ -205,7 +217,7 @@ def _enviar_agradecimento(consulta):
     corpo = template.corpo if template else CORPO_PADRAO_AGRADECIMENTO
     mensagem = _renderizar(corpo, consulta)
     try:
-        resposta = enviar_texto(config.waha_session, consulta.paciente.telefone_whatsapp, mensagem)
+        resposta = _enviar(config, consulta.paciente.telefone_whatsapp, mensagem)
         status = LogNotificacao.Status.ENVIADA
     except RequestException as exc:
         resposta = {"erro": str(exc)}
@@ -236,9 +248,8 @@ def _reforcar_confirmacao(consulta, config):
         return
     texto = config.mensagem_reforco or _REFORCO_PADRAO
     numero = consulta.paciente.telefone_whatsapp
-    enviar_digitando(config.waha_session, numero)  # efeito visual (best-effort)
     try:
-        resposta = enviar_texto(config.waha_session, numero, texto)
+        resposta = _enviar(config, numero, texto)  # humaniza com 'digitando…' antes
         status = LogNotificacao.Status.ENVIADA
     except RequestException as exc:
         resposta = {"erro": str(exc)}
