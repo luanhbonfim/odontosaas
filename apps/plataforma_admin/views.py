@@ -894,20 +894,19 @@ class VendorLoginView(APIView):
             )
 
         user = None
-        # Avalia a lista no schema public antes de alterar o schema_context
+        operador_schema = "public"
+        # Operador do Vendor Admin exige is_superuser (spec §2.2). Admins de clínica são
+        # is_staff=True/superuser=False — nunca são operadores (evita escalonamento).
+        # O Master global é semeado em todos os schemas de tenant; varremos os tenants.
         tenants = list(Clinica.objects.exclude(schema_name="public").filter(ativo=True))
         for t in tenants:
             try:
                 with schema_context(t.schema_name):
                     try:
                         u = Usuario.objects.get(email__iexact=email)
-                        # Operador do Vendor Admin exige is_superuser (spec §2.2: operadores
-                        # do schema public). Admins de clínica são is_staff=True/superuser=False
-                        # — aceitá-los aqui permitiria que o admin de uma clínica assumisse o
-                        # painel da plataforma (escalonamento cross-tenant). Só o Master global
-                        # (is_superuser) é operador.
                         if u.check_password(password) and u.is_superuser and u.is_active:
                             user = u
+                            operador_schema = t.schema_name
                             break
                     except Usuario.DoesNotExist:
                         continue
@@ -927,7 +926,7 @@ class VendorLoginView(APIView):
 
         refresh = RefreshToken.for_user(user)
         refresh["schema_name"] = "public"
-        refresh["operator_schema"] = getattr(t, "schema_name", "public")
+        refresh["operator_schema"] = operador_schema
         refresh["is_staff"] = user.is_staff
         refresh["is_superuser"] = user.is_superuser
         refresh["email"] = user.email
@@ -935,7 +934,7 @@ class VendorLoginView(APIView):
 
         access_token = refresh.access_token
         access_token["schema_name"] = "public"
-        access_token["operator_schema"] = getattr(t, "schema_name", "public")
+        access_token["operator_schema"] = operador_schema
         access_token["is_staff"] = user.is_staff
         access_token["is_superuser"] = user.is_superuser
         access_token["email"] = user.email

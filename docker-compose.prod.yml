@@ -18,6 +18,9 @@ services:
     build:
       context: .
       dockerfile: deploy/edge.Dockerfile
+      args:
+        # Caminho secreto do painel Vendor Admin, embutido no bundle do SPA.
+        VITE_VENDOR_ADMIN_SECRET_PATH: ${VENDOR_ADMIN_SECRET_PATH:-/plataforma-admin}
     image: odonto-edge:prod
     container_name: odonto_edge
     restart: unless-stopped

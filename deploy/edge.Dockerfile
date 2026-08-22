@@ -15,6 +15,11 @@ COPY frontend/package.json frontend/package-lock.json ./
 # que pede ^5). O build funciona; é só o npm ci sendo estrito num install limpo.
 RUN npm ci --legacy-peer-deps
 COPY frontend/ ./
+# Caminho (secreto) do painel Vendor Admin, embutido no bundle em tempo de build.
+# Vem do docker-compose (build arg) a partir de VENDOR_ADMIN_SECRET_PATH no .env.
+# Default /plataforma-admin quando não informado.
+ARG VITE_VENDOR_ADMIN_SECRET_PATH=/plataforma-admin
+ENV VITE_VENDOR_ADMIN_SECRET_PATH=$VITE_VENDOR_ADMIN_SECRET_PATH
 RUN npm run build
 
 # --- Stage 2: Caddy servindo o SPA + proxy do Django ---

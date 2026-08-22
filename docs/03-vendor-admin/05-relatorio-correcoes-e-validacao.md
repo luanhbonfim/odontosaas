@@ -192,4 +192,15 @@ Os dois bloqueadores (H1 webhook e H3 segredos) foram **fechados no código/conf
 
 **Ainda recomendado (não bloqueia):** migrar o Studio RW de denylist para allowlist (abuso por SuperAdmin de confiança); provisionar a role `odonto_studio_ro` por ops (não via app).
 
+## 7. 🕵️ Painel Vendor "escondido" (rodada 6)
+
+Objetivo: deixar o painel acessível só num host/rota não óbvios, sem depender de obscuridade para a segurança real (auth superuser + throttling + camuflagem 404 já cobrem isso).
+
+- **Path secreto no build**: `VITE_VENDOR_ADMIN_SECRET_PATH` embutido no bundle via build-arg (`deploy/edge.Dockerfile` + `docker-compose.prod.yml`), alimentado por `VENDOR_ADMIN_SECRET_PATH` no `.env`. Default `/plataforma-admin`.
+- **Subdomínio dedicado → schema public**: `VENDOR_ADMIN_HOST` (não óbvio) mapeado ao schema `public` pelo comando `bootstrap_vendor`. Deve constar também em `SITE_ADDRESS` (Caddy serve o SPA + `/api`). Em subdomínio de clínica, `/api/plataforma-admin/*` continua dando **404** (camuflagem por `IsVendorHost`).
+- **Comando `bootstrap_vendor`** (`apps/plataforma_admin/management/commands/`): idempotente — mapeia o host do painel → public, cria um plano padrão e (opcional) provisiona a **primeira clínica**, que semeia o operador **Master** (`is_superuser`) e habilita o login. Da 2ª clínica em diante, tudo pelo painel.
+- **Nota de arquitetura**: `apps.usuarios` é TENANT-only (não há tabela `Usuario` no `public`), então o operador **vive no schema de um tenant** (o Master é replicado). Por isso a 1ª clínica precisa ser provisionada por CLI (`bootstrap_vendor`) — não há como logar no painel antes de existir um operador.
+- **Residual (defesa em profundidade)**: o certificado do subdomínio secreto aparece nos CT logs (HTTP-01). Para ocultá-lo de verdade, usar wildcard DNS-01 no Caddy — melhoria de infra futura.
+- Teste: `tests/test_bootstrap_vendor.py` (bootstrap → Master semeado → login no painel OK).
+
 **Veredito:** com o checklist de segredos aplicado, **liberado para produção**. Sem os segredos, o sistema recusa subir (fail-closed) — proteção intencional, não um bug.
