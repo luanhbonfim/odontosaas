@@ -35,6 +35,20 @@ def _enviar(config, numero, texto):
     return enviar_texto(config.waha_session, numero, texto)
 
 
+def _espacar_fila(config):
+    """Espera `config.intervalo_fila_segundos` entre um envio em LOTE e o próximo.
+
+    Anti-bloqueio do WhatsApp: as mensagens nunca saem todas juntas. Chamado APÓS
+    cada envio de um lote (confirmações/recall/avisos). Função de módulo para ficar
+    mockável nos testes (evita o sleep real). Não afeta envios avulsos.
+    """
+    import time
+
+    segundos = getattr(config, "intervalo_fila_segundos", 0) or 0
+    if segundos > 0:
+        time.sleep(segundos)
+
+
 def _renderizar(corpo, consulta, link=""):
     """Substitui as variáveis do template pelos dados da consulta (+ {{link}}).
 
@@ -244,6 +258,7 @@ def _disparar_lembretes_do_tenant():
         )
         if status == LogNotificacao.Status.ENVIADA:
             enviados += 1
+        _espacar_fila(config)  # fila anti-bloqueio: aguarda antes do próximo
     return enviados
 
 
@@ -279,6 +294,7 @@ def _enviar_lembrete(config, template, consulta):
         provider_message_id=id_da_mensagem(payload),
         payload_provedor=payload if isinstance(payload, dict) else {},
     )
+    _espacar_fila(config)  # fila anti-bloqueio entre lembretes do lote
     return 1 if status == LogNotificacao.Status.ENVIADA else 0
 
 

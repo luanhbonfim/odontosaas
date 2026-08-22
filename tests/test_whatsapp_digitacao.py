@@ -9,11 +9,32 @@ ela desligada (ou 0s), envia direto.
 from types import SimpleNamespace
 from unittest.mock import patch
 
+# Captura a função REAL no import (o conftest no-opa `tasks._espacar_fila` via autouse,
+# mas este binding local preserva a implementação original para testá-la).
+from apps.notificacoes.tasks import _espacar_fila as _espacar_fila_real
+
 
 def _config(**kw):
-    base = {"waha_session": "sess", "simular_digitacao": True, "segundos_digitacao": 4}
+    base = {
+        "waha_session": "sess",
+        "simular_digitacao": True,
+        "segundos_digitacao": 4,
+        "intervalo_fila_segundos": 20,
+    }
     base.update(kw)
     return SimpleNamespace(**base)
+
+
+def test_espacar_fila_aguarda_o_intervalo_configurado():
+    with patch("time.sleep") as sleep:
+        _espacar_fila_real(_config(intervalo_fila_segundos=25))
+    sleep.assert_called_once_with(25)
+
+
+def test_espacar_fila_nao_aguarda_quando_zero():
+    with patch("time.sleep") as sleep:
+        _espacar_fila_real(_config(intervalo_fila_segundos=0))
+    sleep.assert_not_called()
 
 
 def test_enviar_simula_digitacao_quando_ligado():

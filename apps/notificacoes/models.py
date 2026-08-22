@@ -52,6 +52,10 @@ class ConfiguracaoNotificacao(ModeloBase):
     # (também pelo Vendor Admin). 0 desliga a espera mesmo com simular_digitacao=True.
     simular_digitacao = models.BooleanField(default=True)
     segundos_digitacao = models.PositiveSmallIntegerField(default=4)
+    # Anti-bloqueio do WhatsApp: os disparos em LOTE (confirmações, recall, avisos)
+    # saem em fila espaçada — nunca todos juntos. Intervalo (segundos) entre um envio
+    # e o próximo, configurável por clínica (também pelo Vendor Admin). 0 = sem espera.
+    intervalo_fila_segundos = models.PositiveSmallIntegerField(default=20)
 
     class Meta:
         verbose_name = "Configuração de notificação"

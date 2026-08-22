@@ -261,6 +261,7 @@ class WhatsAppParamsSerializer(serializers.Serializer):
     enviar_cancelamento = serializers.BooleanField(required=False)
     simular_digitacao = serializers.BooleanField(required=False)
     segundos_digitacao = serializers.IntegerField(min_value=0, max_value=30, required=False)
+    intervalo_fila_segundos = serializers.IntegerField(min_value=0, max_value=600, required=False)
 
 
 class OverridesTenantSerializer(serializers.Serializer):

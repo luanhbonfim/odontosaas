@@ -91,3 +91,5 @@ def sem_sleep_digitando(monkeypatch):
         "apps.notificacoes.waha.enviar_digitando",
     ):
         monkeypatch.setattr(alvo, MagicMock())
+    # Fila anti-bloqueio: no-opa o sleep entre envios em lote (evita esperar 20s/msg).
+    monkeypatch.setattr("apps.notificacoes.tasks._espacar_fila", MagicMock())

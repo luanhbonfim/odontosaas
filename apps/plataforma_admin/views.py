@@ -611,6 +611,7 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
                     "enviar_cancelamento": config.enviar_cancelamento,
                     "simular_digitacao": config.simular_digitacao,
                     "segundos_digitacao": config.segundos_digitacao,
+                    "intervalo_fila_segundos": config.intervalo_fila_segundos,
                 }
             )
 
