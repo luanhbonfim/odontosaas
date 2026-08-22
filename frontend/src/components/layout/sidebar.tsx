@@ -69,7 +69,7 @@ export function Sidebar() {
     return (
       <NavLink
         to={item.para}
-        end={item.para === '/'}
+        end={item.para === '/' || item.end}
         onClick={aoNavegar}
         className={({ isActive }) =>
           cn(

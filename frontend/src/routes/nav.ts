@@ -3,17 +3,19 @@ import {
   Boxes,
   Calendar,
   ClipboardList,
-  DollarSign,
   HeartPulse,
   LayoutDashboard,
   type LucideIcon,
   MessageSquare,
   Package,
+  PieChart,
   Plug,
   Settings,
   Shield,
   Sparkles,
   Stethoscope,
+  TrendingDown,
+  TrendingUp,
   Users,
   UsersRound,
   Wallet,
@@ -31,6 +33,8 @@ export type ItemNav = {
   papeis?: Papel[]
   /** Módulo do SaaS atrelado ao item. Se desabilitado no plano, oculta o menu. */
   modulo?: ModuloRecurso
+  /** Match exato da rota (para pais que têm sub-rotas, ex.: /financeiro). */
+  end?: boolean
 }
 
 /** Um bloco do menu. `titulo` ausente = grupo sem cabeçalho (link direto no topo). */
@@ -50,7 +54,7 @@ const DENTISTA_MAIS = ['DENTISTA', 'DENTISTA_GERENTE', 'ADMIN'] satisfies Papel[
 // operação e administração. Espelha a matriz de permissões (papeis por item).
 export const gruposNav: GrupoNav[] = [
   {
-    itens: [{ rotulo: 'Dashboard', para: '/', icone: LayoutDashboard }],
+    itens: [{ rotulo: 'Dashboard', para: '/dashboard', icone: LayoutDashboard }],
   },
   {
     titulo: 'Atendimento',
@@ -58,6 +62,7 @@ export const gruposNav: GrupoNav[] = [
     itens: [
       { rotulo: 'Agenda', para: '/agenda', icone: Calendar },
       { rotulo: 'Pacientes', para: '/pacientes', icone: Users },
+      { rotulo: 'Convênios', para: '/convenios', icone: BadgeCheck, papeis: RECEPCAO_MAIS },
       { rotulo: 'Dentistas', para: '/dentistas', icone: Stethoscope },
       {
         rotulo: 'Procedimentos',
@@ -71,11 +76,25 @@ export const gruposNav: GrupoNav[] = [
     titulo: 'Financeiro',
     icone: Wallet,
     itens: [
-      { rotulo: 'Convênios', para: '/convenios', icone: BadgeCheck, papeis: RECEPCAO_MAIS },
       {
-        rotulo: 'Financeiro',
+        rotulo: 'Visão Geral',
         para: '/financeiro',
-        icone: DollarSign,
+        icone: PieChart,
+        papeis: RH,
+        modulo: 'financeiro',
+        end: true,
+      },
+      {
+        rotulo: 'Contas a Receber',
+        para: '/financeiro/receber',
+        icone: TrendingUp,
+        papeis: RH,
+        modulo: 'financeiro',
+      },
+      {
+        rotulo: 'Contas a Pagar',
+        para: '/financeiro/pagar',
+        icone: TrendingDown,
         papeis: RH,
         modulo: 'financeiro',
       },

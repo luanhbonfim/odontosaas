@@ -159,7 +159,9 @@ export function App() {
             </Route>
 
             <Route element={<RequireModulo modulo="financeiro" />}>
-              <Route path="financeiro" element={<EmConstrucao titulo="Financeiro" />} />
+              <Route path="financeiro" element={<EmConstrucao titulo="Financeiro — Visão Geral" />} />
+              <Route path="financeiro/receber" element={<EmConstrucao titulo="Contas a Receber" />} />
+              <Route path="financeiro/pagar" element={<EmConstrucao titulo="Contas a Pagar" />} />
             </Route>
 
             <Route element={<RequireModulo modulo="whatsapp" />}>

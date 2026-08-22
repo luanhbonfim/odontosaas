@@ -33,7 +33,10 @@ describe('Sidebar (menu por papel)', () => {
       'Pacientes',
       'Dentistas',
       'Estoque',
-      'Financeiro',
+      // Financeiro virou módulo com telas separadas:
+      'Visão Geral',
+      'Contas a Receber',
+      'Contas a Pagar',
       'WhatsApp',
       'Integrações',
       'Equipe',
@@ -45,14 +48,14 @@ describe('Sidebar (menu por papel)', () => {
 
   it('RECEPCAO não vê Financeiro nem Integrações (mas vê WhatsApp)', () => {
     renderComPapel('RECEPCAO')
-    expect(screen.queryByRole('link', { name: 'Financeiro' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Contas a Receber' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Integrações' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'WhatsApp' })).toBeInTheDocument()
   })
 
   it('DENTISTA não vê Financeiro nem WhatsApp (mas vê Integrações)', () => {
     renderComPapel('DENTISTA')
-    expect(screen.queryByRole('link', { name: 'Financeiro' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Contas a Receber' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'WhatsApp' })).not.toBeInTheDocument()
     // Integrações é aberto ao dentista (vê a sua); e os módulos gerais.
     expect(screen.getByRole('link', { name: 'Integrações' })).toBeInTheDocument()
@@ -61,7 +64,7 @@ describe('Sidebar (menu por papel)', () => {
 
   it('sem sessão carregada, oculta os módulos restritos', () => {
     renderComPapel(null)
-    expect(screen.queryByRole('link', { name: 'Financeiro' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Contas a Receber' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
   })
 
@@ -90,7 +93,7 @@ describe('Sidebar (menu por papel)', () => {
     )
     expect(screen.queryByRole('link', { name: 'Integrações' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'WhatsApp' })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Financeiro' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Contas a Receber' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Estoque' })).toBeInTheDocument()
   })
 })

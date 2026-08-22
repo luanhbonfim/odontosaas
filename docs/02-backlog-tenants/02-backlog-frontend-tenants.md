@@ -139,12 +139,22 @@
 
 ## 💰 Sprint F8 — Financeiro
 
-- [ ] **Contas a pagar/receber** (`DataTable` com filtros `?tipo` e `?status`)
-- [ ] Criar **lançamento manual** (RECEITA/DESPESA) + **ajustes** (editar) + **quitar** (baixa) em 1 clique
-- [ ] **Faturamento por operadora** (ação `/api/faturas/faturar/`) e listagem de faturas
-- [ ] **Fluxo de caixa** (`/api/lancamentos/fluxo-caixa/`) com **gráfico** (a receber × a pagar) e KPIs
-- [ ] Visualização das **contas geradas automaticamente** (origem guia/consulta)
-- [ ] Testes: filtros, quitar, faturar, gráfico de fluxo de caixa
+> **Estrutura de navegação** (módulo "Financeiro" na sidebar, a pedido do usuário): o módulo
+> abre em accordion com **três telas distintas** — a rota base `/financeiro` é a **Visão Geral
+> (agrupada)** e os menus **Contas a Receber** (`/financeiro/receber`) e **Contas a Pagar**
+> (`/financeiro/pagar`) são telas separadas. Todas gated por `modulo: 'financeiro'` + papéis RH
+> (Dentista Gerente / Admin). Menus/rotas já criados (placeholders `Em construção`); esta sprint
+> implementa as telas.
+
+- [ ] **Visão Geral (`/financeiro`)**: KPIs consolidados (a receber × a pagar, saldo), **fluxo de
+      caixa** (`/api/lancamentos/fluxo-caixa/`) com **gráfico**, e atalhos para as duas telas
+- [ ] **Contas a Receber (`/financeiro/receber`)**: `DataTable` de RECEITA (filtros `?tipo=RECEITA&?status`),
+      incluindo as **contas geradas automaticamente** (origem guia/consulta) e **faturamento por
+      operadora** (ação `/api/faturas/faturar/`) + listagem de faturas
+- [ ] **Contas a Pagar (`/financeiro/pagar`)**: `DataTable` de DESPESA (filtros `?tipo=DESPESA&?status`)
+- [ ] Ações comuns às duas telas: criar **lançamento manual** (RECEITA/DESPESA) + **ajustes** (editar)
+      + **quitar** (baixa) em 1 clique
+- [ ] Testes: filtros por tipo/status, quitar, faturar, gráfico de fluxo de caixa, escopo por papel
 
 ---
 
