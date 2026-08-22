@@ -37,6 +37,7 @@ export function useVendorAuth() {
     const { data } = await vendorApi.post('/plataforma-admin/auth/login/', {
       email: credenciais.email,
       password: credenciais.senha,
+      codigo_mfa: credenciais.codigoMfa || undefined,
     })
 
     const payload = decodificarPayloadJwt(data.access)

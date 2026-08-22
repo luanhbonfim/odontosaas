@@ -117,3 +117,25 @@ class RegistroErroOperacional(models.Model):
 
     def __str__(self):
         return f"[{self.criado_em:%Y-%m-%d %H:%M:%S}] {self.schema_tenant} - {self.nivel}: {self.mensagem[:60]}"
+
+
+class OperadorMFA(models.Model):
+    """
+    Segredo TOTP (2FA) de um operador do Vendor Admin, no schema `public`
+    (fonte única — o operador Master é replicado nos tenants, mas o 2FA fica só aqui).
+
+    Vazio/ausente = 2FA desativado para o operador. Gerenciado pelo comando
+    `vendor_2fa`; exigido no login do painel quando houver segredo para o e-mail.
+    """
+
+    email = models.EmailField("e-mail do operador", unique=True)
+    secret = models.CharField(max_length=64, help_text="Segredo TOTP (base32)")
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "2FA de operador (Vendor)"
+        verbose_name_plural = "2FA de operadores (Vendor)"
+
+    def __str__(self):
+        return f"2FA: {self.email}"

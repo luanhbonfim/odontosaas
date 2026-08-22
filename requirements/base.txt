@@ -31,6 +31,9 @@ requests==2.32.3
 # --- Segurança de dados sensíveis (tokens Google criptografados) ---
 cryptography==44.0.0
 
+# --- 2FA/TOTP do operador do Vendor Admin ---
+pyotp==2.9.0
+
 # --- Configuração via variáveis de ambiente ---
 django-environ==0.11.2
 

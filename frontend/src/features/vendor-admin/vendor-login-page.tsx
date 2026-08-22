@@ -36,7 +36,13 @@ export function VendorLoginPage() {
         err && typeof err === 'object' && 'mensagem' in err
           ? String((err as { mensagem: string }).mensagem)
           : 'Credenciais inválidas ou sem permissão de operador.'
-      toast.error(msg)
+      // Backend sinalizou 2FA: revela o campo do código e orienta o operador.
+      if (/2fa|totp|c[óo]digo/i.test(msg) && !solicitarMfa) {
+        setSolicitarMfa(true)
+        toast.info('Este operador exige 2FA. Digite o código do seu autenticador.')
+      } else {
+        toast.error(msg)
+      }
     } finally {
       setCarregando(false)
     }

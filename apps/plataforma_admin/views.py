@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 from apps.core.throttling import ImpersonateThrottle, VendorLoginThrottle
 from apps.plataforma.models import PlanoAssinatura
-from apps.plataforma_admin.models import RegistroAuditoriaVendor
+from apps.plataforma_admin.models import OperadorMFA, RegistroAuditoriaVendor
 from apps.plataforma_admin.permissions import IsVendorHost, IsVendorStaff, IsVendorSuperAdmin
 from apps.plataforma_admin.serializers import (
     AlternarStatusTenantInputSerializer,
@@ -966,6 +966,26 @@ class VendorLoginView(APIView):
                 {"detail": "Credenciais inválidas ou usuário sem permissão de operador."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+
+        # 2FA/TOTP: se houver segredo cadastrado para este operador (schema public,
+        # fonte única), exige e valida o código. Sem registro = 2FA desativado.
+        mfa = OperadorMFA.objects.filter(email__iexact=user.email).first()
+        if mfa and mfa.secret:
+            import pyotp
+
+            codigo = str(request.data.get("codigo_mfa") or request.data.get("codigoMfa") or "").strip()
+            if not codigo:
+                return Response(
+                    {"detail": "Código 2FA obrigatório.", "mfa_required": True},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            # valid_window=1 tolera diferença de relógio de ±30s.
+            if not pyotp.TOTP(mfa.secret).verify(codigo, valid_window=1):
+                cache.set(chave, cache.get(chave, 0) + 1, timeout=VENDOR_LOGIN_BLOQUEIO_SEGUNDOS)
+                return Response(
+                    {"detail": "Código 2FA inválido.", "mfa_required": True},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
 
         # Sucesso: zera contador de falhas do IP
         cache.delete(chave)
