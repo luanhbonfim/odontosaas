@@ -229,8 +229,12 @@ def gerar_token_impersonate(
     """
     from django.utils import timezone
 
+    from apps.plataforma_admin.config import get_config
+
+    # Validade da sessão de suporte, configurável (default 60 min).
+    validade = timedelta(minutes=get_config().impersonate_validade_min or 60)
     agora = timezone.now()
-    limite_expiracao = agora - timedelta(hours=1)
+    limite_expiracao = agora - validade
 
     # Bloqueia se já houver sessão ativa válida criada há menos de 1 hora (a menos que seja reacesso)
     if not reacesso:
@@ -244,7 +248,7 @@ def gerar_token_impersonate(
             .first()
         )
         if sessao_ativa and not sessao_ativa.detalhes.get("encerrado_em"):
-            expira_em = sessao_ativa.criado_em + timedelta(hours=1)
+            expira_em = sessao_ativa.criado_em + validade
             expira_str = expira_em.strftime("%H:%M:%S")
             raise ValidationError(
                 f"Já existe uma sessão de suporte ativa para esta clínica até às {expira_str}. "
@@ -262,7 +266,7 @@ def gerar_token_impersonate(
                 f"Nenhum usuário ativo encontrado no schema '{clinica.schema_name}' para impersonate."
             )
 
-        expira_em = agora + timedelta(hours=1)
+        expira_em = agora + validade
 
         refresh = RefreshToken.for_user(admin_user)
         # Injeta claims customizados de impersonate
@@ -270,14 +274,14 @@ def gerar_token_impersonate(
         refresh["impersonated_by"] = operador_email
         refresh["impersonate_read_only"] = read_only
         refresh["schema_name"] = clinica.schema_name
-        refresh.set_exp(lifetime=timedelta(hours=1))
+        refresh.set_exp(lifetime=validade)
 
         access_token = refresh.access_token
         access_token["is_impersonate"] = True
         access_token["impersonated_by"] = operador_email
         access_token["impersonate_read_only"] = read_only
         access_token["schema_name"] = clinica.schema_name
-        access_token.set_exp(lifetime=timedelta(hours=1))
+        access_token.set_exp(lifetime=validade)
 
         registrar_auditoria_vendor(
             request=request,

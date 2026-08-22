@@ -82,12 +82,19 @@ class LoginView(TokenObtainPairView):
 
 
     def post(self, request, *args, **kwargs):
+        # Lockout configurável (mesma política do painel — ver ConfiguracaoLoginVendor).
+        from apps.plataforma_admin.config import get_config
+
+        cfg = get_config()
+        max_tentativas = cfg.login_max_tentativas or LOGIN_FALHAS_MAX
+        bloqueio_seg = (cfg.login_bloqueio_min or LOGIN_BLOQUEIO_MINUTOS) * 60
+
         chave = _chave_falhas(_ip_cliente(request))
 
-        if cache.get(chave, 0) >= LOGIN_FALHAS_MAX:
+        if cache.get(chave, 0) >= max_tentativas:
             raise Throttled(
                 detail=(
-                    f"Muitas tentativas de login. Aguarde {LOGIN_BLOQUEIO_MINUTOS} minutos "
+                    f"Muitas tentativas de login. Aguarde {cfg.login_bloqueio_min or LOGIN_BLOQUEIO_MINUTOS} minutos "
                     "e tente novamente."
                 ),
             )
@@ -96,7 +103,7 @@ class LoginView(TokenObtainPairView):
             resposta = super().post(request, *args, **kwargs)
         except APIException:
             # Credenciais inválidas / dados ausentes: conta a tentativa deste IP.
-            cache.set(chave, cache.get(chave, 0) + 1, timeout=LOGIN_BLOQUEIO_SEGUNDOS)
+            cache.set(chave, cache.get(chave, 0) + 1, timeout=bloqueio_seg)
             raise
 
         # Sucesso: zera o contador de falhas do IP.

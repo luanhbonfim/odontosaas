@@ -6,6 +6,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from apps.plataforma_admin.views import (
+    ConfiguracaoLoginVendorView,
     PlanoAssinaturaVendorViewSet,
     TenantVendorViewSet,
     MasterAdminVendorViewSet,
@@ -23,6 +24,7 @@ router.register("celery/tarefas", CeleryTarefasViewSet, basename="vendor-celery-
 
 urlpatterns = [
     path("auth/login/", VendorLoginView.as_view(), name="vendor-auth-login"),
+    path("config-login/", ConfiguracaoLoginVendorView.as_view(), name="vendor-config-login"),
     path("", include(router.urls)),
 ]
 

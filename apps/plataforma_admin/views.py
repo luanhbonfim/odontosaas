@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 logger = logging.getLogger(__name__)
 
 from apps.core.throttling import ImpersonateThrottle, VendorLoginThrottle
+from apps.plataforma_admin.config import get_config
 from apps.plataforma.models import PlanoAssinatura
 from apps.plataforma_admin.models import OperadorMFA, RegistroAuditoriaVendor
 from apps.plataforma_admin.permissions import IsVendorHost, IsVendorStaff, IsVendorSuperAdmin
@@ -294,7 +295,7 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         operador_email = getattr(request.user, "email", str(request.user))
-        read_only = serializer.validated_data.get("read_only", True)
+        read_only = serializer.validated_data.get("read_only", get_config().impersonate_read_only_padrao)
         justificativa = serializer.validated_data.get("justificativa", "")
         reacesso = serializer.validated_data.get("reacesso", False)
 
@@ -912,19 +913,27 @@ class VendorLoginView(APIView):
     throttle_classes = [VendorLoginThrottle]
 
     def post(self, request):
+        from datetime import timedelta
+
         from django.core.cache import cache
         from rest_framework_simplejwt.tokens import RefreshToken
+
+        from apps.plataforma_admin.config import get_config
         from apps.usuarios.models import Usuario
+
+        cfg = get_config()
+        max_tentativas = cfg.login_max_tentativas or VENDOR_LOGIN_FALHAS_MAX
+        bloqueio_seg = (cfg.login_bloqueio_min or VENDOR_LOGIN_BLOQUEIO_MINUTOS) * 60
 
         ip = _vendor_ip_cliente(request)
         chave = _vendor_chave_falhas(ip)
 
-        if cache.get(chave, 0) >= VENDOR_LOGIN_FALHAS_MAX:
+        if cache.get(chave, 0) >= max_tentativas:
             return Response(
                 {
                     "detail": (
                         f"Muitas tentativas de login no Vendor Admin. Aguarde "
-                        f"{VENDOR_LOGIN_BLOQUEIO_MINUTOS} minutos e tente novamente."
+                        f"{cfg.login_bloqueio_min or VENDOR_LOGIN_BLOQUEIO_MINUTOS} minutos e tente novamente."
                     )
                 },
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -961,7 +970,7 @@ class VendorLoginView(APIView):
                 continue
 
         if not user:
-            cache.set(chave, cache.get(chave, 0) + 1, timeout=VENDOR_LOGIN_BLOQUEIO_SEGUNDOS)
+            cache.set(chave, cache.get(chave, 0) + 1, timeout=bloqueio_seg)
             return Response(
                 {"detail": "Credenciais inválidas ou usuário sem permissão de operador."},
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -981,11 +990,22 @@ class VendorLoginView(APIView):
                 )
             # valid_window=1 tolera diferença de relógio de ±30s.
             if not pyotp.TOTP(mfa.secret).verify(codigo, valid_window=1):
-                cache.set(chave, cache.get(chave, 0) + 1, timeout=VENDOR_LOGIN_BLOQUEIO_SEGUNDOS)
+                cache.set(chave, cache.get(chave, 0) + 1, timeout=bloqueio_seg)
                 return Response(
                     {"detail": "Código 2FA inválido.", "mfa_required": True},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
+        elif cfg.exigir_2fa_todos:
+            # Política global: nenhum operador entra sem 2FA configurado.
+            return Response(
+                {
+                    "detail": (
+                        "A plataforma exige 2FA para todos os operadores. "
+                        "Configure o 2FA (comando vendor_2fa) antes de acessar."
+                    )
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         # Sucesso: zera contador de falhas do IP
         cache.delete(chave)
@@ -997,8 +1017,11 @@ class VendorLoginView(APIView):
         refresh["is_superuser"] = user.is_superuser
         refresh["email"] = user.email
         refresh["nome"] = user.nome_completo or user.email
+        # Duração dinâmica da sessão (refresh) e do access, conforme configuração.
+        refresh.set_exp(lifetime=timedelta(hours=cfg.refresh_token_horas or 24))
 
         access_token = refresh.access_token
+        access_token.set_exp(lifetime=timedelta(minutes=cfg.access_token_min or 30))
         access_token["schema_name"] = "public"
         access_token["operator_schema"] = operador_schema
         access_token["is_staff"] = user.is_staff
@@ -1018,3 +1041,38 @@ class VendorLoginView(APIView):
 
 
 
+
+
+class ConfiguracaoLoginVendorView(APIView):
+    """
+    Configurações de Login & Sessão da plataforma (singleton, schema public).
+    Leitura e escrita restritas a SuperAdmin. Toda alteração é auditada e invalida
+    o cache de configuração (efeito em até ~30s nos throttles/login).
+    """
+
+    permission_classes = [IsVendorSuperAdmin]
+
+    def get(self, request):
+        from apps.plataforma_admin.models import ConfiguracaoLoginVendor
+        from apps.plataforma_admin.serializers import ConfiguracaoLoginVendorSerializer
+
+        cfg = ConfiguracaoLoginVendor.get_solo()
+        return Response(ConfiguracaoLoginVendorSerializer(cfg).data)
+
+    def patch(self, request):
+        from apps.plataforma_admin.config import limpar_cache_config
+        from apps.plataforma_admin.models import ConfiguracaoLoginVendor
+        from apps.plataforma_admin.serializers import ConfiguracaoLoginVendorSerializer
+
+        cfg = ConfiguracaoLoginVendor.get_solo()
+        ser = ConfiguracaoLoginVendorSerializer(cfg, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        limpar_cache_config()
+        registrar_auditoria_vendor(
+            request=request,
+            acao=RegistroAuditoriaVendor.Acao.PARAMETRIZACAO,
+            schema_alvo="public",
+            detalhes={"acao": "config_login", "campos": list(request.data.keys())},
+        )
+        return Response(ser.data)

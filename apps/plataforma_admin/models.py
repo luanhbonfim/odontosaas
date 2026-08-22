@@ -139,3 +139,65 @@ class OperadorMFA(models.Model):
 
     def __str__(self):
         return f"2FA: {self.email}"
+
+
+class ConfiguracaoLoginVendor(models.Model):
+    """
+    Configurações globais de login/sessão da plataforma (singleton, schema `public`).
+
+    Substitui valores antes fixos em `settings`/código, permitindo ajuste pela tela
+    "Configurações de Login & Sessão" do Vendor Admin (spec docs/03-vendor-admin/06).
+    Leitura via `get_solo()`; escrita restrita a SuperAdmin.
+    """
+
+    # --- Sessão & tokens JWT ---
+    access_token_min = models.PositiveIntegerField(
+        default=30, help_text="Duração do access token em minutos (renovação automática). 5–240."
+    )
+    refresh_token_horas = models.PositiveIntegerField(
+        default=24, help_text="Duração da sessão (refresh token) em horas. 1–720 (30 dias)."
+    )
+    rotacionar_refresh = models.BooleanField(
+        default=False, help_text="Rotaciona o refresh a cada uso (mais seguro)."
+    )
+
+    # --- Proteção contra força bruta (aplica a login de clínica e do painel) ---
+    login_max_tentativas = models.PositiveIntegerField(
+        default=5, help_text="Tentativas por IP antes de bloquear. 3–20."
+    )
+    login_bloqueio_min = models.PositiveIntegerField(
+        default=15, help_text="Tempo de bloqueio após exceder as tentativas, em minutos. 1–240."
+    )
+
+    # --- Sessão de suporte (impersonate) ---
+    impersonate_validade_min = models.PositiveIntegerField(
+        default=60, help_text="Validade do token de suporte em minutos. 5–240."
+    )
+    impersonate_read_only_padrao = models.BooleanField(
+        default=True, help_text="Suporte começa em modo somente-leitura por padrão."
+    )
+
+    # --- 2FA ---
+    exigir_2fa_todos = models.BooleanField(
+        default=False, help_text="Exige 2FA de TODOS os operadores (bloqueia login sem 2FA configurado)."
+    )
+
+    # --- Rate limiting (formato 'N/min') ---
+    throttle_vendor_login = models.CharField(max_length=20, default="30/min")
+    throttle_impersonate = models.CharField(max_length=20, default="30/min")
+    throttle_studio = models.CharField(max_length=20, default="60/min")
+
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuração de Login & Sessão (Vendor)"
+        verbose_name_plural = "Configurações de Login & Sessão (Vendor)"
+
+    def __str__(self):
+        return "Configurações de Login & Sessão (Vendor Admin)"
+
+    @classmethod
+    def get_solo(cls):
+        """Retorna o singleton (cria com os defaults se ainda não existir)."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

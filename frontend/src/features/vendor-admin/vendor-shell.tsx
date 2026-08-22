@@ -8,6 +8,7 @@ import {
   Database,
   Clock,
   ScrollText,
+  SlidersHorizontal,
   Menu,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -76,6 +77,11 @@ const GRUPOS_NAV = [
         rotulo: 'Trilha de Auditoria',
         icone: ScrollText,
         para: `${VENDOR_BASE_PATH}/auditoria`,
+      },
+      {
+        rotulo: 'Config. de Login',
+        icone: SlidersHorizontal,
+        para: `${VENDOR_BASE_PATH}/configuracoes`,
       },
     ],
   },

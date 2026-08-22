@@ -6,7 +6,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.plataforma.models import PlanoAssinatura
-from apps.plataforma_admin.models import RegistroAuditoriaVendor
+from apps.plataforma_admin.models import ConfiguracaoLoginVendor, RegistroAuditoriaVendor
 from apps.tenants.models import Clinica, Dominio
 
 
@@ -428,3 +428,47 @@ class PeriodicTaskUpdateSerializer(serializers.Serializer):
 
 
 
+
+
+class ConfiguracaoLoginVendorSerializer(serializers.ModelSerializer):
+    """Configurações de Login & Sessão do Vendor Admin (com validação de faixas)."""
+
+    access_token_min = serializers.IntegerField(min_value=5, max_value=240)
+    refresh_token_horas = serializers.IntegerField(min_value=1, max_value=720)
+    login_max_tentativas = serializers.IntegerField(min_value=3, max_value=20)
+    login_bloqueio_min = serializers.IntegerField(min_value=1, max_value=240)
+    impersonate_validade_min = serializers.IntegerField(min_value=5, max_value=240)
+
+    class Meta:
+        model = ConfiguracaoLoginVendor
+        fields = [
+            "access_token_min",
+            "refresh_token_horas",
+            "rotacionar_refresh",
+            "login_max_tentativas",
+            "login_bloqueio_min",
+            "impersonate_validade_min",
+            "impersonate_read_only_padrao",
+            "exigir_2fa_todos",
+            "throttle_vendor_login",
+            "throttle_impersonate",
+            "throttle_studio",
+            "atualizado_em",
+        ]
+        read_only_fields = ["atualizado_em"]
+
+    def _validar_rate(self, valor):
+        import re
+
+        if not re.match(r"^\d+/(s|sec|second|m|min|minute|h|hour|d|day)$", (valor or "").strip()):
+            raise serializers.ValidationError("Formato inválido. Use 'N/min' (ex.: 30/min).")
+        return valor.strip()
+
+    def validate_throttle_vendor_login(self, v):
+        return self._validar_rate(v)
+
+    def validate_throttle_impersonate(self, v):
+        return self._validar_rate(v)
+
+    def validate_throttle_studio(self, v):
+        return self._validar_rate(v)
