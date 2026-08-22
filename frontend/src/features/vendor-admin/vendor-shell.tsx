@@ -9,6 +9,7 @@ import {
   Clock,
   ScrollText,
   SlidersHorizontal,
+  ShieldCheck,
   Menu,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -82,6 +83,11 @@ const GRUPOS_NAV = [
         rotulo: 'Config. de Login',
         icone: SlidersHorizontal,
         para: `${VENDOR_BASE_PATH}/configuracoes`,
+      },
+      {
+        rotulo: 'Autenticação 2FA',
+        icone: ShieldCheck,
+        para: `${VENDOR_BASE_PATH}/seguranca-2fa`,
       },
     ],
   },

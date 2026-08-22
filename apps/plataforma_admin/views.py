@@ -1089,3 +1089,134 @@ class ConfiguracaoLoginVendorView(APIView):
             detalhes={"acao": "config_login", "campos": list(request.data.keys())},
         )
         return Response(ser.data)
+
+
+class MFAVendorViewSet(viewsets.ViewSet):
+    """
+    Gestão de 2FA (TOTP) dos operadores do Vendor Admin — 100% pela interface,
+    sem linha de comando.
+
+    - Self-service: o operador logado gerencia o PRÓPRIO 2FA
+      (iniciar -> ler o QR no app autenticador -> confirmar com o código -> desativar).
+    - SuperAdmin: pode listar operadores com 2FA e resetar/desativar o de OUTRO
+      operador por e-mail (recuperação, ex.: perdeu o celular).
+
+    Durante a ativação o segredo fica PENDENTE em cache e só é persistido após a
+    confirmação com um código válido (evita travar o operador por engano). O segredo
+    nunca é retornado depois de ativado.
+    """
+
+    permission_classes = [IsVendorSuperAdmin]
+
+    PENDENTE_TTL = 600  # 10 min para concluir a ativação
+
+    def _email_operador(self, request):
+        return (getattr(request.user, "email", "") or "").strip().lower()
+
+    def _chave_pendente(self, email):
+        return f"vendor_mfa_pending:{email}"
+
+    def list(self, request):
+        """Status do 2FA do operador logado."""
+        email = self._email_operador(request)
+        habilitado = OperadorMFA.objects.filter(email__iexact=email).exists()
+        return Response({"email": email, "habilitado": habilitado})
+
+    @action(detail=False, methods=["post"])
+    def iniciar(self, request):
+        """Gera um segredo PENDENTE (não ativa ainda) e devolve o otpauth p/ o QR."""
+        import pyotp
+        from django.core.cache import cache
+
+        email = self._email_operador(request)
+        if not email:
+            return Response({"erro": "Operador sem e-mail."}, status=status.HTTP_400_BAD_REQUEST)
+        secret = pyotp.random_base32()
+        cache.set(self._chave_pendente(email), secret, timeout=self.PENDENTE_TTL)
+        uri = pyotp.TOTP(secret).provisioning_uri(name=email, issuer_name="PróClínica Vendor")
+        return Response({"secret": secret, "otpauth_uri": uri, "expira_em_seg": self.PENDENTE_TTL})
+
+    @action(detail=False, methods=["post"])
+    def confirmar(self, request):
+        """Confirma a ativação: valida o código contra o segredo pendente e persiste."""
+        import pyotp
+        from django.core.cache import cache
+
+        email = self._email_operador(request)
+        codigo = str(request.data.get("codigo") or "").strip()
+        pendente = cache.get(self._chave_pendente(email))
+        if not pendente:
+            return Response(
+                {"erro": "Nenhuma ativação pendente. Inicie a configuração novamente."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not codigo or not pyotp.TOTP(pendente).verify(codigo, valid_window=1):
+            return Response(
+                {"erro": "Código inválido. Confira o horário do aparelho e tente o código atual."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        OperadorMFA.objects.update_or_create(email=email, defaults={"secret": pendente})
+        cache.delete(self._chave_pendente(email))
+        registrar_auditoria_vendor(
+            request=request,
+            acao=RegistroAuditoriaVendor.Acao.PARAMETRIZACAO,
+            schema_alvo="public",
+            detalhes={"acao": "2fa_ativar", "alvo": email},
+        )
+        return Response({"habilitado": True})
+
+    @action(detail=False, methods=["post"])
+    def desativar(self, request):
+        """Desativa o 2FA do PRÓPRIO operador (exige um código atual válido)."""
+        import pyotp
+
+        email = self._email_operador(request)
+        codigo = str(request.data.get("codigo") or "").strip()
+        mfa = OperadorMFA.objects.filter(email__iexact=email).first()
+        if not mfa:
+            return Response({"habilitado": False})  # já estava desativado
+        if not codigo or not pyotp.TOTP(mfa.secret).verify(codigo, valid_window=1):
+            return Response(
+                {"erro": "Informe um código atual válido do app para desativar o 2FA."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        mfa.delete()
+        registrar_auditoria_vendor(
+            request=request,
+            acao=RegistroAuditoriaVendor.Acao.PARAMETRIZACAO,
+            schema_alvo="public",
+            detalhes={"acao": "2fa_desativar", "alvo": email},
+        )
+        return Response({"habilitado": False})
+
+    @action(detail=False, methods=["get"])
+    def operadores(self, request):
+        """Lista operadores COM 2FA ativo (para o SuperAdmin resetar, se necessário)."""
+        dados = [
+            {
+                "email": m.email,
+                "criado_em": m.criado_em,
+                "atualizado_em": m.atualizado_em,
+                "eu": m.email.lower() == self._email_operador(request),
+            }
+            for m in OperadorMFA.objects.all().order_by("email")
+        ]
+        return Response(dados)
+
+    @action(detail=False, methods=["post"])
+    def resetar(self, request):
+        """SuperAdmin desativa/reseta o 2FA de OUTRO operador por e-mail (recuperação)."""
+        from django.core.cache import cache
+
+        alvo = (request.data.get("email") or "").strip().lower()
+        if not alvo:
+            return Response({"erro": "Informe o e-mail do operador."}, status=status.HTTP_400_BAD_REQUEST)
+        n, _ = OperadorMFA.objects.filter(email__iexact=alvo).delete()
+        cache.delete(self._chave_pendente(alvo))
+        registrar_auditoria_vendor(
+            request=request,
+            acao=RegistroAuditoriaVendor.Acao.PARAMETRIZACAO,
+            schema_alvo="public",
+            detalhes={"acao": "2fa_reset", "alvo": alvo, "removido": bool(n)},
+        )
+        return Response({"email": alvo, "habilitado": False, "removido": bool(n)})

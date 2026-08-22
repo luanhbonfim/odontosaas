@@ -178,7 +178,7 @@ export function ConfiguracoesLoginPage() {
           label="Exigir 2FA de todos os operadores"
           valor={form.exigir_2fa_todos}
           onChange={(v) => set('exigir_2fa_todos', v)}
-          dica="Quando ligado, nenhum operador entra no painel sem ter o 2FA (autenticação em dois fatores por app, ex.: Google Authenticator) configurado. Operadores sem 2FA cadastrado ficam bloqueados até configurar. Configure o 2FA de um operador com o comando 'vendor_2fa' antes de ligar isto."
+          dica="Quando ligado, nenhum operador entra no painel sem ter o 2FA (autenticação em dois fatores por app, ex.: Google Authenticator) configurado. Operadores sem 2FA cadastrado ficam bloqueados até configurar. Ative seu 2FA antes na tela 'Autenticação 2FA' do menu."
         />
       </Secao>
 
