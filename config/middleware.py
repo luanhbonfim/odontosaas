@@ -27,6 +27,14 @@ class HealthCheckMiddleware:
             return self._readiness()
         if request.path == "/caddy/ask/":
             return self._caddy_ask(request)
+        # Webhook do WAHA (resposta do paciente): tratado ANTES da resolução de tenant.
+        # O WAHA chama por um host interno (ex.: `web:8000`) que não é um domínio de
+        # clínica, então o TenantMainMiddleware devolveria 404. A view resolve o schema
+        # pelo `session` do corpo (schema_da_sessao + schema_context), dispensando o Host.
+        if request.path.rstrip("/") == "/notificacoes/whatsapp/webhook":
+            from apps.notificacoes.views import waha_webhook
+
+            return waha_webhook(request)
         return self.get_response(request)
 
     def _caddy_ask(self, request):

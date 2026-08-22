@@ -68,6 +68,19 @@ class Command(BaseCommand):
                 )
             )
 
+        # ---- 1b. Host interno 'web' -> public --------------------------------
+        # O WAHA (container interno) chama o webhook em http://web:8000/... com Host
+        # `web`. Sem um Dominio para esse host, o django-tenants rejeita a requisição
+        # com 404 ANTES da view — e as respostas do paciente (sim/não) nunca chegam.
+        _, criado_web = Dominio.objects.get_or_create(
+            domain="web", defaults={"tenant": publico, "is_primary": False}
+        )
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Host interno do webhook {'criado' if criado_web else 'já existia'}: web -> schema public"
+            )
+        )
+
         # ---- 2. Plano padrão -------------------------------------------------
         if PlanoAssinatura.objects.exists():
             self.stdout.write("Já existe pelo menos um plano — nenhum plano padrão criado.")
