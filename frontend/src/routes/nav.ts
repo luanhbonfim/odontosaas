@@ -1,17 +1,22 @@
 import {
   BadgeCheck,
+  Boxes,
   Calendar,
   ClipboardList,
   DollarSign,
+  HeartPulse,
   LayoutDashboard,
   type LucideIcon,
   MessageSquare,
   Package,
   Plug,
+  Settings,
+  Shield,
   Sparkles,
   Stethoscope,
   Users,
   UsersRound,
+  Wallet,
 } from 'lucide-react'
 
 import type { ModulosAtivos, Papel } from '@/features/auth/use-sessao'
@@ -28,9 +33,11 @@ export type ItemNav = {
   modulo?: ModuloRecurso
 }
 
-/** Um bloco do menu. `titulo` ausente = grupo sem cabeçalho (topo). */
+/** Um bloco do menu. `titulo` ausente = grupo sem cabeçalho (link direto no topo). */
 export type GrupoNav = {
   titulo?: string
+  /** Ícone do módulo (cabeçalho recolhível). */
+  icone?: LucideIcon
   itens: ItemNav[]
 }
 
@@ -47,6 +54,7 @@ export const gruposNav: GrupoNav[] = [
   },
   {
     titulo: 'Atendimento',
+    icone: HeartPulse,
     itens: [
       { rotulo: 'Agenda', para: '/agenda', icone: Calendar },
       { rotulo: 'Pacientes', para: '/pacientes', icone: Users },
@@ -61,6 +69,7 @@ export const gruposNav: GrupoNav[] = [
   },
   {
     titulo: 'Financeiro',
+    icone: Wallet,
     itens: [
       { rotulo: 'Convênios', para: '/convenios', icone: BadgeCheck, papeis: RECEPCAO_MAIS },
       {
@@ -74,14 +83,17 @@ export const gruposNav: GrupoNav[] = [
   },
   {
     titulo: 'Operação',
+    icone: Boxes,
     itens: [{ rotulo: 'Estoque', para: '/estoque', icone: Package, modulo: 'estoque' }],
   },
   {
     titulo: 'Administração',
+    icone: Shield,
     itens: [{ rotulo: 'Equipe', para: '/equipe', icone: UsersRound, papeis: RH }],
   },
   {
     titulo: 'Configurações',
+    icone: Settings,
     itens: [
       {
         rotulo: 'Integrações',
