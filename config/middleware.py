@@ -1,7 +1,7 @@
 """Middlewares do projeto OdontoSaaS."""
 
 from django.db import connection
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 
 
 class HealthCheckMiddleware:
@@ -25,7 +25,30 @@ class HealthCheckMiddleware:
             return JsonResponse({"status": "ok"})
         if request.path == "/health/ready/":
             return self._readiness()
+        if request.path == "/caddy/ask/":
+            return self._caddy_ask(request)
         return self.get_response(request)
+
+    def _caddy_ask(self, request):
+        """Autorização de emissão de certificado on-demand do Caddy (TLS on-demand).
+
+        O Caddy chama `?domain=<host>` a cada handshake de host ainda sem certificado.
+        Só autorizamos (200) hosts que já são clínicas/plataforma conhecidas (têm um
+        `Dominio` no banco) — impede que qualquer subdomínio faça o Caddy emitir cert
+        (abuso / estouro de rate-limit do Let's Encrypt). Resolvido ANTES do tenant.
+        """
+        domain = (request.GET.get("domain") or "").strip().lower()
+        if not domain:
+            return HttpResponse(status=400)
+        try:
+            from apps.tenants.models import Dominio
+
+            if Dominio.objects.filter(domain=domain).exists():
+                return HttpResponse(status=200)
+        except Exception:
+            # Falha ao consultar → nega (fail-safe: não emite cert em estado incerto).
+            return HttpResponse(status=503)
+        return HttpResponse(status=404)
 
     def _readiness(self):
         try:
@@ -79,6 +102,7 @@ class TenantStatusMiddleware:
             status_assinatura = getattr(tenant, "status_assinatura", "")
             vigencia_fim = getattr(tenant, "vigencia_fim", None)
             import datetime
+
             from django.utils import timezone
             if isinstance(vigencia_fim, datetime.date) and vigencia_fim < timezone.localdate():
                 motivo = "expirado"

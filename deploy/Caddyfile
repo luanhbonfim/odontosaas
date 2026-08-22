@@ -2,24 +2,32 @@
 # OdontoSaaS — Caddy (proxy reverso + HTTPS automático via Let's Encrypt)
 #
 # O Caddy é o ÚNICO serviço exposto à internet (80/443). Ele:
-#   1) emite e renova o certificado HTTPS sozinho (grátis, automático);
+#   1) emite e renova certificados HTTPS sozinho (grátis, automático);
 #   2) entrega o app React (SPA) em /srv;
 #   3) faz proxy do backend Django (web:8000) nas rotas de API/admin/OAuth.
 #
-# Postgres, Redis, Django e WAHA ficam na rede interna do Docker — sem porta
-# pública. Ninguém de fora os alcança.
+# Multi-tenant SEM DNS por clínica:
+#   - Crie UM registro wildcard no DNS:  *.proclinica.cloud  ->  IP da VPS
+#   - O Caddy emite certificado SOB DEMANDA (on-demand TLS) para cada subdomínio
+#     na primeira visita, autorizado pelo endpoint /caddy/ask/ do Django, que só
+#     libera hosts que já são clínicas/plataforma conhecidas (têm `Dominio` no
+#     banco). Assim, ao provisionar uma clínica pelo painel, ela já funciona em
+#     <schema>.proclinica.cloud — sem criar DNS nem editar este arquivo.
 #
-# SITE_ADDRESS e ACME_EMAIL vêm do .env (ex.: SITE_ADDRESS=clinica.seudominio.com.br).
-# Vários subdomínios: separe por espaço (ex.: "a.dominio.com.br b.dominio.com.br").
+# Postgres, Redis, Django e WAHA ficam na rede interna do Docker (sem porta pública).
 # ==========================================================================
 
 {
 	email {$ACME_EMAIL}
+	# Autorização de emissão de cert on-demand: pergunta ao Django se o host é
+	# uma clínica/plataforma válida antes de pedir o certificado ao Let's Encrypt.
+	on_demand_tls {
+		ask http://web:8000/caddy/ask/
+	}
 }
 
-# --- Apex/institucional: página "em breve" (futuro site de vendas do produto) ---
-# Domínios fixos (não usam env) para não haver risco de bloco vazio derrubar o
-# Caddy inteiro. As clínicas sempre entram pelo SEU subdomínio (bloco abaixo).
+# --- Apex/institucional: página de vendas/landing (domínio raiz) ---
+# Explícito e fixo (não usa env) para nunca depender do on-demand.
 proclinica.cloud, www.proclinica.cloud {
 	encode zstd gzip
 	root * /srv-landing
@@ -27,22 +35,27 @@ proclinica.cloud, www.proclinica.cloud {
 	header -Server
 }
 
-{$SITE_ADDRESS} {
+# --- Todos os demais hosts (subdomínios de clínica + subdomínio do painel) ---
+# Certificado emitido sob demanda (gated pelo /caddy/ask/). Serve o SPA e faz o
+# proxy do backend. Cobre automaticamente qualquer clínica nova provisionada.
+https:// {
+	tls {
+		on_demand
+	}
 	encode zstd gzip
 
-	# --- Backend Django (tudo o mais é o app React) ---
+	# Backend Django (o restante é o app React).
 	@backend path /api/* /admin /admin/* /static/* /media/* /health /health/* /integracoes/* /notificacoes/*
 	handle @backend {
 		reverse_proxy web:8000
 	}
 
-	# --- SPA (React/Vite): arquivos estáticos + fallback p/ index.html (React Router) ---
+	# SPA (React/Vite): estáticos + fallback para index.html (React Router).
 	handle {
 		root * /srv
 		try_files {path} /index.html
 		file_server
 	}
 
-	# Não revela o software do servidor.
 	header -Server
 }
