@@ -20,6 +20,7 @@ import {
   Campo,
   classeCampoSelect,
 } from '@/components/common/form-kit'
+import { mascararCnpj, mascararCpf, mascararTelefone } from '@/lib/utils/mascaras'
 import { useVendorPlanos, type PlanoAssinaturaVendor } from '../planos/use-vendor-planos'
 import { useProvisionarTenant, type ProvisionarTenantInput } from './use-vendor-tenants'
 
@@ -120,34 +121,11 @@ function gerarOpcoesSugestoes(nome: string): { schema: string; dominio: string; 
   return unicas.slice(0, 3)
 }
 
-function formatarCpf(valor: string): string {
-  const digits = valor.replace(/\D/g, '').slice(0, 11)
-  return digits
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
-}
-
-function formatarCnpj(valor: string): string {
-  const digits = valor.replace(/\D/g, '').slice(0, 14)
-  return digits
-    .replace(/^(\d{2})(\d)/, '$1.$2')
-    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/\.(\d{3})(\d)/, '.$1/$2')
-    .replace(/(\d{4})(\d)/, '$1-$2')
-}
-
-function formatarTelefone(valor: string): string {
-  const digits = valor.replace(/\D/g, '').slice(0, 11)
-  if (digits.length <= 10) {
-    return digits
-      .replace(/^(\d{2})(\d)/, '($1) $2')
-      .replace(/(\d{4})(\d)/, '$1-$2')
-  }
-  return digits
-    .replace(/^(\d{2})(\d)/, '($1) $2')
-    .replace(/(\d{5})(\d)/, '$1-$2')
-}
+// Máscaras vêm do módulo compartilhado (fonte única) — ver lib/utils/mascaras.
+// Aliases mantêm os nomes usados nos handlers abaixo.
+const formatarCpf = mascararCpf
+const formatarCnpj = mascararCnpj
+const formatarTelefone = mascararTelefone
 
 type Props = {
   trigger: ReactNode
