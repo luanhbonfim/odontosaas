@@ -193,6 +193,21 @@ export function useAlternarStatusTenant() {
   })
 }
 
+/** Renova a vigência da clínica (conforme a periodicidade do plano) e a reativa. */
+export function useRenovarTenant() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await vendorApi.post(`/plataforma-admin/tenants/${id}/renovar/`)
+      return data
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: CHAVE_TENANTS })
+      queryClient.invalidateQueries({ queryKey: [...CHAVE_TENANTS, id] })
+    },
+  })
+}
+
 export function useExpurgarTenant() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -38,6 +38,7 @@ import { CeleryMonitorPage } from '@/features/vendor-admin/celery/celery-monitor
 
 import { Navigate } from 'react-router-dom'
 import { PaginaPublicaPlataforma } from '@/features/public/pagina-publica-plataforma'
+import { ClinicaNaoEncontradaPage } from '@/features/error/clinica-nao-encontrada-page'
 import { useClinicaAtual } from '@/features/auth/use-clinica-atual'
 import { NaoEncontradaPage } from '@/features/error/nao-encontrada-page'
 
@@ -47,8 +48,11 @@ function LoginRoute() {
 }
 
 function RootRouter() {
-  const { data: infoClinica, isLoading } = useClinicaAtual()
+  const { data: infoClinica, isLoading, isError } = useClinicaAtual()
   if (isLoading) return null
+
+  // Host não resolve para clínica (404): página terminal, sem redirecionar (evita loop).
+  if (isError) return <ClinicaNaoEncontradaPage />
 
   // No host público (sem tenant), exibe a página institucional/vendas
   if (infoClinica?.is_public) {

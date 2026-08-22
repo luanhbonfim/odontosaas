@@ -46,6 +46,7 @@ import {
   type RegistroAuditoria,
   useVendorTenantDetalhes,
   useAtualizarTenant,
+  useRenovarTenant,
   useImpersonateTenant,
   useEncerrarSuporte,
   useGoogleParams,
@@ -120,6 +121,7 @@ export function TenantDetalhesPage() {
   const { data: tenant, isLoading } = useVendorTenantDetalhes(tenantId)
   const { data: planos } = useVendorPlanos()
   const atualizar = useAtualizarTenant()
+  const renovar = useRenovarTenant()
   const impersonate = useImpersonateTenant()
   const encerrarSuporte = useEncerrarSuporte()
 
@@ -748,6 +750,23 @@ export function TenantDetalhesPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Renovar assinatura: estende a vigência conforme a periodicidade do plano e reativa a clínica */}
+              <Button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await renovar.mutateAsync(tenantId)
+                    toast.success('Assinatura renovada — vigência estendida e clínica reativada.')
+                  } catch {
+                    toast.error('Falha ao renovar a assinatura.')
+                  }
+                }}
+                disabled={renovar.isPending}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+              >
+                {renovar.isPending ? 'Renovando…' : 'Renovar assinatura (estende a vigência)'}
+              </Button>
 
               {/* Overrides de Limites */}
               <div className="p-4 rounded-lg bg-[#0B132B]/60 border border-[#1E2D56] space-y-4">

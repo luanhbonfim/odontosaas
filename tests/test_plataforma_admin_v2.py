@@ -612,3 +612,34 @@ def test_vendor_login_view_sucesso_no_host_publico(tenant_fixture):
 
 
 
+
+
+@pytest.mark.django_db(transaction=True)
+def test_action_renovar_reativa_e_estende_vigencia(vendor_client, tenant_fixture):
+    """A action /renovar/ estende a vigência (pela periodicidade do plano) e reativa a clínica vencida."""
+    import datetime
+
+    from django.utils import timezone
+
+    # Deixa a clínica vencida/bloqueada.
+    tenant_fixture.vigencia_fim = timezone.localdate() - datetime.timedelta(days=5)
+    tenant_fixture.status_assinatura = Clinica.StatusAssinatura.INADIMPLENTE
+    tenant_fixture.ativo = False
+    tenant_fixture.save()
+
+    resp = vendor_client.post(
+        f"/api/plataforma-admin/tenants/{tenant_fixture.id}/renovar/", {}, format="json"
+    )
+    assert resp.status_code == status.HTTP_200_OK, resp.content
+
+    tenant_fixture.refresh_from_db()
+    assert tenant_fixture.ativo is True
+    assert tenant_fixture.status_assinatura == Clinica.StatusAssinatura.ATIVA
+    assert tenant_fixture.vigencia_fim is not None
+    assert tenant_fixture.vigencia_fim > timezone.localdate()
+
+    assert RegistroAuditoriaVendor.objects.filter(
+        schema_alvo=tenant_fixture.schema_name,
+        acao=RegistroAuditoriaVendor.Acao.PARAMETRIZACAO,
+        detalhes__acao="renovacao_assinatura",
+    ).exists()

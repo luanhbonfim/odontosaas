@@ -216,6 +216,52 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
         """Alias para alternar_status (com hífen)."""
         return self.alternar_status(request, pk)
 
+    @action(detail=True, methods=["post"], url_path="renovar")
+    def renovar(self, request, pk=None):
+        """Renova a vigência da clínica conforme a periodicidade do plano e a reativa.
+
+        Estende a partir do MAIOR entre hoje e a vigência atual (se ainda no futuro),
+        somando +30 dias (mensal), +365 (anual) ou tornando permanente (sem vencimento).
+        Reativa a clínica (ativo=True, status=ATIVA)."""
+        import datetime as _dt
+
+        from django.utils import timezone
+
+        clinica = self.get_object()
+        plano = clinica.plano_assinatura
+        vig_anterior = clinica.vigencia_fim
+        hoje = timezone.localdate()
+
+        Periodicidade = PlanoAssinatura.Periodicidade
+        if plano is not None and plano.periodicidade == Periodicidade.PERMANENTE:
+            nova_vigencia = None
+        else:
+            dias = 365 if (plano is not None and plano.periodicidade == Periodicidade.ANUAL) else 30
+            base = (
+                clinica.vigencia_fim
+                if (isinstance(clinica.vigencia_fim, _dt.date) and clinica.vigencia_fim > hoje)
+                else hoje
+            )
+            nova_vigencia = base + _dt.timedelta(days=dias)
+
+        clinica.vigencia_fim = nova_vigencia
+        clinica.status_assinatura = Clinica.StatusAssinatura.ATIVA
+        clinica.ativo = True
+        clinica.save(update_fields=["vigencia_fim", "status_assinatura", "ativo"])
+
+        registrar_auditoria_vendor(
+            request=request,
+            acao=RegistroAuditoriaVendor.Acao.PARAMETRIZACAO,
+            schema_alvo=clinica.schema_name,
+            detalhes={
+                "acao": "renovacao_assinatura",
+                "vigencia_anterior": str(vig_anterior) if vig_anterior else None,
+                "vigencia_nova": str(nova_vigencia) if nova_vigencia else "permanente",
+                "periodicidade": plano.periodicidade if plano else None,
+            },
+        )
+        return Response(ClinicaDetailVendorSerializer(clinica).data, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=["post"], url_path="reset-admin-senha")
     def reset_admin_senha(self, request, pk=None):
         """Redefine forçadamente a senha do admin da clínica."""

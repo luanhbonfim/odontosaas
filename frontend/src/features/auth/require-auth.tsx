@@ -3,6 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { tokenStore } from '@/lib/api/token-store'
 import { useClinicaAtual } from '@/features/auth/use-clinica-atual'
 import { useSessao } from '@/features/auth/use-sessao'
+import { ClinicaNaoEncontradaPage } from '@/features/error/clinica-nao-encontrada-page'
 import type { ModuloRecurso } from '@/routes/nav'
 
 /**
@@ -10,9 +11,11 @@ import type { ModuloRecurso } from '@/routes/nav'
  * redireciona para /login — assim cada menu/rota exige usuário autenticado.
  */
 export function RequireAuth() {
-  const { data: infoClinica, isLoading } = useClinicaAtual()
+  const { data: infoClinica, isLoading, isError } = useClinicaAtual()
 
   if (isLoading) return null
+  // Host não resolve para clínica (404): página terminal, sem redirecionar (evita loop).
+  if (isError) return <ClinicaNaoEncontradaPage />
 
   // No host público da plataforma (sem tenant), redireciona para a raiz pública
   if (infoClinica?.is_public) {
@@ -27,13 +30,15 @@ export function RequireAuth() {
 
 /** Rota pública só para visitantes: se já autenticado, vai para a home. */
 export function SomenteVisitante() {
-  const { data: infoClinica, isLoading } = useClinicaAtual()
+  const { data: infoClinica, isLoading, isError } = useClinicaAtual()
   const hasImpersonateParam =
     typeof window !== 'undefined' &&
     (window.location.search.includes('impersonate_access') ||
       window.location.search.includes('impersonate_token'))
 
   if (isLoading) return null
+  // Host não resolve para clínica (404): página terminal, sem redirecionar (evita loop).
+  if (isError) return <ClinicaNaoEncontradaPage />
 
   // No host público, a rota /login não existe -> redireciona para a raiz pública /
   if (infoClinica?.is_public) {

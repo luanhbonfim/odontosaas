@@ -80,4 +80,16 @@ describe('Guarda de rotas', () => {
     renderizar('/dashboard')
     expect(screen.getByText('Raiz Pública ou Painel')).toBeInTheDocument()
   })
+
+  it('quando o host não resolve para clínica (404/isError), mostra página terminal e NÃO redireciona (anti-loop)', () => {
+    // Simula clínica inexistente/removida + token velho (cenário do loop de redirecionamento).
+    tokenStore.definir({ access: 'a', refresh: 'r' })
+    mockUseClinicaAtual.mockReturnValue({ data: undefined, isLoading: false, isError: true })
+
+    renderizar('/login')
+    expect(screen.getByText(/Clínica não encontrada/i)).toBeInTheDocument()
+    // Não caiu em login nem redirecionou para a raiz (sem loop).
+    expect(screen.queryByText('Tela de login')).not.toBeInTheDocument()
+    expect(screen.queryByText('Raiz Pública ou Painel')).not.toBeInTheDocument()
+  })
 })
