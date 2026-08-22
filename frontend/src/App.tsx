@@ -24,6 +24,7 @@ import { queryClient } from '@/lib/api/query-client'
 import { aplicarTema, useTema } from '@/stores/tema'
 
 import { MeuPlanoPage } from '@/features/plano/meu-plano-page'
+import { MinhaContaPage } from '@/features/conta/minha-conta-page'
 import { VENDOR_BASE_PATH } from '@/features/vendor-admin/constants'
 import { VendorDashboardPage } from '@/features/vendor-admin/vendor-dashboard-page'
 import { VendorLoginPage } from '@/features/vendor-admin/vendor-login-page'
@@ -171,6 +172,7 @@ export function App() {
 
             <Route path="equipe" element={<UsuariosPage />} />
             <Route path="meu-plano" element={<MeuPlanoPage />} />
+            <Route path="minha-conta" element={<MinhaContaPage />} />
           </Route>
         </Route>
 

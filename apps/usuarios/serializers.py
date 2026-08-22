@@ -4,9 +4,21 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 
 from apps.dentistas.models import Dentista
 from apps.usuarios.models import Usuario
+
+
+class MFARequired(AuthenticationFailed):
+    """
+    Sinaliza que o login precisa de um código 2FA (senha já validada).
+
+    Herda de AuthenticationFailed (APIException) — e NÃO de ValidationError — porque
+    `serializer.is_valid(raise_exception=True)` reembrulha ValidationError e perderia
+    a subclasse. Como APIException, propaga intacta e a `LoginView` a converte em 401
+    com `mfa_required: true`, sem contar como falha de senha.
+    """
 
 
 def validar_senha(senha, usuario=None):
@@ -166,8 +178,10 @@ class MultiTenantTokenObtainPairSerializer(serializers.Serializer):
 
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+    codigo_mfa = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     def validate(self, attrs):
+        from django.core.cache import cache
         from django.db import connection
         from django_tenants.utils import schema_context
         from rest_framework import exceptions
@@ -200,6 +214,24 @@ class MultiTenantTokenObtainPairSerializer(serializers.Serializer):
 
         if not user or not user.is_active:
             raise exceptions.AuthenticationFailed("E-mail ou senha inválidos.")
+
+        # 2FA (opt-in por usuário): se houver segredo cadastrado, exige e valida o código.
+        from apps.usuarios.models import UsuarioMFA
+
+        mfa = UsuarioMFA.objects.filter(usuario=user).first()
+        if mfa:
+            import pyotp
+
+            codigo = str(attrs.get("codigo_mfa") or "").strip()
+            if not codigo:
+                raise MFARequired("Código 2FA obrigatório.")
+            if not pyotp.TOTP(mfa.secret).verify(codigo, valid_window=1):
+                raise MFARequired("Código 2FA inválido.")
+            # Anti-replay: código não reutilizável dentro da sua janela de validade.
+            chave_replay = f"tenant_mfa_used:{connection.schema_name}:{user.pk}:{codigo}"
+            if cache.get(chave_replay):
+                raise MFARequired("Código 2FA já utilizado. Aguarde o próximo código.")
+            cache.set(chave_replay, 1, timeout=120)
 
         refresh = RefreshToken.for_user(user)
         schema_atual = connection.schema_name

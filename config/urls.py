@@ -52,7 +52,14 @@ from apps.pacientes.views import (
     PlanoOdontologicoViewSet,
 )
 from apps.procedimentos.views import ProcedimentoViewSet
-from apps.usuarios.views import EncerrarSuporteTenantView, LoginView, MeView, TenantAtualView, UsuarioViewSet
+from apps.usuarios.views import (
+    ContaMFAViewSet,
+    EncerrarSuporteTenantView,
+    LoginView,
+    MeView,
+    TenantAtualView,
+    UsuarioViewSet,
+)
 
 router = DefaultRouter()
 router.register("dentistas", DentistaViewSet, basename="dentista")
@@ -77,6 +84,7 @@ router.register("lancamentos", LancamentoFinanceiroViewSet, basename="lancamento
 router.register("faturas", FaturaViewSet, basename="fatura")
 router.register("auditoria", RegistroAuditoriaViewSet, basename="auditoria")
 router.register("usuarios", UsuarioViewSet, basename="usuario")
+router.register("conta/mfa", ContaMFAViewSet, basename="conta-mfa")
 
 from apps.plataforma.views import MeuPlanoView
 

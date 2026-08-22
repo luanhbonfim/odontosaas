@@ -1,8 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { UserMenu } from './user-menu'
+
+const renderMenu = () => render(<UserMenu />, { wrapper: MemoryRouter })
 
 const { sessaoMock, sairMock, temaState } = vi.hoisted(() => ({
   sessaoMock: vi.fn(),
@@ -37,14 +40,14 @@ describe('UserMenu', () => {
 
   it('mostra o nome do usuário no gatilho', () => {
     comUsuario()
-    render(<UserMenu />)
+    renderMenu()
     expect(screen.getByRole('button', { name: /menu do usuário/i })).toHaveTextContent('Dra. Ana')
   })
 
   it('abre o menu (mostra o papel) e permite sair', async () => {
     comUsuario()
     const user = userEvent.setup()
-    render(<UserMenu />)
+    renderMenu()
 
     await user.click(screen.getByRole('button', { name: /menu do usuário/i }))
     expect(await screen.findByText('Dentista Gerente')).toBeInTheDocument()

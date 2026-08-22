@@ -1,4 +1,5 @@
-import { LogOut, Moon, Sun, User } from 'lucide-react'
+import { LogOut, Moon, Settings, Sun, User } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -16,6 +17,7 @@ import { useTema } from '@/stores/tema'
 export function UserMenu() {
   const { usuario } = useSessao()
   const { sair } = useAuth()
+  const navegar = useNavigate()
   const tema = useTema((estado) => estado.tema)
   const alternarTema = useTema((estado) => estado.alternar)
 
@@ -48,6 +50,10 @@ export function UserMenu() {
         </DropdownMenuLabel>
 
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => navegar('/minha-conta')}>
+          <Settings />
+          Minha conta
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => alternarTema()}>
           {tema === 'escuro' ? <Sun /> : <Moon />}
           {tema === 'escuro' ? 'Tema claro' : 'Tema escuro'}

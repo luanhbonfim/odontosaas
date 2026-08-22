@@ -65,3 +65,27 @@ class Usuario(AbstractUser):
 
     def __str__(self):
         return self.nome_completo or self.email
+
+
+class UsuarioMFA(models.Model):
+    """
+    Segredo TOTP (2FA) de um usuário da clínica (por-tenant).
+
+    Opt-in: existe apenas para quem ativou o 2FA. Enquanto houver registro, o login
+    daquele usuário passa a exigir o código de 6 dígitos. Gerenciado pela tela
+    "Minha conta" (self-service).
+    """
+
+    usuario = models.OneToOneField(
+        Usuario, on_delete=models.CASCADE, related_name="mfa", verbose_name="usuário"
+    )
+    secret = models.CharField(max_length=64, help_text="Segredo TOTP (base32)")
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "2FA de usuário"
+        verbose_name_plural = "2FA de usuários"
+
+    def __str__(self):
+        return f"2FA: {self.usuario.email}"

@@ -12,6 +12,7 @@ from django.core.cache import cache
 from django.db import connection
 from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, PermissionDenied, Throttled
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -20,6 +21,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.usuarios.perfis import pode_gerenciar
 from apps.usuarios.serializers import (
+    MFARequired,
     MultiTenantTokenObtainPairSerializer,
     UsuarioMeSerializer,
     UsuarioSerializer,
@@ -101,6 +103,17 @@ class LoginView(TokenObtainPairView):
 
         try:
             resposta = super().post(request, *args, **kwargs)
+        except MFARequired as exc:
+            # Senha correta, faltou/errou o código 2FA: NÃO conta como falha de senha
+            # (evita bloquear quem só está fornecendo o segundo fator). O front usa
+            # `mfa_required` para exibir o campo de código.
+            detalhe = exc.detail
+            if isinstance(detalhe, (list, tuple)) and detalhe:
+                detalhe = detalhe[0]
+            return Response(
+                {"detail": str(detalhe), "mfa_required": True},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
         except APIException:
             # Credenciais inválidas / dados ausentes: conta a tentativa deste IP.
             cache.set(chave, cache.get(chave, 0) + 1, timeout=bloqueio_seg)
@@ -249,4 +262,84 @@ class EncerrarSuporteTenantView(APIView):
                 encerradas += 1
 
         return Response({"mensagem": "Sessão de suporte encerrada com sucesso.", "total_encerradas": encerradas})
+
+
+class ContaMFAViewSet(viewsets.ViewSet):
+    """
+    2FA (TOTP) da conta do usuário da clínica — self-service, 100% pela tela
+    "Minha conta". Opt-in: só existe para quem ativar.
+
+    Fluxo de ativação: iniciar (segredo pendente em cache) -> ler o QR no app ->
+    confirmar com o código (só então persiste). Desativar exige um código atual.
+    O segredo nunca é retornado após ativado.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    PENDENTE_TTL = 600  # 10 min para concluir a ativação
+
+    def _chave_pendente(self, request):
+        # Namespaced por schema (tenant) + id do usuário: isolamento total entre clínicas.
+        return f"conta_mfa_pending:{connection.schema_name}:{request.user.pk}"
+
+    def _mfa_do_usuario(self, request):
+        from apps.usuarios.models import UsuarioMFA
+
+        return UsuarioMFA.objects.filter(usuario=request.user).first()
+
+    def list(self, request):
+        """Status do 2FA do usuário logado."""
+        return Response({"email": request.user.email, "habilitado": self._mfa_do_usuario(request) is not None})
+
+    @action(detail=False, methods=["post"])
+    def iniciar(self, request):
+        """Gera um segredo PENDENTE (não ativa ainda) e devolve o otpauth p/ o QR."""
+        import pyotp
+
+        secret = pyotp.random_base32()
+        cache.set(self._chave_pendente(request), secret, timeout=self.PENDENTE_TTL)
+        nome = request.user.email
+        emissor = "PróClínica"
+        uri = pyotp.TOTP(secret).provisioning_uri(name=nome, issuer_name=emissor)
+        return Response({"secret": secret, "otpauth_uri": uri, "expira_em_seg": self.PENDENTE_TTL})
+
+    @action(detail=False, methods=["post"])
+    def confirmar(self, request):
+        """Confirma a ativação: valida o código contra o segredo pendente e persiste."""
+        import pyotp
+
+        from apps.usuarios.models import UsuarioMFA
+
+        codigo = str(request.data.get("codigo") or "").strip()
+        pendente = cache.get(self._chave_pendente(request))
+        if not pendente:
+            return Response(
+                {"erro": "Nenhuma ativação pendente. Inicie a configuração novamente."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not codigo or not pyotp.TOTP(pendente).verify(codigo, valid_window=1):
+            return Response(
+                {"erro": "Código inválido. Confira o horário do aparelho e tente o código atual."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        UsuarioMFA.objects.update_or_create(usuario=request.user, defaults={"secret": pendente})
+        cache.delete(self._chave_pendente(request))
+        return Response({"habilitado": True})
+
+    @action(detail=False, methods=["post"])
+    def desativar(self, request):
+        """Desativa o 2FA da própria conta (exige um código atual válido)."""
+        import pyotp
+
+        codigo = str(request.data.get("codigo") or "").strip()
+        mfa = self._mfa_do_usuario(request)
+        if not mfa:
+            return Response({"habilitado": False})  # já estava desativado
+        if not codigo or not pyotp.TOTP(mfa.secret).verify(codigo, valid_window=1):
+            return Response(
+                {"erro": "Informe um código atual válido do app para desativar o 2FA."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        mfa.delete()
+        return Response({"habilitado": False})
 
