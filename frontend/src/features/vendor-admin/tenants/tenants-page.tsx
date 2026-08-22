@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Clock,
 } from 'lucide-react'
+import { urlDaClinica } from '../url-clinica'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -327,7 +328,7 @@ export function TenantsPage() {
                             </Button>
 
                             <a
-                              href={`http://${dominioPrincipal}:5173`}
+                              href={urlDaClinica(dominioPrincipal)}
                               target="_blank"
                               rel="noreferrer"
                               className="p-2 text-slate-500 hover:text-white transition-colors"

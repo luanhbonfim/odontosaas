@@ -40,6 +40,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { VENDOR_BASE_PATH } from '../constants'
+import { urlDaClinica } from '../url-clinica'
 import { useVendorPlanos } from '../planos/use-vendor-planos'
 import {
   type ErroOperacional,
@@ -331,7 +332,7 @@ export function TenantDetalhesPage() {
       if (resp.refresh) params.set('impersonate_refresh', resp.refresh)
 
       window.open(
-        `http://${dominioPrincipal}:5173/login?${params.toString()}`,
+        urlDaClinica(dominioPrincipal, `/login?${params.toString()}`),
         '_blank'
       )
     } catch (excecao: unknown) {
@@ -364,11 +365,11 @@ export function TenantDetalhesPage() {
       if (resp.refresh) params.set('impersonate_refresh', resp.refresh)
 
       window.open(
-        `http://${dominioPrincipal}:5173/login?${params.toString()}`,
+        urlDaClinica(dominioPrincipal, `/login?${params.toString()}`),
         '_blank'
       )
     } catch {
-      window.open(`http://${dominioPrincipal}:5173/`, '_blank')
+      window.open(urlDaClinica(dominioPrincipal), '_blank')
     } finally {
       setAcessandoPainel(false)
     }
@@ -438,7 +439,7 @@ export function TenantDetalhesPage() {
               <span className="flex items-center gap-1">
                 <Globe className="size-3 text-slate-500" />
                 <a
-                  href={`http://${dominioPrincipal}:5173`}
+                  href={urlDaClinica(dominioPrincipal)}
                   target="_blank"
                   rel="noreferrer"
                   className="hover:text-white underline decoration-slate-600"
