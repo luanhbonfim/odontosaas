@@ -16,10 +16,10 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Campo } from '@/components/common/form-kit'
+import { BotaoVendorPrimario, BotaoVendorSecundario } from '../ui/vendor-ui'
 import { useMasterAdminInfo, useAtualizarMasterAdmin } from './use-master-admin'
 
 const schema = z
@@ -109,16 +109,15 @@ export function MasterAdminPage() {
           </div>
         </div>
 
-        <Button
-          variant="outline"
+        <BotaoVendorSecundario
           size="sm"
           onClick={() => refetch()}
           disabled={carregandoInfo}
-          className="border-[#1E2D56] text-slate-300 hover:bg-[#1A2A4E] text-xs cursor-pointer"
+          className="text-xs cursor-pointer"
         >
           <RefreshCw className={`size-3.5 mr-1.5 ${carregandoInfo ? 'animate-spin' : ''}`} />
           Atualizar Status
-        </Button>
+        </BotaoVendorSecundario>
       </div>
 
       {/* Cards de Status e Cobertura Multi-Tenant */}
@@ -200,33 +199,36 @@ export function MasterAdminPage() {
 
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="master-email" className="text-xs text-slate-200 font-medium">
-                    E-mail do Administrador Master
-                  </Label>
+                <Campo
+                  id="master-email"
+                  label="E-mail do Administrador Master"
+                  obrigatorio
+                  erro={errors.email?.message}
+                >
                   <Input
                     id="master-email"
                     type="email"
                     {...register('email')}
                     placeholder="admin@proclinica.com.br"
+                    aria-invalid={!!errors.email}
                     className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs font-mono"
                   />
-                  {errors.email && (
-                    <p className="text-[11px] text-red-400 font-medium">{errors.email.message}</p>
-                  )}
-                </div>
+                </Campo>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="master-senha" className="text-xs text-slate-200 font-medium">
-                      Nova Senha Master
-                    </Label>
+                  <Campo
+                    id="master-senha"
+                    label="Nova Senha Master"
+                    obrigatorio
+                    erro={errors.nova_senha?.message}
+                  >
                     <div className="relative">
                       <Input
                         id="master-senha"
                         type={mostrarSenha ? 'text' : 'password'}
                         {...register('nova_senha')}
                         placeholder="••••••••••••"
+                        aria-invalid={!!errors.nova_senha}
                         className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs pr-9"
                       />
                       <button
@@ -237,21 +239,21 @@ export function MasterAdminPage() {
                         {mostrarSenha ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                       </button>
                     </div>
-                    {errors.nova_senha && (
-                      <p className="text-[11px] text-red-400 font-medium">{errors.nova_senha.message}</p>
-                    )}
-                  </div>
+                  </Campo>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="master-confirmar" className="text-xs text-slate-200 font-medium">
-                      Confirmar Nova Senha
-                    </Label>
+                  <Campo
+                    id="master-confirmar"
+                    label="Confirmar Nova Senha"
+                    obrigatorio
+                    erro={errors.confirmar_senha?.message}
+                  >
                     <div className="relative">
                       <Input
                         id="master-confirmar"
                         type={mostrarConfirmar ? 'text' : 'password'}
                         {...register('confirmar_senha')}
                         placeholder="••••••••••••"
+                        aria-invalid={!!errors.confirmar_senha}
                         className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs pr-9"
                       />
                       <button
@@ -262,17 +264,14 @@ export function MasterAdminPage() {
                         {mostrarConfirmar ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                       </button>
                     </div>
-                    {errors.confirmar_senha && (
-                      <p className="text-[11px] text-red-400 font-medium">{errors.confirmar_senha.message}</p>
-                    )}
-                  </div>
+                  </Campo>
                 </div>
 
                 <div className="pt-3 border-t border-[#1E2D56]/60 flex items-center justify-end">
-                  <Button
+                  <BotaoVendorPrimario
                     type="submit"
                     disabled={isSubmitting || atualizarMaster.isPending}
-                    className="bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950 font-bold text-xs px-5 py-2 cursor-pointer shadow-md"
+                    className="text-xs px-5 py-2 cursor-pointer"
                   >
                     {atualizarMaster.isPending ? (
                       <>
@@ -285,7 +284,7 @@ export function MasterAdminPage() {
                         Sincronizar Senha em Todas as Clínicas
                       </>
                     )}
-                  </Button>
+                  </BotaoVendorPrimario>
                 </div>
               </form>
             </CardContent>

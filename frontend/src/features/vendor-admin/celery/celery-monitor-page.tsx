@@ -14,6 +14,7 @@ import {
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { BotaoVendorSecundario } from '../ui/vendor-ui'
 import { useVendorCelery, type PeriodicTaskItem } from './use-vendor-celery'
 import { EditarFrequenciaModal } from './editar-frequencia-modal'
 
@@ -86,22 +87,21 @@ export function CeleryMonitorPage() {
           </div>
         </div>
 
-        <Button
-          variant="outline"
+        <BotaoVendorSecundario
           size="sm"
           onClick={() => recarregarTarefas()}
           disabled={carregandoTarefas || carregandoStatus}
-          className="border-slate-700 bg-[#0F1B38] text-xs text-slate-300 hover:bg-[#1C2C54] hover:text-white"
+          className="text-xs"
         >
           <RotateCw className={`mr-1.5 size-3.5 ${carregandoTarefas ? 'animate-spin' : ''}`} />
           Atualizar Dados
-        </Button>
+        </BotaoVendorSecundario>
       </div>
 
       {/* KPI Cards de Infraestrutura */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* 1. Broker Redis */}
-        <div className="rounded-xl border border-[#1C2C54] bg-[#0F1B38] p-4 shadow-sm">
+        <div className="rounded-xl border border-[#1E2D56] bg-[#111D3B] p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400">Broker (Redis)</span>
             <Server className="size-4 text-slate-500" />
@@ -123,7 +123,7 @@ export function CeleryMonitorPage() {
         </div>
 
         {/* 2. Tamanho da Fila Celery */}
-        <div className="rounded-xl border border-[#1C2C54] bg-[#0F1B38] p-4 shadow-sm">
+        <div className="rounded-xl border border-[#1E2D56] bg-[#111D3B] p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400">Fila Padrão (celery)</span>
             <Layers className="size-4 text-slate-500" />
@@ -135,7 +135,7 @@ export function CeleryMonitorPage() {
         </div>
 
         {/* 3. Workers Ativos */}
-        <div className="rounded-xl border border-[#1C2C54] bg-[#0F1B38] p-4 shadow-sm">
+        <div className="rounded-xl border border-[#1E2D56] bg-[#111D3B] p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400">Workers no Cluster</span>
             <Cpu className="size-4 text-slate-500" />
@@ -147,7 +147,7 @@ export function CeleryMonitorPage() {
         </div>
 
         {/* 4. Tarefas Periódicas */}
-        <div className="rounded-xl border border-[#1C2C54] bg-[#0F1B38] p-4 shadow-sm">
+        <div className="rounded-xl border border-[#1E2D56] bg-[#111D3B] p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400">Tarefas do Beat</span>
             <Activity className="size-4 text-slate-500" />
@@ -160,8 +160,8 @@ export function CeleryMonitorPage() {
       </div>
 
       {/* Tabela de Tarefas Periódicas */}
-      <div className="rounded-xl border border-[#1C2C54] bg-[#0F1B38] shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+      <div className="rounded-xl border border-[#1E2D56] bg-[#111D3B] shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#1E2D56] px-4 py-3">
           <div className="flex items-center gap-2">
             <Clock className="size-4 text-[#D4AF37]" />
             <h2 className="text-sm font-bold text-slate-100">Catálogo de Tarefas Periódicas</h2>
@@ -286,7 +286,7 @@ export function CeleryMonitorPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setTarefaEmEdicao(tarefa)}
-                            className="h-7 border-slate-700 bg-slate-900 px-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white"
+                            className="h-7 border-[#1E2D56] bg-slate-900 px-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white"
                             title="Editar Frequência de Execução"
                           >
                             <Settings className="size-3.5 mr-1" />

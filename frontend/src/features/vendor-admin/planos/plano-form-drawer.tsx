@@ -11,7 +11,6 @@ import {
   SheetFooter,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   CabecalhoDrawer,
@@ -21,6 +20,7 @@ import {
   LinhaToggle,
   classeCampoSelect,
 } from '@/components/common/form-kit'
+import { BotaoVendorPrimario, BotaoVendorSecundario } from '../ui/vendor-ui'
 import {
   type PlanoAssinaturaVendor,
   useAtualizarPlano,
@@ -255,15 +255,9 @@ export function PlanoFormDrawer({ trigger, plano }: Props) {
 
           <SheetFooter className="mt-auto border-t border-[#1E2D56] pt-4 flex gap-2">
             <SheetClose asChild>
-              <Button type="button" variant="outline" className="border-[#1E2D56] text-slate-300 hover:bg-[#1A2A4E] hover:text-white">
-                Cancelar
-              </Button>
+              <BotaoVendorSecundario type="button">Cancelar</BotaoVendorSecundario>
             </SheetClose>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950 font-bold shadow-md cursor-pointer"
-            >
+            <BotaoVendorPrimario type="submit" disabled={isSubmitting} className="cursor-pointer">
               {isSubmitting ? (
                 <>
                   <Loader2 className="size-4 animate-spin mr-2" />
@@ -272,7 +266,7 @@ export function PlanoFormDrawer({ trigger, plano }: Props) {
               ) : (
                 'Salvar Plano'
               )}
-            </Button>
+            </BotaoVendorPrimario>
           </SheetFooter>
         </form>
       </SheetContent>

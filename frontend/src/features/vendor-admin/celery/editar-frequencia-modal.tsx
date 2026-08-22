@@ -8,9 +8,9 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { BotaoVendorPrimario, BotaoVendorSecundario, selectVendorCls } from '../ui/vendor-ui'
 import type { PeriodicTaskItem } from './use-vendor-celery'
 
 interface EditarFrequenciaModalProps {
@@ -79,7 +79,7 @@ export function EditarFrequenciaModal({
 
   return (
     <Dialog open={aberto} onOpenChange={(v) => !salvando && !v && aoFechar()}>
-      <DialogContent className="max-w-md border-slate-700 bg-[#0F1B38] text-slate-100">
+      <DialogContent className="max-w-md border-[#1E2D56] bg-[#111D3B] text-slate-100">
         <DialogHeader>
           <div className="flex items-center gap-2.5">
             <div className="flex size-9 items-center justify-center rounded-lg bg-[#D4AF37]/20 text-[#D4AF37]">
@@ -98,7 +98,7 @@ export function EditarFrequenciaModal({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {/* Seletor de Tipo de Agendamento */}
-          <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-800 bg-slate-900/80 p-1">
+          <div className="grid grid-cols-2 gap-2 rounded-lg border border-[#1E2D56] bg-[#0B132B]/80 p-1">
             <button
               type="button"
               onClick={() => setTipoAgendamento('intervalo')}
@@ -137,7 +137,7 @@ export function EditarFrequenciaModal({
                   min={1}
                   value={every}
                   onChange={(e) => setEvery(Math.max(1, Number(e.target.value)))}
-                  className="h-8 border-slate-700 bg-slate-900 text-xs text-slate-100"
+                  className="border-[#1E2D56] bg-[#0B132B]/80 text-xs text-slate-100"
                   required
                 />
               </div>
@@ -150,7 +150,7 @@ export function EditarFrequenciaModal({
                   id="select-period"
                   value={period}
                   onChange={(e) => setPeriod(e.target.value)}
-                  className="h-8 w-full rounded-md border border-slate-700 bg-slate-900 px-2 text-xs text-slate-100 focus:border-[#D4AF37] focus:outline-none"
+                  className={selectVendorCls}
                 >
                   <option value="seconds">Segundos</option>
                   <option value="minutes">Minutos</option>
@@ -168,7 +168,7 @@ export function EditarFrequenciaModal({
                     placeholder="*"
                     value={cronMinute}
                     onChange={(e) => setCronMinute(e.target.value)}
-                    className="h-8 border-slate-700 bg-slate-900 font-mono text-xs text-slate-100"
+                    className="h-8 border-[#1E2D56] bg-[#0B132B]/80 font-mono text-xs text-slate-100"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -177,7 +177,7 @@ export function EditarFrequenciaModal({
                     placeholder="*"
                     value={cronHour}
                     onChange={(e) => setCronHour(e.target.value)}
-                    className="h-8 border-slate-700 bg-slate-900 font-mono text-xs text-slate-100"
+                    className="h-8 border-[#1E2D56] bg-[#0B132B]/80 font-mono text-xs text-slate-100"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -186,7 +186,7 @@ export function EditarFrequenciaModal({
                     placeholder="*"
                     value={cronDayOfWeek}
                     onChange={(e) => setCronDayOfWeek(e.target.value)}
-                    className="h-8 border-slate-700 bg-slate-900 font-mono text-xs text-slate-100"
+                    className="h-8 border-[#1E2D56] bg-[#0B132B]/80 font-mono text-xs text-slate-100"
                   />
                 </div>
               </div>
@@ -196,7 +196,7 @@ export function EditarFrequenciaModal({
             </div>
           )}
 
-          <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-2.5 text-xs text-slate-400">
+          <div className="rounded-lg border border-[#1E2D56] bg-[#0B132B]/60 p-2.5 text-xs text-slate-400">
             <div className="flex items-center gap-1.5 font-semibold text-slate-200">
               <AlertCircle className="size-3.5 text-[#D4AF37]" />
               <span>Aplicação Imediata no Cluster</span>
@@ -207,20 +207,10 @@ export function EditarFrequenciaModal({
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={aoFechar}
-              disabled={salvando}
-              className="border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800"
-            >
+            <BotaoVendorSecundario type="button" onClick={aoFechar} disabled={salvando}>
               Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={salvando}
-              className="bg-[#D4AF37] font-semibold text-slate-950 hover:bg-[#E5C158]"
-            >
+            </BotaoVendorSecundario>
+            <BotaoVendorPrimario type="submit" disabled={salvando}>
               {salvando ? (
                 <>
                   <Loader2 className="mr-1.5 size-3.5 animate-spin" />
@@ -229,7 +219,7 @@ export function EditarFrequenciaModal({
               ) : (
                 'Salvar Frequência'
               )}
-            </Button>
+            </BotaoVendorPrimario>
           </DialogFooter>
         </form>
       </DialogContent>

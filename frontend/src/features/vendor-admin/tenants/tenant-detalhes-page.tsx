@@ -32,6 +32,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/common/status-badge'
+import { Campo, SecaoForm } from '@/components/common/form-kit'
+import { BotaoVendorPrimario, BotaoVendorSecundario } from '../ui/vendor-ui'
 import {
   Dialog,
   DialogContent,
@@ -141,6 +143,7 @@ export function TenantDetalhesPage() {
   const [reagendamentoMinutos, setReagendamentoMinutos] = useState<number>(1)
   const [simularDigitacao, setSimularDigitacao] = useState<boolean>(true)
   const [segundosDigitacao, setSegundosDigitacao] = useState<number>(4)
+  const [intervaloFila, setIntervaloFila] = useState<number>(20)
   const [trocarPlanoAberto, setTrocarPlanoAberto] = useState(false)
 
   // Sincroniza dados do Google e WhatsApp quando carregados da API
@@ -163,7 +166,14 @@ export function TenantDetalhesPage() {
     if (whatsapp.data?.segundos_digitacao !== undefined) {
       setSegundosDigitacao(whatsapp.data.segundos_digitacao)
     }
-  }, [whatsapp.data?.simular_digitacao, whatsapp.data?.segundos_digitacao])
+    if (whatsapp.data?.intervalo_fila_segundos !== undefined) {
+      setIntervaloFila(whatsapp.data.intervalo_fila_segundos)
+    }
+  }, [
+    whatsapp.data?.simular_digitacao,
+    whatsapp.data?.segundos_digitacao,
+    whatsapp.data?.intervalo_fila_segundos,
+  ])
 
   // Localiza a sessão ativa se houver
   const sessaoAtivaAtual = Array.isArray(suporteSessoes)
@@ -539,38 +549,31 @@ export function TenantDetalhesPage() {
             <CardContent>
               <form onSubmit={formGeral.handleSubmit(onSalvarGeral)} className="space-y-6">
                 {/* Seção Clínica (PJ) */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-semibold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1.5">
-                    <Building2 className="size-3.5" />
-                    Dados da Clínica (Pessoa Jurídica)
-                  </h3>
+                <SecaoForm titulo="Dados da Clínica (Pessoa Jurídica)" icone={Building2}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="detalhes-nome" className="text-xs text-slate-200 font-medium">
-                        Nome Fantasia *
-                      </Label>
+                    <Campo
+                      id="detalhes-nome"
+                      label="Nome Fantasia"
+                      obrigatorio
+                      erro={formGeral.formState.errors.nome_fantasia?.message}
+                    >
                       <Input
                         id="detalhes-nome"
                         {...formGeral.register('nome_fantasia')}
+                        aria-invalid={!!formGeral.formState.errors.nome_fantasia}
                         className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
                       />
-                    </div>
+                    </Campo>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="detalhes-razao" className="text-xs text-slate-200 font-medium">
-                        Razão Social
-                      </Label>
+                    <Campo id="detalhes-razao" label="Razão Social">
                       <Input
                         id="detalhes-razao"
                         {...formGeral.register('razao_social')}
                         className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
                       />
-                    </div>
+                    </Campo>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="detalhes-cnpj" className="text-xs text-slate-200 font-medium">
-                        CNPJ
-                      </Label>
+                    <Campo id="detalhes-cnpj" label="CNPJ">
                       <Input
                         id="detalhes-cnpj"
                         inputMode="numeric"
@@ -580,12 +583,9 @@ export function TenantDetalhesPage() {
                         placeholder="00.000.000/0000-00"
                         className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
                       />
-                    </div>
+                    </Campo>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="detalhes-tel" className="text-xs text-slate-200 font-medium">
-                        Telefone Institucional
-                      </Label>
+                    <Campo id="detalhes-tel" label="Telefone Institucional">
                       <Input
                         id="detalhes-tel"
                         inputMode="tel"
@@ -595,83 +595,65 @@ export function TenantDetalhesPage() {
                         placeholder="(00) 0000-0000"
                         className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
                       />
-                    </div>
+                    </Campo>
                   </div>
-                </div>
+                </SecaoForm>
 
                 {/* Seção Responsável / Assinante */}
-                <div className="space-y-3 pt-4 border-t border-[#1E2D56]/60">
-                  <h3 className="text-xs font-semibold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1.5">
-                    <User className="size-3.5" />
-                    Dados Pessoais do Responsável / Assinante
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="resp-nome" className="text-xs text-slate-200 font-medium">
-                        Nome Completo do Responsável
-                      </Label>
-                      <Input
-                        id="resp-nome"
-                        {...formGeral.register('responsavel_nome')}
-                        placeholder="Ex.: Dr. Roberto Silva"
-                        className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
-                      />
-                    </div>
+                <div className="pt-4 border-t border-[#1E2D56]/60">
+                  <SecaoForm titulo="Dados Pessoais do Responsável / Assinante" icone={User}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Campo id="resp-nome" label="Nome Completo do Responsável">
+                        <Input
+                          id="resp-nome"
+                          {...formGeral.register('responsavel_nome')}
+                          placeholder="Ex.: Dr. Roberto Silva"
+                          className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
+                        />
+                      </Campo>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="resp-cpf" className="text-xs text-slate-200 font-medium">
-                        CPF do Responsável
-                      </Label>
-                      <Input
-                        id="resp-cpf"
-                        inputMode="numeric"
-                        {...formGeral.register('responsavel_cpf', {
-                          onChange: (e) => formGeral.setValue('responsavel_cpf', mascararCpf(e.target.value)),
-                        })}
-                        placeholder="000.000.000-00"
-                        className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
-                      />
-                    </div>
+                      <Campo id="resp-cpf" label="CPF do Responsável">
+                        <Input
+                          id="resp-cpf"
+                          inputMode="numeric"
+                          {...formGeral.register('responsavel_cpf', {
+                            onChange: (e) => formGeral.setValue('responsavel_cpf', mascararCpf(e.target.value)),
+                          })}
+                          placeholder="000.000.000-00"
+                          className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
+                        />
+                      </Campo>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="resp-tel" className="text-xs text-slate-200 font-medium">
-                        Telefone / WhatsApp Pessoal
-                      </Label>
-                      <Input
-                        id="resp-tel"
-                        inputMode="tel"
-                        {...formGeral.register('responsavel_telefone', {
-                          onChange: (e) => formGeral.setValue('responsavel_telefone', mascararTelefone(e.target.value)),
-                        })}
-                        placeholder="(00) 00000-0000"
-                        className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
-                      />
-                    </div>
+                      <Campo id="resp-tel" label="Telefone / WhatsApp Pessoal">
+                        <Input
+                          id="resp-tel"
+                          inputMode="tel"
+                          {...formGeral.register('responsavel_telefone', {
+                            onChange: (e) => formGeral.setValue('responsavel_telefone', mascararTelefone(e.target.value)),
+                          })}
+                          placeholder="(00) 00000-0000"
+                          className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
+                        />
+                      </Campo>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="resp-email" className="text-xs text-slate-200 font-medium">
-                        E-mail de Contato
-                      </Label>
-                      <Input
-                        id="resp-email"
-                        type="email"
-                        {...formGeral.register('responsavel_email')}
-                        placeholder="doutor@email.com"
-                        className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
-                      />
+                      <Campo id="resp-email" label="E-mail de Contato">
+                        <Input
+                          id="resp-email"
+                          type="email"
+                          {...formGeral.register('responsavel_email')}
+                          placeholder="doutor@email.com"
+                          className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
+                        />
+                      </Campo>
                     </div>
-                  </div>
+                  </SecaoForm>
                 </div>
 
                 <div className="pt-2 flex justify-end">
-                  <Button
-                    type="submit"
-                    disabled={atualizar.isPending}
-                    className="bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950 font-bold text-xs cursor-pointer shadow-md"
-                  >
+                  <BotaoVendorPrimario type="submit" disabled={atualizar.isPending} className="text-xs cursor-pointer">
                     <Save className="size-3.5 mr-1.5" />
                     Salvar Dados Gerais
-                  </Button>
+                  </BotaoVendorPrimario>
                 </div>
               </form>
             </CardContent>
@@ -724,8 +706,7 @@ export function TenantDetalhesPage() {
           <CardContent>
             <form onSubmit={formAssinatura.handleSubmit(onSalvarAssinatura)} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-slate-200 font-medium">Plano de Assinatura</Label>
+                <Campo label="Plano de Assinatura">
                   <div className="h-9 rounded-md bg-[#0B132B]/80 border border-[#1E2D56] px-3 flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-2 min-w-0">
                       <Package className="size-3.5 text-[#D4AF37] shrink-0" />
@@ -743,13 +724,16 @@ export function TenantDetalhesPage() {
                       Trocar plano
                     </Button>
                   </div>
-                </div>
+                </Campo>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-slate-200 font-medium flex items-center justify-between">
-                    <span>Data Final da Vigência (Vencimento)</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Calculada pelo Plano</span>
-                  </Label>
+                <Campo
+                  label={
+                    <span className="flex w-full items-center justify-between font-normal">
+                      <span>Data Final da Vigência (Vencimento)</span>
+                      <span className="text-[10px] text-slate-400">Calculada pelo Plano</span>
+                    </span>
+                  }
+                >
                   <div className="h-9 rounded-md bg-[#0B132B]/80 border border-[#1E2D56] px-3 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
                       <Calendar className="size-3.5 text-[#D4AF37]" />
@@ -777,7 +761,7 @@ export function TenantDetalhesPage() {
                       </span>
                     )}
                   </div>
-                </div>
+                </Campo>
               </div>
 
               {/* Renovar assinatura: só aparece se a clínica estiver VENCIDA. Estende a
@@ -808,10 +792,7 @@ export function TenantDetalhesPage() {
                   Overrides Manuais de Capacidade
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="override-dentistas" className="text-xs text-slate-200 font-medium">
-                      Override: Limite de Dentistas
-                    </Label>
+                  <Campo id="override-dentistas" label="Override: Limite de Dentistas">
                     <Input
                       id="override-dentistas"
                       type="number"
@@ -819,12 +800,9 @@ export function TenantDetalhesPage() {
                       {...formAssinatura.register('override_limite_dentistas')}
                       className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
                     />
-                  </div>
+                  </Campo>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="override-usuarios" className="text-xs text-slate-200 font-medium">
-                      Override: Limite de Usuários
-                    </Label>
+                  <Campo id="override-usuarios" label="Override: Limite de Usuários">
                     <Input
                       id="override-usuarios"
                       type="number"
@@ -832,19 +810,15 @@ export function TenantDetalhesPage() {
                       {...formAssinatura.register('override_limite_usuarios')}
                       className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
                     />
-                  </div>
+                  </Campo>
                 </div>
               </div>
 
               <div className="flex justify-end">
-                <Button
-                  type="submit"
-                  disabled={atualizar.isPending}
-                  className="bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950 font-bold text-xs cursor-pointer shadow-md"
-                >
+                <BotaoVendorPrimario type="submit" disabled={atualizar.isPending} className="text-xs cursor-pointer">
                   <Save className="size-3.5 mr-1.5" />
                   Salvar Assinatura &amp; Limites
-                </Button>
+                </BotaoVendorPrimario>
               </div>
             </form>
           </CardContent>
@@ -1239,6 +1213,66 @@ export function TenantDetalhesPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Card: Fila de envio (anti-bloqueio) — intervalo entre mensagens em lote */}
+          <Card className={`border-[#1E2D56] bg-[#111D3B] text-slate-100 shadow-md ${!whatsappHabilitado ? 'opacity-80' : ''}`}>
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold text-white flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="size-4 text-[#D4AF37]" />
+                  Fila de Envio (anti-bloqueio)
+                </div>
+                {!whatsappHabilitado && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
+                    NÃO APLICÁVEL
+                  </span>
+                )}
+              </CardTitle>
+              <CardDescription className="text-slate-400 text-xs">
+                Para não bloquear o número, os disparos em lote (confirmações, recall, avisos) saem em fila — nunca todos juntos. Defina o intervalo entre uma mensagem e a próxima.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row items-end gap-4">
+                <div className="space-y-1.5 flex-1 max-w-xs">
+                  <Label htmlFor="waha-fila" className="text-xs text-slate-200 font-medium">
+                    Intervalo entre mensagens (segundos)
+                  </Label>
+                  <Input
+                    id="waha-fila"
+                    type="number"
+                    min={0}
+                    max={600}
+                    value={intervaloFila}
+                    onChange={(e) => setIntervaloFila(Number(e.target.value))}
+                    disabled={!whatsappHabilitado}
+                    className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <p className="text-[10px] text-slate-500">0–600s. Ex.: 20 = uma mensagem a cada 20s. 0 desliga a espera.</p>
+                </div>
+                <Button
+                  onClick={async () => {
+                    if (!whatsappHabilitado) return
+                    try {
+                      await whatsapp.salvar.mutateAsync({ intervalo_fila_segundos: intervaloFila })
+                      toast.success('Intervalo da fila salvo com sucesso!')
+                    } catch {
+                      toast.error('Erro ao salvar o intervalo da fila.')
+                    }
+                  }}
+                  disabled={!whatsappHabilitado || whatsapp.salvar.isPending}
+                  className={`font-bold text-xs shadow-md ${
+                    !whatsappHabilitado
+                      ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60'
+                      : 'bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950 cursor-pointer'
+                  }`}
+                >
+                  <Save className="size-3.5 mr-1.5" />
+                  Salvar Intervalo da Fila
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -1341,14 +1375,14 @@ export function TenantDetalhesPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button
+                <BotaoVendorPrimario
                   size="sm"
                   onClick={() => setModalImpersonate(true)}
-                  className="bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950 font-bold text-xs shadow-md cursor-pointer"
+                  className="text-xs cursor-pointer"
                 >
                   <Plus className="size-3.5 mr-1.5" />
                   Nova Sessão de Suporte
-                </Button>
+                </BotaoVendorPrimario>
               </div>
             </CardHeader>
 
@@ -1699,22 +1733,16 @@ export function TenantDetalhesPage() {
           </div>
 
           <DialogFooter className="flex gap-2 sm:justify-end border-t border-[#1E2D56] pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setModalImpersonate(false)}
-              className="border-[#1E2D56] text-slate-300 hover:bg-[#1A2A4E]"
-            >
+            <BotaoVendorSecundario type="button" onClick={() => setModalImpersonate(false)}>
               Cancelar
-            </Button>
-            <Button
+            </BotaoVendorSecundario>
+            <BotaoVendorPrimario
               type="button"
               onClick={handleImpersonate}
               disabled={impersonate.isPending || temSessaoAtiva || justificativaImpersonate.trim().length < 5}
-              className="bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950 font-bold"
             >
               Iniciar Sessão de Suporte
-            </Button>
+            </BotaoVendorPrimario>
           </DialogFooter>
         </DialogContent>
       </Dialog>

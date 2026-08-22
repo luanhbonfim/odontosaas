@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { BotaoVendorSecundario } from '../ui/vendor-ui'
 
 interface JustificativaEscritaModalProps {
   aberto: boolean
@@ -43,7 +44,7 @@ export function JustificativaEscritaModal({
 
   return (
     <Dialog open={aberto} onOpenChange={(v) => !executando && !v && aoFechar()}>
-      <DialogContent className="max-w-lg border-red-500/40 bg-[#0F1B38] text-slate-100">
+      <DialogContent className="max-w-lg border-red-500/40 bg-[#111D3B] text-slate-100">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-red-500/20 text-red-400">
@@ -74,7 +75,7 @@ export function JustificativaEscritaModal({
 
           <div>
             <Label className="text-xs font-medium text-slate-300">Prévia do Comando SQL:</Label>
-            <pre className="mt-1 max-h-28 overflow-x-auto rounded-md bg-slate-950 p-2.5 font-mono text-xs text-amber-300 border border-slate-800">
+            <pre className="mt-1 max-h-28 overflow-x-auto rounded-md bg-[#0B132B] p-2.5 font-mono text-xs text-amber-300 border border-[#1E2D56]">
               {sql}
             </pre>
           </div>
@@ -92,22 +93,16 @@ export function JustificativaEscritaModal({
                 setJustificativa(e.target.value)
                 if (e.target.value.trim().length >= 10) setErroValidacao('')
               }}
-              className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              className="w-full rounded-md border border-[#1E2D56] bg-[#0B132B]/80 px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
             />
             {erroValidacao && <p className="text-xs text-red-400">{erroValidacao}</p>}
           </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={aoFechar}
-            disabled={executando}
-            className="border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800"
-          >
+          <BotaoVendorSecundario type="button" onClick={aoFechar} disabled={executando}>
             Cancelar
-          </Button>
+          </BotaoVendorSecundario>
           <Button
             type="button"
             onClick={handleConfirmar}

@@ -46,7 +46,7 @@ export function HistoricoQueriesModal({
 
   return (
     <Dialog open={aberto} onOpenChange={(v) => !v && aoFechar()}>
-      <DialogContent className="max-w-2xl border-slate-700 bg-[#0F1B38] text-slate-100">
+      <DialogContent className="max-w-2xl border-[#1E2D56] bg-[#111D3B] text-slate-100">
         <DialogHeader>
           <div className="flex items-center justify-between pr-6">
             <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ export function HistoricoQueriesModal({
               placeholder="Filtrar por SQL ou nome de schema..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="h-9 border-slate-700 bg-slate-900 pl-9 text-xs text-slate-100 placeholder:text-slate-500"
+              className="h-9 border-[#1E2D56] bg-[#0B132B]/80 pl-9 text-xs text-slate-100 placeholder:text-slate-500"
             />
           </div>
 
@@ -93,7 +93,7 @@ export function HistoricoQueriesModal({
               itensFiltrados.map((item) => (
                 <div
                   key={item.id}
-                  className="group rounded-lg border border-slate-800 bg-slate-900/80 p-3 transition-colors hover:border-slate-700 hover:bg-slate-900"
+                  className="group rounded-lg border border-[#1E2D56] bg-[#0B132B]/80 p-3 transition-colors hover:bg-[#0B132B]"
                 >
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ export function HistoricoQueriesModal({
                     </div>
                   </div>
 
-                  <pre className="mt-2 max-h-20 overflow-x-auto rounded bg-slate-950 p-2 font-mono text-xs text-slate-300">
+                  <pre className="mt-2 max-h-20 overflow-x-auto rounded bg-[#0B132B] p-2 font-mono text-xs text-slate-300">
                     {item.sql}
                   </pre>
 

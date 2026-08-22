@@ -54,7 +54,7 @@ export function VendorLoginPage() {
         <CardHeader className="items-center text-center space-y-2 pb-4">
           <img src="/logo.png" alt="PróClínica" className="mx-auto h-32 w-auto" />
           <div className="flex items-center gap-1.5 justify-center">
-            <ShieldCheck className="h-5 w-5 text-[#D4AF37]" />
+            <ShieldCheck className="size-5 text-[#D4AF37]" />
             <h1 className="text-xl font-bold text-white tracking-tight">Painel da Plataforma</h1>
           </div>
           <CardTitle className="text-xs font-semibold uppercase tracking-wider text-[#D4AF37]">
@@ -102,7 +102,7 @@ export function VendorLoginPage() {
                   className="absolute right-3 top-2.5 text-slate-400 hover:text-[#D4AF37] transition-colors cursor-pointer"
                   tabIndex={-1}
                 >
-                  {verSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {verSenha ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
             </div>
@@ -114,7 +114,7 @@ export function VendorLoginPage() {
                   <span className="text-[10px] text-slate-400">6 dígitos</span>
                 </Label>
                 <div className="relative">
-                  <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-[#D4AF37]" />
+                  <KeyRound className="absolute left-3 top-2.5 size-4 text-[#D4AF37]" />
                   <Input
                     id="vendor-mfa"
                     type="text"
@@ -145,7 +145,7 @@ export function VendorLoginPage() {
             >
               {carregando ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="size-4 animate-spin mr-2" />
                   Validando...
                 </>
               ) : (

@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/common/status-badge'
+import { BotaoVendorPrimario } from './ui/vendor-ui'
 import { vendorApi } from './vendor-api-client'
 import { VENDOR_BASE_PATH } from './constants'
 import { ProvisionarTenantModal } from './tenants/provisionar-tenant-modal'
@@ -88,7 +89,7 @@ export function VendorDashboardPage() {
             <h1 className="text-2xl font-bold tracking-tight text-white">
               Visão Geral da Plataforma
             </h1>
-            <ShieldCheck className="h-6 w-6 text-[#D4AF37]" />
+            <ShieldCheck className="size-6 text-[#D4AF37]" />
           </div>
           <p className="text-sm text-slate-300">
             Painel consolidado de clínicas, faturamento, banco de dados e automações Celery.
@@ -97,10 +98,10 @@ export function VendorDashboardPage() {
         <div className="flex items-center gap-3">
           <ProvisionarTenantModal
             trigger={
-              <Button className="font-semibold cursor-pointer shadow-md bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950">
-                <PlusCircle className="h-4 w-4 mr-2" />
+              <BotaoVendorPrimario className="cursor-pointer">
+                <PlusCircle className="size-4 mr-2" />
                 Provisionar Clínica
-              </Button>
+              </BotaoVendorPrimario>
             }
           />
         </div>
@@ -186,7 +187,7 @@ export function VendorDashboardPage() {
             <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
               Total Clínicas
             </CardTitle>
-            <Building2 className="h-4 w-4 text-[#D4AF37]" />
+            <Building2 className="size-4 text-[#D4AF37]" />
           </CardHeader>
           <CardContent>
             {carregandoTenants ? (
@@ -204,7 +205,7 @@ export function VendorDashboardPage() {
             <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
               Ativas
             </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <CheckCircle2 className="size-4 text-emerald-400" />
           </CardHeader>
           <CardContent>
             {carregandoTenants ? (
@@ -222,7 +223,7 @@ export function VendorDashboardPage() {
             <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
               A Vencer (15d)
             </CardTitle>
-            <Clock className="h-4 w-4 text-amber-400" />
+            <Clock className="size-4 text-amber-400" />
           </CardHeader>
           <CardContent>
             {carregandoTenants ? (
@@ -240,7 +241,7 @@ export function VendorDashboardPage() {
             <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
               Planos Vencidos
             </CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-400" />
+            <AlertCircle className="size-4 text-red-400" />
           </CardHeader>
           <CardContent>
             {carregandoTenants ? (
@@ -258,7 +259,7 @@ export function VendorDashboardPage() {
             <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
               Bloqueadas
             </CardTitle>
-            <Lock className="h-4 w-4 text-red-400" />
+            <Lock className="size-4 text-red-400" />
           </CardHeader>
           <CardContent>
             {carregandoTenants ? (
@@ -278,7 +279,7 @@ export function VendorDashboardPage() {
             <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
               MRR Estimado
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-[#D4AF37]" />
+            <DollarSign className="size-4 text-[#D4AF37]" />
           </CardHeader>
           <CardContent>
             {carregandoTenants ? (
@@ -299,7 +300,7 @@ export function VendorDashboardPage() {
         <Card className="border-[#1E2D56] bg-[#111D3B] text-slate-100 lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-base font-semibold text-white flex items-center gap-2">
-              <Server className="h-4 w-4 text-[#D4AF37]" />
+              <Server className="size-4 text-[#D4AF37]" />
               Saúde do Cluster
             </CardTitle>
             <CardDescription className="text-slate-400 text-xs">
@@ -323,7 +324,7 @@ export function VendorDashboardPage() {
 
             <div className="flex items-center justify-between p-3 rounded-lg bg-[#0B132B]/80 border border-[#1E2D56]">
               <div className="flex items-center gap-2.5">
-                <Activity className="h-4 w-4 text-[#D4AF37]" />
+                <Activity className="size-4 text-[#D4AF37]" />
                 <span className="text-xs font-medium text-slate-200">Workers Celery</span>
               </div>
               <span className="text-xs font-semibold text-[#D4AF37]">
@@ -333,7 +334,7 @@ export function VendorDashboardPage() {
 
             <Button asChild className="w-full text-xs cursor-pointer bg-[#16254A] hover:bg-[#1E3364] border border-[#1E2D56] text-white shadow-xs">
               <Link to={`${VENDOR_BASE_PATH}/celery`}>
-                <Clock className="h-3.5 w-3.5 mr-2 text-[#D4AF37]" />
+                <Clock className="size-3.5 mr-2 text-[#D4AF37]" />
                 Ver Agendamentos do Beat
               </Link>
             </Button>
@@ -344,7 +345,7 @@ export function VendorDashboardPage() {
         <Card className="border-[#1E2D56] bg-[#111D3B] text-slate-100 lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base font-semibold text-white flex items-center gap-2">
-              <Zap className="h-4 w-4 text-[#D4AF37]" />
+              <Zap className="size-4 text-[#D4AF37]" />
               Ferramentas de Sustentação
             </CardTitle>
             <CardDescription className="text-slate-400 text-xs">
@@ -357,8 +358,8 @@ export function VendorDashboardPage() {
               className="p-4 rounded-xl bg-[#0B132B]/70 border border-[#1E2D56] hover:border-[#D4AF37]/50 hover:bg-[#132145] transition-all group"
             >
               <div className="flex items-center justify-between mb-2">
-                <Database className="h-5 w-5 text-[#D4AF37] group-hover:scale-110 transition-transform" />
-                <ArrowRight className="h-4 w-4 text-slate-500 group-hover:text-[#D4AF37] transition-colors" />
+                <Database className="size-5 text-[#D4AF37] group-hover:scale-110 transition-transform" />
+                <ArrowRight className="size-4 text-slate-500 group-hover:text-[#D4AF37] transition-colors" />
               </div>
               <h3 className="text-sm font-semibold text-white">Database Studio</h3>
               <p className="text-xs text-slate-400 mt-1">
@@ -371,8 +372,8 @@ export function VendorDashboardPage() {
               className="p-4 rounded-xl bg-[#0B132B]/70 border border-[#1E2D56] hover:border-[#D4AF37]/50 hover:bg-[#132145] transition-all group"
             >
               <div className="flex items-center justify-between mb-2">
-                <ShieldCheck className="h-5 w-5 text-emerald-400 group-hover:scale-110 transition-transform" />
-                <ArrowRight className="h-4 w-4 text-slate-500 group-hover:text-[#D4AF37] transition-colors" />
+                <ShieldCheck className="size-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <ArrowRight className="size-4 text-slate-500 group-hover:text-[#D4AF37] transition-colors" />
               </div>
               <h3 className="text-sm font-semibold text-white">Trilha de Auditoria</h3>
               <p className="text-xs text-slate-400 mt-1">
@@ -394,7 +395,7 @@ export function VendorDashboardPage() {
           </div>
           <Button asChild variant="ghost" className="text-[#D4AF37] hover:text-[#D4AF37]/80 hover:bg-transparent text-xs">
             <Link to={`${VENDOR_BASE_PATH}/tenants`}>
-              Ver todas <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              Ver todas <ArrowRight className="size-3.5 ml-1" />
             </Link>
           </Button>
         </CardHeader>

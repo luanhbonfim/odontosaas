@@ -104,6 +104,7 @@ export type WhatsAppParams = {
   enviar_cancelamento: boolean
   simular_digitacao: boolean
   segundos_digitacao: number
+  intervalo_fila_segundos: number
 }
 
 export type MetricasOperacionais = {

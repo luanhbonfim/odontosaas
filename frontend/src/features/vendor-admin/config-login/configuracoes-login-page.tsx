@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { toast } from 'sonner'
 import { Info, SlidersHorizontal } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { LinhaToggle } from '@/components/common/form-kit'
+import { BotaoVendorPrimario } from '../ui/vendor-ui'
 import { type ConfigLogin, useConfigLogin, useSalvarConfigLogin } from './use-config-login'
 
-const inputCls =
-  'w-full h-9 rounded-md bg-[#0B132B]/80 border border-[#1E2D56] px-3 text-xs text-white focus:outline-none focus:border-[#D4AF37]'
+/** Palette dark do input do vendor, aplicada sobre o shadcn Input. */
+const inputVendorCls = 'bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs focus-visible:border-[#D4AF37]'
 
 /** Ícone "ⓘ" com tooltip explicativo no hover/foco (Tailwind puro, sem dependência). */
 function InfoDica({ texto }: { texto: string }) {
@@ -44,15 +47,19 @@ function CampoNum(props: {
   max?: number
   dica?: string
 }) {
+  const id = useId()
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
-        <label className="text-xs text-slate-200 font-medium">{props.label}</label>
+        <Label htmlFor={id} className="text-slate-200">
+          {props.label}
+        </Label>
         {props.dica && <InfoDica texto={props.dica} />}
       </div>
-      <input
+      <Input
+        id={id}
         type="number"
-        className={inputCls}
+        className={inputVendorCls}
         value={props.valor}
         min={props.min}
         max={props.max}
@@ -63,31 +70,33 @@ function CampoNum(props: {
 }
 
 function CampoTexto(props: { label: string; valor: string; onChange: (v: string) => void; dica?: string }) {
+  const id = useId()
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
-        <label className="text-xs text-slate-200 font-medium">{props.label}</label>
+        <Label htmlFor={id} className="text-slate-200">
+          {props.label}
+        </Label>
         {props.dica && <InfoDica texto={props.dica} />}
       </div>
-      <input type="text" className={inputCls} value={props.valor} onChange={(e) => props.onChange(e.target.value)} />
+      <Input id={id} type="text" className={inputVendorCls} value={props.valor} onChange={(e) => props.onChange(e.target.value)} />
     </div>
   )
 }
 
 function CampoBool(props: { label: string; valor: boolean; onChange: (v: boolean) => void; dica?: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          className="accent-[#D4AF37]"
-          checked={props.valor}
-          onChange={(e) => props.onChange(e.target.checked)}
-        />
-        <span className="text-xs text-slate-200 font-medium">{props.label}</span>
-      </label>
-      {props.dica && <InfoDica texto={props.dica} />}
-    </div>
+    <LinhaToggle
+      className="bg-[#0B132B]/60 border-[#1E2D56]"
+      titulo={
+        <span className="flex items-center gap-1.5">
+          {props.label}
+          {props.dica && <InfoDica texto={props.dica} />}
+        </span>
+      }
+      checked={props.valor}
+      onChange={(e) => props.onChange(e.target.checked)}
+    />
   )
 }
 
@@ -221,13 +230,9 @@ export function ConfiguracoesLoginPage() {
       </Secao>
 
       <div className="flex justify-end">
-        <Button
-          onClick={onSalvar}
-          disabled={salvar.isPending}
-          className="bg-[#D4AF37] text-black hover:bg-[#C29D26] disabled:opacity-60"
-        >
+        <BotaoVendorPrimario onClick={onSalvar} disabled={salvar.isPending}>
           {salvar.isPending ? 'Salvando…' : 'Salvar configurações'}
-        </Button>
+        </BotaoVendorPrimario>
       </div>
     </div>
   )

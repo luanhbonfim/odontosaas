@@ -22,6 +22,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { BotaoVendorPrimario } from '../ui/vendor-ui'
 import { useVendorStudio, type ColunaInfo } from './use-vendor-studio'
 import { JustificativaEscritaModal } from './justificativa-escrita-modal'
 import { HistoricoQueriesModal } from './historico-queries-modal'
@@ -157,7 +158,7 @@ export function DatabaseStudioPage() {
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col space-y-3 p-4 md:p-6 overflow-hidden">
       {/* Header Superior da Barra de Ferramentas do Studio */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#1C2C54] bg-[#0F1B38] p-3 shadow-md">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#1E2D56] bg-[#111D3B] p-3 shadow-md">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-lg bg-[#D4AF37]/15 text-[#D4AF37]">
             <Database className="size-5" />
@@ -185,7 +186,7 @@ export function DatabaseStudioPage() {
                 setTabelaExpandida(null)
               }}
               disabled={carregandoSchemas || executando}
-              className="h-8 rounded-lg border border-slate-700 bg-slate-900 px-2.5 text-xs text-slate-100 focus:border-[#D4AF37] focus:outline-none"
+              className="h-8 rounded-lg border border-[#1E2D56] bg-[#0B132B]/80 px-2.5 text-xs text-slate-100 focus:border-[#D4AF37] focus:outline-none"
             >
               {schemas.map((s) => (
                 <option key={s.schema_name} value={s.schema_name}>
@@ -196,7 +197,7 @@ export function DatabaseStudioPage() {
           </div>
 
           {/* Alternador de Modo RO / RW */}
-          <div className="flex items-center rounded-lg border border-slate-700 bg-slate-900 p-0.5">
+          <div className="flex items-center rounded-lg border border-[#1E2D56] bg-[#0B132B]/80 p-0.5">
             <button
               type="button"
               onClick={() => setModo('RO')}
@@ -232,7 +233,7 @@ export function DatabaseStudioPage() {
               value={limiteLinhas}
               onChange={(e) => setLimiteLinhas(Number(e.target.value))}
               disabled={executando}
-              className="h-8 rounded-lg border border-slate-700 bg-slate-900 px-2 text-xs text-slate-100 focus:border-[#D4AF37] focus:outline-none"
+              className="h-8 rounded-lg border border-[#1E2D56] bg-[#0B132B]/80 px-2 text-xs text-slate-100 focus:border-[#D4AF37] focus:outline-none"
             >
               {LIMITES_OPCOES.map((lim) => (
                 <option key={lim} value={lim}>
@@ -247,18 +248,18 @@ export function DatabaseStudioPage() {
             variant="outline"
             size="sm"
             onClick={() => setModalHistoricoAberto(true)}
-            className="h-8 border-slate-700 bg-slate-900 text-xs text-slate-300 hover:bg-slate-800 hover:text-white"
+            className="h-8 border-[#1E2D56] bg-slate-900 text-xs text-slate-300 hover:bg-slate-800 hover:text-white"
           >
             <History className="mr-1.5 size-3.5 text-slate-400" />
             Histórico ({historico.length})
           </Button>
 
           {/* Botão Executar */}
-          <Button
+          <BotaoVendorPrimario
             size="sm"
             onClick={() => dispararExecucao()}
             disabled={executando || !sql.trim()}
-            className="h-8 bg-[#D4AF37] text-xs font-bold text-slate-950 hover:bg-[#E5C158] disabled:opacity-50"
+            className="h-8 text-xs disabled:opacity-50"
           >
             {executando ? (
               <>
@@ -271,15 +272,15 @@ export function DatabaseStudioPage() {
                 Executar (Ctrl+Enter)
               </>
             )}
-          </Button>
+          </BotaoVendorPrimario>
         </div>
       </div>
 
       {/* Grid Principal: Explorer de Tabelas (Esquerda) e Console + Resultados (Direita) */}
       <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-12 overflow-hidden">
         {/* Painel Esquerdo: Dicionário & Tabelas do Schema */}
-        <div className="flex flex-col rounded-xl border border-[#1C2C54] bg-[#0F1B38] p-3 md:col-span-3 overflow-hidden shadow-sm">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div className="flex flex-col rounded-xl border border-[#1E2D56] bg-[#111D3B] p-3 md:col-span-3 overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between pb-2 border-b border-[#1E2D56]">
             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
               <TableIcon className="size-4 text-[#D4AF37]" />
               <span>Tabelas ({tabelas.length})</span>
@@ -303,7 +304,7 @@ export function DatabaseStudioPage() {
               placeholder="Filtrar tabelas..."
               value={filtroTabelas}
               onChange={(e) => setFiltroTabelas(e.target.value)}
-              className="h-7.5 border-slate-800 bg-slate-900 pl-8 text-xs text-slate-100 placeholder:text-slate-500"
+              className="h-7.5 border-[#1E2D56] bg-[#0B132B]/80 pl-8 text-xs text-slate-100 placeholder:text-slate-500"
             />
           </div>
 
@@ -322,7 +323,7 @@ export function DatabaseStudioPage() {
                 return (
                   <div
                     key={tab.tabela}
-                    className="rounded-md border border-slate-800/80 bg-slate-900/40 text-xs overflow-hidden"
+                    className="rounded-md border border-[#1E2D56]/80 bg-[#0B132B]/40 text-xs overflow-hidden"
                   >
                     <button
                       type="button"
@@ -360,7 +361,7 @@ export function DatabaseStudioPage() {
 
                     {/* Colunas da tabela */}
                     {expandida && (
-                      <div className="border-t border-slate-800 bg-slate-950/70 p-2 space-y-1">
+                      <div className="border-t border-[#1E2D56] bg-[#0B132B]/70 p-2 space-y-1">
                         {tab.colunas.map((col: ColunaInfo) => (
                           <div
                             key={col.nome}
@@ -389,10 +390,10 @@ export function DatabaseStudioPage() {
         </div>
 
         {/* Painel Direito: Editor SQL (Topo) e Resultados (Base) */}
-        <div className="flex flex-col rounded-xl border border-[#1C2C54] bg-[#0F1B38] p-3 md:col-span-9 overflow-hidden shadow-sm space-y-3">
+        <div className="flex flex-col rounded-xl border border-[#1E2D56] bg-[#111D3B] p-3 md:col-span-9 overflow-hidden shadow-sm space-y-3">
           {/* Editor SQL com atalho Ctrl+Enter */}
-          <div className="flex flex-col rounded-lg border border-slate-700 bg-slate-950 p-2 relative">
-            <div className="flex items-center justify-between pb-1 text-[11px] text-slate-400 border-b border-slate-800/80 mb-1.5">
+          <div className="flex flex-col rounded-lg border border-[#1E2D56] bg-[#0B132B]/80 p-2 relative">
+            <div className="flex items-center justify-between pb-1 text-[11px] text-slate-400 border-b border-[#1E2D56]/80 mb-1.5">
               <span className="font-mono text-[#D4AF37] font-semibold">Console SQL</span>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-slate-500">Pressione Ctrl+Enter para executar</span>
@@ -424,9 +425,9 @@ export function DatabaseStudioPage() {
           </div>
 
           {/* Painel de Resultados */}
-          <div className="flex flex-1 flex-col rounded-lg border border-slate-800 bg-slate-950/60 overflow-hidden">
+          <div className="flex flex-1 flex-col rounded-lg border border-[#1E2D56] bg-[#0B132B]/60 overflow-hidden">
             {/* Barra de Status e Exportação do Resultado */}
-            <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs">
+            <div className="flex items-center justify-between border-b border-[#1E2D56] bg-[#111D3B]/90 px-3 py-1.5 text-xs">
               <div className="flex items-center gap-3">
                 <span className="font-semibold text-slate-200">Resultado da Consulta</span>
                 {resultadoAtual && (
@@ -454,7 +455,7 @@ export function DatabaseStudioPage() {
                     variant="outline"
                     size="sm"
                     onClick={exportarCSV}
-                    className="h-6 gap-1 px-2 text-[11px] border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+                    className="h-6 gap-1 px-2 text-[11px] border-[#1E2D56] bg-slate-800 text-slate-200 hover:bg-slate-700"
                   >
                     <Download className="size-3" />
                     CSV
@@ -463,7 +464,7 @@ export function DatabaseStudioPage() {
                     variant="outline"
                     size="sm"
                     onClick={exportarJSON}
-                    className="h-6 gap-1 px-2 text-[11px] border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+                    className="h-6 gap-1 px-2 text-[11px] border-[#1E2D56] bg-slate-800 text-slate-200 hover:bg-slate-700"
                   >
                     <Download className="size-3" />
                     JSON

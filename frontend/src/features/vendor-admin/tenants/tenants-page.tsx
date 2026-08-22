@@ -22,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/common/status-badge'
 import { classeCampoSelect } from '@/components/common/form-kit'
+import { BotaoVendorPrimario } from '../ui/vendor-ui'
 import { VENDOR_BASE_PATH } from '../constants'
 import {
   type ClinicaListItem,
@@ -75,10 +76,10 @@ export function TenantsPage() {
         acoes={
           <ProvisionarTenantModal
             trigger={
-              <Button className="font-semibold bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950 shadow-md cursor-pointer">
+              <BotaoVendorPrimario className="cursor-pointer">
                 <Plus className="size-4 mr-2" />
                 Provisionar Clínica
-              </Button>
+              </BotaoVendorPrimario>
             }
           />
         }
