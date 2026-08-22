@@ -644,4 +644,21 @@ def fila_pendente():
                 )
 
     itens.sort(key=lambda item: item["previsto_para"])
+
+    # Espaçamento anti-bloqueio: as mensagens de um mesmo horário de disparo não saem
+    # juntas — vão em fila, uma a cada `intervalo_fila_segundos`. Refletimos isso no
+    # "previsto para": itens com o MESMO horário-base recebem +intervalo por posição
+    # (1ª às HH:MM:00, 2ª +Ns, 3ª +2N s, ...). `atrasado` é reavaliado após o ajuste.
+    intervalo = getattr(config, "intervalo_fila_segundos", 0) or 0
+    if intervalo:
+        posicao_por_base = {}
+        for item in itens:
+            base = item["previsto_para"]
+            pos = posicao_por_base.get(base, 0)
+            if pos:
+                item["previsto_para"] = base + timedelta(seconds=intervalo * pos)
+                item["atrasado"] = item["previsto_para"] < agora
+            posicao_por_base[base] = pos + 1
+        itens.sort(key=lambda item: item["previsto_para"])
+
     return itens

@@ -852,7 +852,14 @@ function FilaTab() {
               <Clock className="size-3.5" /> Sai no próximo envio
             </span>
           ) : (
-            <DateTime iso={row.original.previsto_para} />
+            // Com segundos: deixa visível o espaçamento anti-bloqueio (ex.: 09:00:00, 09:00:20…).
+            <span className="tabular-nums">
+              {new Date(row.original.previsto_para).toLocaleString('pt-BR', {
+                dateStyle: 'short',
+                timeStyle: 'medium',
+                timeZone: 'America/Sao_Paulo',
+              })}
+            </span>
           ),
       },
       {
