@@ -45,7 +45,13 @@ const schema = z.object({
     .min(1, 'Informe o nome do schema')
     .regex(/^[a-z0-9_]+$/, 'Use apenas letras minúsculas, números e underline')
     .max(63, 'Máximo de 63 caracteres'),
-  dominio: z.string().min(1, 'Informe o domínio da clínica (ex: clinica.localhost)'),
+  dominio: z
+    .string()
+    .min(1, 'Informe o domínio de acesso da clínica')
+    .regex(
+      /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/,
+      'Domínio inválido: use apenas letras minúsculas, números e hífen (sem underline), ex.: minha-clinica.proclinica.cloud',
+    ),
 
   // 4. Plano Comercial & Início de Contrato (Obrigatório)
   plano_id: z.number({ message: 'Selecione um plano comercial para a clínica' }).min(1, 'Selecione um plano comercial'),
@@ -64,21 +70,41 @@ function normalizarSlug(texto: string): string {
     .slice(0, 50)
 }
 
+/**
+ * Domínio base da plataforma, derivado do host do próprio painel:
+ *   - dev:  localhost              (painel em localhost:5173)
+ *   - prod: proclinica.cloud       (painel em ops-xxxx.proclinica.cloud → remove o 1º rótulo)
+ * Assim o provisionamento nunca sai com `.localhost` fixo em produção.
+ */
+function dominioBasePlataforma(): string {
+  const host = window.location.hostname
+  const partes = host.split('.')
+  return partes.length >= 3 ? partes.slice(1).join('.') : host
+}
+
+/** Rótulo DNS-safe a partir do schema (subdomínio não aceita `_`; troca por `-`). */
+function rotuloDns(schema: string): string {
+  return schema.replace(/_/g, '-').replace(/^-+|-+$/g, '')
+}
+
 function gerarOpcoesSugestoes(nome: string): { schema: string; dominio: string; rotulo: string }[] {
   const base = normalizarSlug(nome)
   if (!base) return []
 
+  const bd = dominioBasePlataforma()
+  const dom = (schema: string) => `${rotuloDns(schema)}.${bd}`
+
   const semPrefixo = base.replace(/^(clinica|consultorio|dr|dra|instituto|centro|odontologia)_+/, '')
   const opcoes: { schema: string; dominio: string; rotulo: string }[] = [
-    { schema: base, dominio: `${base}.localhost`, rotulo: 'Direto do Nome' },
+    { schema: base, dominio: dom(base), rotulo: 'Direto do Nome' },
   ]
 
   if (semPrefixo && semPrefixo !== base) {
-    opcoes.push({ schema: semPrefixo, dominio: `${semPrefixo}.localhost`, rotulo: 'Simplificado' })
-    opcoes.push({ schema: `clinica_${semPrefixo}`, dominio: `clinica_${semPrefixo}.localhost`, rotulo: 'Prefixo Clínica' })
+    opcoes.push({ schema: semPrefixo, dominio: dom(semPrefixo), rotulo: 'Simplificado' })
+    opcoes.push({ schema: `clinica_${semPrefixo}`, dominio: dom(`clinica_${semPrefixo}`), rotulo: 'Prefixo Clínica' })
   } else {
-    opcoes.push({ schema: `clinica_${base}`, dominio: `clinica_${base}.localhost`, rotulo: 'Prefixo Clínica' })
-    opcoes.push({ schema: `${base}_odonto`, dominio: `${base}_odonto.localhost`, rotulo: 'Sufixo Odonto' })
+    opcoes.push({ schema: `clinica_${base}`, dominio: dom(`clinica_${base}`), rotulo: 'Prefixo Clínica' })
+    opcoes.push({ schema: `${base}_odonto`, dominio: dom(`${base}_odonto`), rotulo: 'Sufixo Odonto' })
   }
 
   // Deduplica opções mantendo as 3 primeiras únicas
@@ -483,7 +509,7 @@ export function ProvisionarTenantModal({ trigger }: Props) {
                     <Input
                       id="prov-dominio"
                       {...register('dominio')}
-                      placeholder="odontoprime.localhost"
+                      placeholder={`odontoprime.${dominioBasePlataforma()}`}
                       className="bg-[#0B132B]/80 border-[#1E2D56] text-white font-mono text-xs pr-8"
                     />
                     <Edit3 className="size-3.5 text-slate-500 absolute right-2.5 top-3 pointer-events-none" />

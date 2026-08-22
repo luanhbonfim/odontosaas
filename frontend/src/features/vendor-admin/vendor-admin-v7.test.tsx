@@ -262,8 +262,10 @@ describe('Vendor Admin - Sprint V7', () => {
     const inputSchema = screen.getByLabelText(/Schema PostgreSQL/i)
     expect(inputSchema).toHaveValue('odonto_estetica')
 
+    // O schema mantém underscore (válido no Postgres), mas o domínio é DNS-safe
+    // (subdomínio não aceita `_` -> vira `-`).
     const inputDominio = screen.getByLabelText(/Domínio de Acesso/i)
-    expect(inputDominio).toHaveValue('odonto_estetica.localhost')
+    expect(inputDominio).toHaveValue('odonto-estetica.localhost')
   })
 
   it('renderiza a tela de Detalhes da Clínica com 5 abas e dados operacionais', async () => {
