@@ -265,6 +265,79 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
         )
         return Response(ClinicaDetailVendorSerializer(clinica).data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["post"], url_path="trocar-plano")
+    def trocar_plano(self, request, pk=None):
+        """Troca o plano comercial da clínica, com política de vigência escolhida.
+
+        Body: `plano_id` (obrigatório) + `vigencia_modo`:
+          - "agora": recalcula o vencimento a partir de HOJE pela periodicidade do novo
+            plano (reativa a clínica).
+          - "manter": só troca o plano; mantém o vencimento atual inalterado.
+          - "proximo_ciclo": soma o período do novo plano ao vencimento atual (a nova
+            vigência começa a valer a partir do próximo vencimento).
+        """
+        import datetime as _dt
+
+        from django.utils import timezone
+
+        clinica = self.get_object()
+        plano_id = request.data.get("plano_id")
+        modo = (request.data.get("vigencia_modo") or "manter").strip()
+        if modo not in ("agora", "manter", "proximo_ciclo"):
+            return Response({"erro": "vigencia_modo inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        novo_plano = PlanoAssinatura.objects.filter(pk=plano_id).first()
+        if novo_plano is None:
+            return Response({"erro": "Plano não encontrado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        plano_anterior = clinica.plano_assinatura
+        vig_anterior = clinica.vigencia_fim
+        hoje = timezone.localdate()
+        Periodicidade = PlanoAssinatura.Periodicidade
+
+        def _com_periodo(base_data):
+            if novo_plano.periodicidade == Periodicidade.PERMANENTE:
+                return None
+            dias = 365 if novo_plano.periodicidade == Periodicidade.ANUAL else 30
+            return base_data + _dt.timedelta(days=dias)
+
+        clinica.plano_assinatura = novo_plano
+        campos = ["plano_assinatura"]
+
+        if modo == "agora":
+            clinica.vigencia_fim = _com_periodo(hoje)
+            clinica.status_assinatura = Clinica.StatusAssinatura.ATIVA
+            clinica.ativo = True
+            campos += ["vigencia_fim", "status_assinatura", "ativo"]
+        elif modo == "proximo_ciclo":
+            base = (
+                clinica.vigencia_fim
+                if (isinstance(clinica.vigencia_fim, _dt.date) and clinica.vigencia_fim > hoje)
+                else hoje
+            )
+            clinica.vigencia_fim = _com_periodo(base)
+            clinica.status_assinatura = Clinica.StatusAssinatura.ATIVA
+            clinica.ativo = True
+            campos += ["vigencia_fim", "status_assinatura", "ativo"]
+        # "manter": não mexe na vigência nem no status.
+
+        clinica.save(update_fields=campos)
+
+        registrar_auditoria_vendor(
+            request=request,
+            acao=RegistroAuditoriaVendor.Acao.PARAMETRIZACAO,
+            schema_alvo=clinica.schema_name,
+            detalhes={
+                "acao": "troca_plano",
+                "plano_anterior": plano_anterior.nome if plano_anterior else None,
+                "plano_novo": novo_plano.nome,
+                "vigencia_modo": modo,
+                "vigencia_anterior": str(vig_anterior) if vig_anterior else None,
+                "vigencia_nova": str(clinica.vigencia_fim) if clinica.vigencia_fim else "permanente",
+            },
+        )
+        return Response(ClinicaDetailVendorSerializer(clinica).data, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=["post"], url_path="reset-admin-senha")
     def reset_admin_senha(self, request, pk=None):
         """Redefine forçadamente a senha do admin da clínica."""

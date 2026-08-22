@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Plus,
+  Package,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -43,6 +44,7 @@ import { VENDOR_BASE_PATH } from '../constants'
 import { urlDaClinica } from '../url-clinica'
 import { mascararCnpj, mascararCpf, mascararTelefone } from '@/lib/utils/mascaras'
 import { useVendorPlanos } from '../planos/use-vendor-planos'
+import { TrocarPlanoModal } from './trocar-plano-modal'
 import {
   type ErroOperacional,
   type RegistroAuditoria,
@@ -139,6 +141,7 @@ export function TenantDetalhesPage() {
   const [reagendamentoMinutos, setReagendamentoMinutos] = useState<number>(1)
   const [simularDigitacao, setSimularDigitacao] = useState<boolean>(true)
   const [segundosDigitacao, setSegundosDigitacao] = useState<number>(4)
+  const [trocarPlanoAberto, setTrocarPlanoAberto] = useState(false)
 
   // Sincroniza dados do Google e WhatsApp quando carregados da API
   useEffect(() => {
@@ -722,23 +725,24 @@ export function TenantDetalhesPage() {
             <form onSubmit={formAssinatura.handleSubmit(onSalvarAssinatura)} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="assinatura-plano" className="text-xs text-slate-200 font-medium">
-                    Plano de Assinatura
-                  </Label>
-                  <select
-                    id="assinatura-plano"
-                    {...formAssinatura.register('plano_assinatura', {
-                      setValueAs: (v) => (v === '' ? null : Number(v)),
-                    })}
-                    className="w-full h-9 rounded-md bg-[#0B132B] border border-[#1E2D56] px-3 py-1 text-xs text-white shadow-xs focus:outline-hidden"
-                  >
-                    <option value="" className="bg-[#0B132B] text-slate-400">Sem Plano Vinculado</option>
-                    {planos?.map((p) => (
-                      <option key={p.id} value={p.id} className="bg-[#0B132B] text-white">
-                        {p.nome} (R$ {Number(p.preco_mensal).toFixed(2)}/mês [{p.periodicidade || 'MENSAL'}])
-                      </option>
-                    ))}
-                  </select>
+                  <Label className="text-xs text-slate-200 font-medium">Plano de Assinatura</Label>
+                  <div className="h-9 rounded-md bg-[#0B132B]/80 border border-[#1E2D56] px-3 flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Package className="size-3.5 text-[#D4AF37] shrink-0" />
+                      <span className="font-medium text-white truncate">
+                        {tenant.plano_nome || 'Sem plano vinculado'}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setTrocarPlanoAberto(true)}
+                      className="h-7 shrink-0 border-[#1E2D56] bg-[#152345] text-slate-200 hover:bg-[#1A2A4E] text-[11px]"
+                    >
+                      Trocar plano
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
@@ -776,22 +780,27 @@ export function TenantDetalhesPage() {
                 </div>
               </div>
 
-              {/* Renovar assinatura: estende a vigência conforme a periodicidade do plano e reativa a clínica */}
-              <Button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await renovar.mutateAsync(tenantId)
-                    toast.success('Assinatura renovada — vigência estendida e clínica reativada.')
-                  } catch {
-                    toast.error('Falha ao renovar a assinatura.')
-                  }
-                }}
-                disabled={renovar.isPending}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
-              >
-                {renovar.isPending ? 'Renovando…' : 'Renovar assinatura (estende a vigência)'}
-              </Button>
+              {/* Renovar assinatura: só aparece se a clínica estiver VENCIDA. Estende a
+                  vigência conforme a periodicidade do plano e reativa a clínica. */}
+              {tenant.dias_restantes_vigencia !== null &&
+                tenant.dias_restantes_vigencia !== undefined &&
+                tenant.dias_restantes_vigencia < 0 && (
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await renovar.mutateAsync(tenantId)
+                        toast.success('Assinatura renovada — vigência estendida e clínica reativada.')
+                      } catch {
+                        toast.error('Falha ao renovar a assinatura.')
+                      }
+                    }}
+                    disabled={renovar.isPending}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+                  >
+                    {renovar.isPending ? 'Renovando…' : 'Renovar assinatura (clínica vencida)'}
+                  </Button>
+                )}
 
               {/* Overrides de Limites */}
               <div className="p-4 rounded-lg bg-[#0B132B]/60 border border-[#1E2D56] space-y-4">
@@ -1709,6 +1718,14 @@ export function TenantDetalhesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TrocarPlanoModal
+        aberto={trocarPlanoAberto}
+        aoFechar={() => setTrocarPlanoAberto(false)}
+        tenantId={tenantId}
+        planoAtualId={tenant.plano_assinatura ?? null}
+        planos={planos ?? []}
+      />
     </div>
   )
 }

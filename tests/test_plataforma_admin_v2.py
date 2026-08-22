@@ -643,3 +643,63 @@ def test_action_renovar_reativa_e_estende_vigencia(vendor_client, tenant_fixture
         acao=RegistroAuditoriaVendor.Acao.PARAMETRIZACAO,
         detalhes__acao="renovacao_assinatura",
     ).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_trocar_plano_modo_manter_nao_altera_vigencia(vendor_client, tenant_fixture):
+    """modo 'manter': troca o plano, mas o vencimento fica inalterado."""
+    import datetime
+
+    from django.utils import timezone
+
+    venc = timezone.localdate() + datetime.timedelta(days=10)
+    tenant_fixture.vigencia_fim = venc
+    tenant_fixture.save()
+    novo = PlanoAssinatura.objects.create(nome="Novo Mensal", preco_mensal=99.0, periodicidade="MENSAL")
+
+    resp = vendor_client.post(
+        f"/api/plataforma-admin/tenants/{tenant_fixture.id}/trocar-plano/",
+        {"plano_id": novo.id, "vigencia_modo": "manter"},
+        format="json",
+    )
+    assert resp.status_code == status.HTTP_200_OK, resp.content
+    tenant_fixture.refresh_from_db()
+    assert tenant_fixture.plano_assinatura_id == novo.id
+    assert tenant_fixture.vigencia_fim == venc  # inalterado
+
+
+@pytest.mark.django_db(transaction=True)
+def test_trocar_plano_modo_agora_recalcula_vigencia(vendor_client, tenant_fixture):
+    """modo 'agora': vencimento recalculado a partir de hoje pela periodicidade do novo plano."""
+    import datetime
+
+    from django.utils import timezone
+
+    tenant_fixture.vigencia_fim = timezone.localdate() - datetime.timedelta(days=5)
+    tenant_fixture.ativo = False
+    tenant_fixture.save()
+    anual = PlanoAssinatura.objects.create(nome="Novo Anual", preco_mensal=990.0, periodicidade="ANUAL")
+
+    resp = vendor_client.post(
+        f"/api/plataforma-admin/tenants/{tenant_fixture.id}/trocar-plano/",
+        {"plano_id": anual.id, "vigencia_modo": "agora"},
+        format="json",
+    )
+    assert resp.status_code == status.HTTP_200_OK, resp.content
+    tenant_fixture.refresh_from_db()
+    hoje = timezone.localdate()
+    assert tenant_fixture.plano_assinatura_id == anual.id
+    assert tenant_fixture.ativo is True
+    assert tenant_fixture.status_assinatura == Clinica.StatusAssinatura.ATIVA
+    # ~365 dias à frente (janela por causa de execução/fuso).
+    assert tenant_fixture.vigencia_fim >= hoje + datetime.timedelta(days=360)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_trocar_plano_plano_inexistente_400(vendor_client, tenant_fixture):
+    resp = vendor_client.post(
+        f"/api/plataforma-admin/tenants/{tenant_fixture.id}/trocar-plano/",
+        {"plano_id": 999999, "vigencia_modo": "manter"},
+        format="json",
+    )
+    assert resp.status_code == status.HTTP_400_BAD_REQUEST

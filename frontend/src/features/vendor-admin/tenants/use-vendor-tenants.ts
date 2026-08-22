@@ -210,6 +210,25 @@ export function useRenovarTenant() {
   })
 }
 
+export type VigenciaModo = 'agora' | 'manter' | 'proximo_ciclo'
+
+export function useTrocarPlano(tenantId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ plano_id, vigencia_modo }: { plano_id: number; vigencia_modo: VigenciaModo }) => {
+      const { data } = await vendorApi.post(`/plataforma-admin/tenants/${tenantId}/trocar-plano/`, {
+        plano_id,
+        vigencia_modo,
+      })
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CHAVE_TENANTS })
+      queryClient.invalidateQueries({ queryKey: [...CHAVE_TENANTS, tenantId] })
+    },
+  })
+}
+
 export function useExpurgarTenant() {
   const queryClient = useQueryClient()
   return useMutation({
