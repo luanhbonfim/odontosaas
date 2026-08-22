@@ -15,6 +15,7 @@ import {
 } from '@/components/common/form-kit'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { InputTelefone } from '@/components/common/campos-mascarados'
 import { Sheet, SheetClose, SheetContent, SheetFooter, SheetTrigger } from '@/components/ui/sheet'
 import type { ErroApi } from '@/lib/api/client'
 
@@ -132,7 +133,19 @@ export function DentistaFormDrawer({ trigger, dentista }: Props) {
             <SecaoForm titulo="Contato">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Campo id="telefone" label="Telefone">
-                  <Input id="telefone" placeholder="(11) 99999-9999" {...register('telefone')} />
+                  <Controller
+                    control={control}
+                    name="telefone"
+                    render={({ field }) => (
+                      <InputTelefone
+                        id="telefone"
+                        placeholder="(11) 99999-9999"
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
+                    )}
+                  />
                 </Campo>
                 <Campo id="email" label="E-mail" erro={errors.email?.message}>
                   <Input

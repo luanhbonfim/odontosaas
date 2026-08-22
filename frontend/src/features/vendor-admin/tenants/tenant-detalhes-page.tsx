@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/dialog'
 import { VENDOR_BASE_PATH } from '../constants'
 import { urlDaClinica } from '../url-clinica'
+import { mascararCnpj, mascararTelefone } from '@/lib/utils/mascaras'
 import { useVendorPlanos } from '../planos/use-vendor-planos'
 import {
   type ErroOperacional,
@@ -558,7 +559,10 @@ export function TenantDetalhesPage() {
                       </Label>
                       <Input
                         id="detalhes-cnpj"
-                        {...formGeral.register('cnpj')}
+                        inputMode="numeric"
+                        {...formGeral.register('cnpj', {
+                          onChange: (e) => formGeral.setValue('cnpj', mascararCnpj(e.target.value)),
+                        })}
                         placeholder="00.000.000/0000-00"
                         className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
                       />
@@ -570,7 +574,10 @@ export function TenantDetalhesPage() {
                       </Label>
                       <Input
                         id="detalhes-tel"
-                        {...formGeral.register('telefone')}
+                        inputMode="tel"
+                        {...formGeral.register('telefone', {
+                          onChange: (e) => formGeral.setValue('telefone', mascararTelefone(e.target.value)),
+                        })}
                         placeholder="(00) 0000-0000"
                         className="bg-[#0B132B]/80 border-[#1E2D56] text-white text-xs"
                       />

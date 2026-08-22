@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+import { InputCpf, InputTelefone } from '@/components/common/campos-mascarados'
 import { Cpf, DateText, PhoneText } from '@/components/common/formato'
 import { StatusBadge } from '@/components/common/status-badge'
 import { Button } from '@/components/ui/button'
@@ -225,12 +226,19 @@ function FormDados({
                 CPF
                 <Obrigatorio />
               </Label>
-              <Input
-                id="cpf"
-                inputMode="numeric"
-                aria-required="true"
-                aria-invalid={!!errors.cpf}
-                {...register('cpf')}
+              <Controller
+                control={control}
+                name="cpf"
+                render={({ field }) => (
+                  <InputCpf
+                    id="cpf"
+                    aria-required="true"
+                    aria-invalid={!!errors.cpf}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                )}
               />
               {errors.cpf && <p className="text-xs text-destructive">{errors.cpf.message}</p>}
             </div>
@@ -243,7 +251,18 @@ function FormDados({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="telefone_whatsapp">Telefone</Label>
-              <Input id="telefone_whatsapp" inputMode="tel" {...register('telefone_whatsapp')} />
+              <Controller
+                control={control}
+                name="telefone_whatsapp"
+                render={({ field }) => (
+                  <InputTelefone
+                    id="telefone_whatsapp"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">E-mail</Label>
