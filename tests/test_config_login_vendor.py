@@ -77,3 +77,12 @@ def test_config_login_valida_faixas_e_formato():
     assert sup.patch(URL, {"refresh_token_horas": 99999}, format="json", HTTP_HOST="localhost").status_code == 400
     # formato de throttle inválido
     assert sup.patch(URL, {"throttle_studio": "abc"}, format="json", HTTP_HOST="localhost").status_code == 400
+    # "0/min" derrubaria o login do painel (num_requests=0 => 429 sempre) -> rejeitado
+    assert sup.patch(URL, {"throttle_vendor_login": "0/min"}, format="json", HTTP_HOST="localhost").status_code == 400
+    # zeros à esquerda e taxa absurda (desligaria a defesa) -> rejeitados
+    assert sup.patch(URL, {"throttle_impersonate": "00/min"}, format="json", HTTP_HOST="localhost").status_code == 400
+    assert (
+        sup.patch(URL, {"throttle_studio": "999999999/sec"}, format="json", HTTP_HOST="localhost").status_code == 400
+    )
+    # limite superior válido ainda passa
+    assert sup.patch(URL, {"throttle_studio": "60/min"}, format="json", HTTP_HOST="localhost").status_code == 200

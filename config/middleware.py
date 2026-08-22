@@ -160,11 +160,13 @@ class ImpersonateReadOnlyMiddleware:
                         import jwt
                         from django.conf import settings
 
-                        secret = getattr(settings, "SECRET_KEY", "")
-                        try:
-                            payload = jwt.decode(token_str, secret, algorithms=["HS256"])
-                        except Exception:
-                            payload = jwt.decode(token_str, options={"verify_signature": False})
+                        # Assinatura SEMPRE verificada: nunca decidimos read-only sobre claims
+                        # não autenticados. Token que não verifica é rejeitado com 401 pela
+                        # MultiTenantJWTAuthentication (DRF), então basta ignorar aqui.
+                        signing_key = getattr(settings, "SIMPLE_JWT", {}).get("SIGNING_KEY") or getattr(
+                            settings, "SECRET_KEY", ""
+                        )
+                        payload = jwt.decode(token_str, signing_key, algorithms=["HS256"])
 
                         if payload.get("is_impersonate") and payload.get("impersonate_read_only"):
                             return JsonResponse(

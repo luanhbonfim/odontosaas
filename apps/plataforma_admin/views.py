@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 logger = logging.getLogger(__name__)
 
+from apps.core.handlers import sanitizar_texto_sensivel
 from apps.core.throttling import ImpersonateThrottle, VendorLoginThrottle
 from apps.plataforma_admin.config import get_config
 from apps.plataforma.models import PlanoAssinatura
@@ -161,8 +162,9 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         except Exception as exc:
+            logger.exception("Falha no provisionamento de clínica")
             return Response(
-                {"erro": "Falha no provisionamento.", "detalhes": str(exc)},
+                {"erro": "Falha no provisionamento.", "detalhes": sanitizar_texto_sensivel(str(exc))},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -282,8 +284,9 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
         except Exception as exc:
+            logger.exception("Falha ao resetar senha do administrador")
             return Response(
-                {"erro": "Falha ao resetar senha do administrador.", "detalhes": str(exc)},
+                {"erro": "Falha ao resetar senha do administrador.", "detalhes": sanitizar_texto_sensivel(str(exc))},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -310,8 +313,9 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
             )
             return Response(dados_sessao, status=status.HTTP_200_OK)
         except Exception as exc:
+            logger.exception("Falha ao iniciar impersonate")
             return Response(
-                {"erro": "Falha ao iniciar impersonate.", "detalhes": str(exc)},
+                {"erro": "Falha ao iniciar impersonate.", "detalhes": sanitizar_texto_sensivel(str(exc))},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -995,6 +999,15 @@ class VendorLoginView(APIView):
                     {"detail": "Código 2FA inválido.", "mfa_required": True},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
+            # Anti-replay: um mesmo código TOTP não pode ser reutilizado dentro da sua
+            # janela de validade (~90s), mesmo que interceptado.
+            chave_replay = f"vendor_mfa_used:{user.email.lower()}:{codigo}"
+            if cache.get(chave_replay):
+                return Response(
+                    {"detail": "Código 2FA já utilizado. Aguarde o próximo código.", "mfa_required": True},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            cache.set(chave_replay, 1, timeout=120)
         elif cfg.exigir_2fa_todos:
             # Política global: nenhum operador entra sem 2FA configurado.
             return Response(

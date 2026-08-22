@@ -460,9 +460,15 @@ class ConfiguracaoLoginVendorSerializer(serializers.ModelSerializer):
     def _validar_rate(self, valor):
         import re
 
-        if not re.match(r"^\d+/(s|sec|second|m|min|minute|h|hour|d|day)$", (valor or "").strip()):
-            raise serializers.ValidationError("Formato inválido. Use 'N/min' (ex.: 30/min).")
-        return valor.strip()
+        alvo = (valor or "").strip()
+        # Numerador deve ser >= 1 (sem zero e sem zeros à esquerda): "0/min" desliga o
+        # login do painel (429 em toda requisição) e é irreversível pela própria API.
+        m = re.match(r"^([1-9]\d*)/(s|sec|second|m|min|minute|h|hour|d|day)$", alvo)
+        if not m:
+            raise serializers.ValidationError("Formato inválido. Use 'N/min' com N>=1 (ex.: 30/min).")
+        if int(m.group(1)) > 10000:
+            raise serializers.ValidationError("Taxa muito alta. Máximo de 10000 por período.")
+        return alvo
 
     def validate_throttle_vendor_login(self, v):
         return self._validar_rate(v)

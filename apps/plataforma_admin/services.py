@@ -28,9 +28,13 @@ def obter_ip_cliente(request) -> str:
     """Extrai o IP real do cliente a partir dos headers da requisição."""
     if not request:
         return "127.0.0.1"
+    # Último hop do X-Forwarded-For (anexado pelo proxy de confiança/Caddy). O PRIMEIRO
+    # elemento é controlado pelo cliente e forjaria a trilha de auditoria (repúdio).
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded_for:
-        return x_forwarded_for.split(",")[0].strip()
+        partes = [p.strip() for p in x_forwarded_for.split(",") if p.strip()]
+        if partes:
+            return partes[-1]
     return request.META.get("REMOTE_ADDR", "127.0.0.1")
 
 
