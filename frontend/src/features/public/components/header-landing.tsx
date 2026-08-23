@@ -37,7 +37,7 @@ export function HeaderLanding() {
             className="size-10 w-auto object-contain"
           />
           <span className="text-base font-bold tracking-tight text-foreground">
-            Pró<span className="text-primary">Clínica</span>
+            Pró<span className="text-[#b89048]">Clínica</span>
           </span>
         </a>
 
