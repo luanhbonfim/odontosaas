@@ -76,10 +76,10 @@ export function OdontogramaShowcase() {
                 6 procedimentos
               </span>
             </div>
-            <div className="overflow-x-auto rounded-xl border border-border bg-background/60 p-3">
+            <div className="rounded-xl border border-border bg-background/60 p-2 sm:p-3">
               <svg
                 viewBox={VIEWBOX_COM_NUMEROS}
-                className="mx-auto h-auto w-full min-w-[480px] max-w-2xl"
+                className="mx-auto h-auto w-full max-w-2xl"
                 role="img"
                 aria-label="Arcada dentária de exemplo com seis dentes destacados por procedimentos registrados"
               >

@@ -2,7 +2,7 @@
 //
 // TODO(usuario): trocar o número abaixo pelo WhatsApp comercial real (formato
 // internacional, apenas dígitos: DDI + DDD + número). Ex.: 5518999999999.
-export const NUMERO_COMERCIAL = '5518900000000'
+export const NUMERO_COMERCIAL = '5518996902466'
 
 export type Periodicidade = 'MENSAL' | 'ANUAL' | 'PERMANENTE'
 
