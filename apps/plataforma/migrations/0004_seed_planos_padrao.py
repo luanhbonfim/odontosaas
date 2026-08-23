@@ -10,14 +10,15 @@ from django.db import migrations
 
 PLANOS = [
     {
+        # Foco em dentista pequeno / autônomo — porta de entrada acessível.
         "nome": "Essencial",
         "periodicidade": "MENSAL",
-        "preco_mensal": "149.00",
-        "preco_anual": "1430.00",  # ~20% off (12x 149 = 1788)
-        "limite_dentistas": 2,
-        "limite_usuarios": 4,
-        "limite_pacientes_ativos": 800,
-        "limite_armazenamento_mb": 2048,
+        "preco_mensal": "30.00",
+        "preco_anual": "288.00",  # ~20% off (12x 30 = 360)
+        "limite_dentistas": 1,
+        "limite_usuarios": 2,
+        "limite_pacientes_ativos": 300,
+        "limite_armazenamento_mb": 1024,
         "modulo_financeiro_ativo": False,
         "modulo_estoque_ativo": False,
         "sync_google_ativo": True,
@@ -27,12 +28,12 @@ PLANOS = [
     {
         "nome": "Profissional",
         "periodicidade": "MENSAL",
-        "preco_mensal": "279.00",
-        "preco_anual": "2680.00",  # ~20% off (12x 279 = 3348)
-        "limite_dentistas": 6,
-        "limite_usuarios": 12,
-        "limite_pacientes_ativos": None,  # ilimitado
-        "limite_armazenamento_mb": 10240,
+        "preco_mensal": "79.00",
+        "preco_anual": "758.00",  # ~20% off (12x 79 = 948)
+        "limite_dentistas": 3,
+        "limite_usuarios": 6,
+        "limite_pacientes_ativos": 1500,
+        "limite_armazenamento_mb": 5120,
         "modulo_financeiro_ativo": True,
         "modulo_estoque_ativo": True,
         "sync_google_ativo": True,
@@ -42,12 +43,12 @@ PLANOS = [
     {
         "nome": "Premium",
         "periodicidade": "MENSAL",
-        "preco_mensal": "499.00",
-        "preco_anual": "4790.00",  # ~20% off (12x 499 = 5988)
+        "preco_mensal": "149.00",
+        "preco_anual": "1430.00",  # ~20% off (12x 149 = 1788)
         "limite_dentistas": None,  # ilimitado
         "limite_usuarios": None,
         "limite_pacientes_ativos": None,
-        "limite_armazenamento_mb": 51200,
+        "limite_armazenamento_mb": 20480,
         "modulo_financeiro_ativo": True,
         "modulo_estoque_ativo": True,
         "sync_google_ativo": True,

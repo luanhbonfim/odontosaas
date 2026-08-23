@@ -43,6 +43,7 @@ function featuresDoPlano(plano: PlanoPublico): Feature[] {
     { label: 'Automação de WhatsApp', ativo: plano.whatsapp_waha_ativo },
     { label: 'Módulo Financeiro & TISS', ativo: plano.modulo_financeiro_ativo },
     { label: 'Controle de Estoque', ativo: plano.modulo_estoque_ativo },
+    { label: 'Assistente com IA para o dentista', ativo: true, emBreve: true },
   ]
 }
 
