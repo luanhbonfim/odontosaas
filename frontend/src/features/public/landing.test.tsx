@@ -129,7 +129,7 @@ describe('gerarLinkWhatsApp', () => {
     const link = gerarLinkWhatsApp('Enterprise', 'ANUAL')
     expect(link).toContain(`https://wa.me/${NUMERO_COMERCIAL}?text=`)
     expect(decodeURIComponent(link)).toContain(
-      'Olá! Tenho interesse no Plano Enterprise (Anual) do PróClínica Cloud.',
+      'Olá! Tenho interesse no Plano Enterprise (Anual) do PróClínica.',
     )
   })
 })

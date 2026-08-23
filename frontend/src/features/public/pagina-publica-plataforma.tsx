@@ -10,7 +10,7 @@ import { PlanosSection } from './components/planos-section'
 import { RecursosSection } from './components/recursos-section'
 
 /**
- * Landing page / página de vendas do PróClínica Cloud.
+ * Landing page / página de vendas do PróClínica.
  * Renderizada no host público raiz (sem tenant) — ver `RootRouter` em App.tsx.
  *
  * Tema claro (rosa blush + dourado) consistente com o app das clínicas: usa os

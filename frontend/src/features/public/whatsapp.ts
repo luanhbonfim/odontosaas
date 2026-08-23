@@ -21,12 +21,12 @@ export function linkWhatsApp(mensagem: string): string {
 export function gerarLinkWhatsApp(planoNome: string, periodicidade: Periodicidade): string {
   const mensagem = `Olá! Tenho interesse no Plano ${planoNome} (${periodicidadeLabel(
     periodicidade,
-  )}) do PróClínica Cloud.`
+  )}) do PróClínica.`
   return linkWhatsApp(mensagem)
 }
 
 // Mensagens pré-formatadas dos CTAs institucionais (header/hero/floating).
 export const MSG_CONSULTOR =
-  'Olá! Estou no site do PróClínica Cloud e gostaria de falar com um consultor sobre o sistema para minha clínica.'
+  'Olá! Estou no site do PróClínica e gostaria de falar com um consultor sobre o sistema para minha clínica.'
 export const MSG_DEMONSTRACAO =
-  'Olá! Gostaria de agendar uma demonstração gratuita do PróClínica Cloud para conhecer os recursos na prática.'
+  'Olá! Gostaria de agendar uma demonstração gratuita do PróClínica para conhecer os recursos na prática.'

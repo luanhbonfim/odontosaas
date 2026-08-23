@@ -32,12 +32,12 @@ export function FooterLanding() {
                 className="size-10 w-auto object-contain"
               />
               <span className="text-base font-bold tracking-tight text-foreground">
-                PróClínica <span className="text-primary">Cloud</span>
+                Pró<span className="text-[#b89048]">Clínica</span>
               </span>
             </div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Plataforma SaaS de gestão inteligente para clínicas e consultórios odontológicos.
-              Agenda, prontuário, financeiro e automação de WhatsApp em um só lugar.
+              Gestão inteligente para clínicas e consultórios odontológicos. Agenda, prontuário,
+              financeiro e automação de WhatsApp em um só lugar.
             </p>
             <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1.5 text-xs font-medium text-muted-foreground">
               <ShieldCheck className="size-4 text-success" aria-hidden="true" />
@@ -93,7 +93,7 @@ export function FooterLanding() {
 
         <div className="mt-12 border-t border-border pt-6">
           <p className="text-center text-xs text-muted-foreground">
-            © 2026 PróClínica Cloud. Todos os direitos reservados.
+            © 2026 PróClínica. Todos os direitos reservados.
           </p>
         </div>
       </div>
