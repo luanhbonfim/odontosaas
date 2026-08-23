@@ -100,7 +100,7 @@ export function DentistasPage() {
             placeholder="Buscar por nome ou CRO…"
             value={busca}
             onChange={(evento) => setBusca(evento.target.value)}
-            className="max-w-xs"
+            className="w-full sm:max-w-xs"
           />
           <DataTable
             columns={colunas}

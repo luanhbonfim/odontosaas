@@ -4,8 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DataTable } from './data-table'
 
+// DataTable decide "tabela x cards" por `useEhTelaLarga` (>= lg): true = tabela, false = cards.
 const { ehDesktopMock } = vi.hoisted(() => ({ ehDesktopMock: vi.fn(() => true) }))
-vi.mock('@/stores/ui', () => ({ useEhDesktop: ehDesktopMock }))
+vi.mock('@/stores/ui', () => ({ useEhTelaLarga: ehDesktopMock }))
 
 type Linha = { nome: string; telefone: string }
 

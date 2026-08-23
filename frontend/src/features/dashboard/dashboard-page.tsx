@@ -14,10 +14,13 @@ import { useState } from 'react'
 
 import { DataTable } from '@/components/common/data-table'
 import { DateTime, Money, PhoneText } from '@/components/common/formato'
+import { type ItemSegmento, SegmentadorRodape } from '@/components/common/segmentador-rodape'
 import { StatusBadge } from '@/components/common/status-badge'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSessao } from '@/features/auth/use-sessao'
+import { cn } from '@/lib/utils'
+import { useEhDesktop } from '@/stores/ui'
 
 import {
   ConsultasPorDiaChart,
@@ -91,16 +94,28 @@ export function DashboardPage() {
   // Seção Financeiro só para quem tem acesso (Gerente/Admin), espelhando a matriz.
   const podeVerFinanceiro = usuario?.papel === 'DENTISTA_GERENTE' || usuario?.papel === 'ADMIN'
 
+  // Dashboard é denso: no mobile mostramos UMA seção por vez, trocada pelo
+  // segmentador do rodapé. No desktop (>= md) tudo aparece normalmente.
+  const desktop = useEhDesktop()
+  const [secao, setSecao] = useState('atendimento')
+  const segmentos: ItemSegmento[] = [
+    { id: 'atendimento', rotulo: 'Atendimento', icone: CalendarCheck },
+    ...(podeVerFinanceiro ? [{ id: 'financeiro', rotulo: 'Financeiro', icone: Wallet }] : []),
+    { id: 'estoque', rotulo: 'Estoque', icone: Boxes },
+  ]
+  // No mobile, oculta as seções que não são a ativa.
+  const oculto = (id: string) => (!desktop && secao !== id ? 'hidden' : '')
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20 md:pb-0">
       <PageHeader
         titulo="Dashboard"
         descricao="Visão geral da clínica."
         acoes={<PeriodoSelector valor={periodo} aoMudar={setPeriodo} />}
       />
 
-      {/* Próximas consultas — em destaque, acima de tudo */}
-      <Card>
+      {/* Próximas consultas — em destaque, acima de tudo (seção Atendimento no mobile) */}
+      <Card className={oculto('atendimento')}>
         <CardHeader>
           <CardTitle>Próximas consultas</CardTitle>
         </CardHeader>
@@ -110,7 +125,7 @@ export function DashboardPage() {
       </Card>
 
       {/* Atendimento */}
-      <section className="space-y-4">
+      <section className={cn('space-y-4', oculto('atendimento'))}>
         <SecaoTitulo>Atendimento</SecaoTitulo>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <KpiCard
@@ -157,7 +172,7 @@ export function DashboardPage() {
 
       {/* Financeiro — só Gerente/Admin (espelha a matriz; nota 1) */}
       {podeVerFinanceiro && (
-        <section className="space-y-4">
+        <section className={cn('space-y-4', oculto('financeiro'))}>
           <SecaoTitulo>Financeiro</SecaoTitulo>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
@@ -220,7 +235,7 @@ export function DashboardPage() {
       )}
 
       {/* Estoque e insumos */}
-      <section className="space-y-4">
+      <section className={cn('space-y-4', oculto('estoque'))}>
         <SecaoTitulo>Estoque e insumos</SecaoTitulo>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
@@ -274,6 +289,8 @@ export function DashboardPage() {
           </Card>
         </div>
       </section>
+
+      <SegmentadorRodape itens={segmentos} ativo={secao} aoMudar={setSecao} />
     </div>
   )
 }

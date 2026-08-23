@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useEhDesktop } from '@/stores/ui'
+import { useEhTelaLarga } from '@/stores/ui'
 
 /** Paginação controlada pelo servidor (1-based). Quando ausente, a `DataTable`
  * pagina no cliente. */
@@ -57,7 +57,8 @@ export function DataTable<T>({
   ordenacaoManual,
 }: DataTableProps<T>) {
   const [sortingCliente, setSortingCliente] = useState<SortingState>([])
-  const desktop = useEhDesktop()
+  // Tabela só em telas largas (>= lg); em celular/tablet estreito vira cards (sem scroll lateral).
+  const desktop = useEhTelaLarga()
   const manual = paginacaoManual != null
   // No modo paginado só há ordenação se controlada pelo servidor (senão ordenaria
   // apenas a página visível, o que enganaria).
@@ -181,22 +182,50 @@ export function DataTable<T>({
               {textoVazio}
             </div>
           ) : (
-            linhas.map((row) => (
-              <div key={row.id} className="space-y-1.5 rounded-lg border bg-card p-4">
-                {row.getVisibleCells().map((cell) => {
-                  const cabecalho = cell.column.columnDef.header
-                  const rotulo = typeof cabecalho === 'string' ? cabecalho : ''
-                  return (
-                    <div key={cell.id} className="flex items-start justify-between gap-3 text-sm">
-                      {rotulo && <span className="text-muted-foreground">{rotulo}</span>}
-                      <span className={rotulo ? 'text-right font-medium' : 'ml-auto'}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </span>
+            linhas.map((row) => {
+              const cells = row.getVisibleCells()
+              const comRotulo = cells.filter(
+                (c, i) => i > 0 && typeof c.column.columnDef.header === 'string' && c.column.columnDef.header,
+              )
+              const semRotulo = cells.filter(
+                (c, i) => i > 0 && !(typeof c.column.columnDef.header === 'string' && c.column.columnDef.header),
+              )
+              const primeira = cells[0]
+              return (
+                <div key={row.id} className="rounded-lg border bg-card p-4">
+                  {/* Topo: título (1ª coluna) à esquerda + ações no canto superior direito */}
+                  <div className="flex items-start justify-between gap-3">
+                    {primeira && (
+                      <div className="min-w-0 text-sm font-semibold text-foreground">
+                        {flexRender(primeira.column.columnDef.cell, primeira.getContext())}
+                      </div>
+                    )}
+                    {semRotulo.length > 0 && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        {semRotulo.map((cell) => (
+                          <span key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {/* Demais campos: pares rótulo/valor alinhados à esquerda (agrupados) */}
+                  {comRotulo.length > 0 && (
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                      {comRotulo.map((cell) => (
+                        <div key={cell.id} className="min-w-0 text-sm">
+                          <span className="block text-xs text-muted-foreground">
+                            {cell.column.columnDef.header as string}
+                          </span>
+                          <span className="block truncate font-medium">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  )
-                })}
-              </div>
-            ))
+                  )}
+                </div>
+              )
+            })
           )}
         </div>
       )}

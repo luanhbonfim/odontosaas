@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { useSessao } from '@/features/auth/use-sessao'
 import { useDentistas } from '@/features/dentistas/use-dentistas'
 import type { ErroApi } from '@/lib/api/client'
+import { cn } from '@/lib/utils'
 import { useDebounce } from '@/lib/hooks/use-debounce'
 
 import { type Paciente, TAMANHO_PAGINA, useExcluirPaciente, usePacientes } from './use-pacientes'
@@ -194,16 +195,17 @@ export function PacientesPage() {
         />
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Mobile: filtros empilhados em 100% de largura (acompanham o botão). sm+: em linha. */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <Input
               placeholder="Buscar por nome ou CPF…"
               value={busca}
               onChange={(evento) => setBusca(evento.target.value)}
-              className="max-w-xs"
+              className="w-full sm:w-72"
               aria-label="Buscar pacientes"
             />
             <select
-              className={classeSelect}
+              className={cn(classeSelect, 'w-full sm:w-48')}
               value={ativo}
               onChange={(e) => setAtivo(e.target.value)}
               aria-label="Filtrar por status"
@@ -213,7 +215,7 @@ export function PacientesPage() {
               <option value="false">Inativos</option>
             </select>
             <select
-              className={classeSelect}
+              className={cn(classeSelect, 'w-full sm:w-48')}
               value={dentistaResponsavel}
               onChange={(e) => setDentistaResponsavel(e.target.value)}
               aria-label="Filtrar por dentista responsável"

@@ -21,6 +21,7 @@ import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { DataTable } from '@/components/common/data-table'
+import { type ItemSegmento, SegmentadorRodape } from '@/components/common/segmentador-rodape'
 import { CabecalhoDrawer, Campo, CorpoDrawer, LinhaToggle } from '@/components/common/form-kit'
 import { DateTime } from '@/components/common/formato'
 import { StatusBadge, type VarianteStatus } from '@/components/common/status-badge'
@@ -118,15 +119,25 @@ function renderizarPreview(corpo: string): string {
   return corpo.replace(/\{\{(\w+)\}\}/g, (_todo, chave) => AMOSTRA[chave] ?? `{{${chave}}}`)
 }
 
+const ABAS_WHATSAPP: ItemSegmento[] = [
+  { id: 'config', rotulo: 'Config', icone: Settings2 },
+  { id: 'templates', rotulo: 'Templates', icone: MessageSquareText },
+  { id: 'fila', rotulo: 'Fila', icone: Clock },
+  { id: 'historico', rotulo: 'Histórico', icone: History },
+]
+
 export function NotificacoesPage() {
+  const [aba, setAba] = useState('config')
   return (
-    <div className="space-y-6">
+    // pb no mobile p/ o conteúdo não ficar atrás do segmentador do rodapé
+    <div className="space-y-6 pb-20 md:pb-0">
       <PageHeader
         titulo="WhatsApp"
         descricao="Confirmações e lembretes por WhatsApp: configuração, mensagens e histórico."
       />
-      <Tabs defaultValue="config">
-        <TabsList>
+      <Tabs value={aba} onValueChange={setAba}>
+        {/* No mobile a navegação vai para o rodapé (SegmentadorRodape); esconde a barra do topo */}
+        <TabsList className="hidden md:flex">
           <TabsTrigger value="config">
             <Settings2 className="size-4" /> Configuração
           </TabsTrigger>
@@ -140,19 +151,21 @@ export function NotificacoesPage() {
             <History className="size-4" /> Histórico
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="config" className="pt-4">
+        <TabsContent value="config" className="pt-1 md:pt-4">
           <ConfiguracaoTab />
         </TabsContent>
-        <TabsContent value="templates" className="pt-4">
+        <TabsContent value="templates" className="pt-1 md:pt-4">
           <TemplatesTab />
         </TabsContent>
-        <TabsContent value="fila" className="pt-4">
+        <TabsContent value="fila" className="pt-1 md:pt-4">
           <FilaTab />
         </TabsContent>
-        <TabsContent value="historico" className="pt-4">
+        <TabsContent value="historico" className="pt-1 md:pt-4">
           <HistoricoTab />
         </TabsContent>
       </Tabs>
+
+      <SegmentadorRodape itens={ABAS_WHATSAPP} ativo={aba} aoMudar={setAba} />
     </div>
   )
 }
@@ -500,7 +513,8 @@ function TemplatesTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      {/* Mobile: descrição em cima e o botão embaixo (100% largura). sm+: lado a lado. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">
           Confirmação, cancelamento e agradecimento já vêm prontos (só editar). Você adiciona
           quantos <strong>lembretes</strong> quiser.
@@ -508,7 +522,7 @@ function TemplatesTab() {
         <TemplateDrawer
           tiposExistentes={templates.map((t) => t.tipo).filter(Boolean) as string[]}
           trigger={
-            <Button size="sm">
+            <Button size="sm" className="w-full sm:w-auto sm:shrink-0">
               <Plus /> Adicionar lembrete
             </Button>
           }

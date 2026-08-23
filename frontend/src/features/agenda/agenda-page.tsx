@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import type { ErroApi } from '@/lib/api/client'
+import { cn } from '@/lib/utils'
+import { useEhDesktop } from '@/stores/ui'
 
 import { ConsultaModal, type EstadoModal } from './consulta-modal'
 import {
@@ -31,6 +33,10 @@ export function AgendaPage() {
   const calRef = useRef<FullCalendar>(null)
   const [modal, setModal] = useState<EstadoModal | null>(null)
   const eventos = (data ?? []).map(consultaParaEvento)
+  // No mobile a semana (7 colunas) não cabe: começa na visão Dia com toolbar compacta.
+  const desktop = useEhDesktop()
+  // Semana/Mês no mobile: precisam de largura → o wrapper rola na horizontal (sem premium).
+  const [precisaLargura, setPrecisaLargura] = useState(false)
 
   return (
     <div className="space-y-6">
@@ -62,17 +68,27 @@ export function AgendaPage() {
       ) : (
         <Card>
           <CardContent className="p-4">
+            {/* Mobile em Semana/Mês: rola na horizontal com largura mínima (colunas legíveis). */}
+            <div className={cn(!desktop && precisaLargura && 'overflow-x-auto')}>
+              <div className={cn(!desktop && precisaLargura && 'min-w-[680px]')}>
             <FullCalendar
+              // Remonta ao cruzar o breakpoint para aplicar initialView/toolbar do modo certo.
+              key={desktop ? 'desktop' : 'mobile'}
               ref={calRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="timeGridWeek"
+              initialView={desktop ? 'timeGridWeek' : 'timeGridDay'}
               locale={LOCALE_PT_BR}
+              // Mesmos botões (Mês/Semana/Dia) no mobile e no desktop; no mobile a
+              // toolbar empilha via CSS (ver index.css) e cabe na tela estreita.
               headerToolbar={{
                 left: 'prev,next today',
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,timeGridDay',
               }}
               events={eventos}
+              // Ao trocar de visão, marca se precisa de largura (Semana/Mês) para o
+              // wrapper rolar horizontalmente no mobile em vez de espremer as colunas.
+              datesSet={(arg) => setPrecisaLargura(arg.view.type !== 'timeGridDay')}
               // Bloco preenchido com a cor do status (sem a "bolinha" do mês).
               eventDisplay="block"
               height="auto"
@@ -139,6 +155,8 @@ export function AgendaPage() {
                 }
               }}
             />
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

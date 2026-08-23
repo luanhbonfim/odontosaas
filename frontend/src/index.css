@@ -183,3 +183,25 @@
     background: transparent;
   }
 }
+
+/* Agenda (FullCalendar) no mobile: toolbar empilhada e compacta, sem estourar a largura. */
+@media (max-width: 767px) {
+  .fc .fc-toolbar.fc-header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .fc .fc-toolbar-title {
+    font-size: 1rem;
+    text-align: center;
+  }
+  .fc .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+  .fc .fc-button {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.8rem;
+  }
+}

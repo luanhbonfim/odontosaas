@@ -20,6 +20,24 @@ export function useEhDesktop() {
   return desktop
 }
 
+// Telas realmente largas (>= lg). Abaixo disso (celular + tablet em retrato) as
+// tabelas viram cards — evita scroll lateral em telas estreitas.
+const CONSULTA_LG = '(min-width: 1024px)'
+
+/** Hook reativo: true em telas largas (>= lg / 1024px). */
+export function useEhTelaLarga() {
+  const [larga, setLarga] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(CONSULTA_LG).matches,
+  )
+  useEffect(() => {
+    const mql = window.matchMedia(CONSULTA_LG)
+    const aoMudar = () => setLarga(mql.matches)
+    mql.addEventListener('change', aoMudar)
+    return () => mql.removeEventListener('change', aoMudar)
+  }, [])
+  return larga
+}
+
 type EstadoUI = {
   sidebarAberta: boolean
   alternarSidebar: () => void

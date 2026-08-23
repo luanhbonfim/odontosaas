@@ -86,7 +86,7 @@ export function UsuariosPage() {
             placeholder="Buscar por nome ou e-mail…"
             value={busca}
             onChange={(evento) => setBusca(evento.target.value)}
-            className="max-w-xs"
+            className="w-full sm:max-w-xs"
           />
           <DataTable
             columns={colunas}
