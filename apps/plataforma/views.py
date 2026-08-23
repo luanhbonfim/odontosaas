@@ -5,12 +5,13 @@ Views da plataforma para o schema do tenant.
 import datetime
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, OpenApiResponse
-from rest_framework import permissions, status
+from rest_framework import generics, permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.dentistas.models import Dentista
 from apps.pacientes.models import Paciente
+from apps.plataforma.models import PlanoAssinatura
 from apps.usuarios.models import Usuario
 
 
@@ -129,3 +130,40 @@ class MeuPlanoView(APIView):
         }
 
         return Response(dados, status=status.HTTP_200_OK)
+
+
+class PlanoPublicoSerializer(serializers.ModelSerializer):
+    """Planos expostos publicamente na landing page (sem dados sensíveis)."""
+
+    class Meta:
+        model = PlanoAssinatura
+        fields = [
+            "id",
+            "nome",
+            "periodicidade",
+            "preco_mensal",
+            "preco_anual",
+            "limite_dentistas",
+            "limite_usuarios",
+            "limite_pacientes_ativos",
+            "limite_armazenamento_mb",
+            "modulo_financeiro_ativo",
+            "modulo_estoque_ativo",
+            "sync_google_ativo",
+            "whatsapp_waha_ativo",
+        ]
+
+
+class PlanosPublicosView(generics.ListAPIView):
+    """
+    Lista pública (sem autenticação) dos planos ATIVOS, para a página de vendas.
+    Servida no host público (schema public); `PlanoAssinatura` é SHARED_APP.
+    """
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []  # endpoint anônimo — não tenta validar JWT
+    serializer_class = PlanoPublicoSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return PlanoAssinatura.objects.filter(ativo=True).order_by("preco_mensal")

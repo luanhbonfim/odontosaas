@@ -86,13 +86,15 @@ router.register("auditoria", RegistroAuditoriaViewSet, basename="auditoria")
 router.register("usuarios", UsuarioViewSet, basename="usuario")
 router.register("conta/mfa", ContaMFAViewSet, basename="conta-mfa")
 
-from apps.plataforma.views import MeuPlanoView
+from apps.plataforma.views import MeuPlanoView, PlanosPublicosView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
     path("api/plataforma-admin/", include("apps.plataforma_admin.urls")),
     path("api/meu-plano/", MeuPlanoView.as_view(), name="meu_plano"),
+    # Planos ativos para a landing page (público, sem autenticação)
+    path("api/plataforma/planos/", PlanosPublicosView.as_view(), name="planos_publicos"),
     # Autenticação JWT (login por e-mail → access/refresh)
     path("api/auth/token/", LoginView.as_view(), name="token_obtain_pair"),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
