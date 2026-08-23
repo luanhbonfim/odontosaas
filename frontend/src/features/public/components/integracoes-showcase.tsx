@@ -6,14 +6,12 @@ import {
   Check,
   CheckCheck,
   CheckCircle2,
-  Clock,
   Layers,
   Link2,
   Lock,
   MessageCircle,
   Sparkles,
-  Stethoscope,
-  User,
+  XCircle,
   Ban,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -173,52 +171,28 @@ function LinkConfirmacaoMockup() {
           </div>
         </div>
 
-        {/* Página de confirmação */}
-        <div className="px-5 py-6 text-center">
-          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/20">
-            <CalendarCheck className="size-6" aria-hidden="true" />
-          </span>
-          <p className="mt-3 text-sm font-bold text-foreground">Clínica Sorriso</p>
-          <h4 className="mt-1 text-base font-extrabold tracking-tight text-foreground">
-            Confirme sua consulta
-          </h4>
-
-          {/* Detalhes do agendamento */}
-          <div className="mt-4 space-y-2.5 rounded-xl border border-border bg-background/70 p-4 text-left">
-            <div className="flex items-center gap-2.5 text-xs text-foreground">
-              <User className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span className="font-medium">Maria Silva</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-xs text-foreground">
-              <CalendarClock className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span className="font-medium">Amanhã, 24/08 às 09:00</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-xs text-foreground">
-              <Stethoscope className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span className="font-medium">Dra. Ana Paula</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-xs text-foreground">
-              <Clock className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span className="font-medium">Duração ~50 min</span>
-            </div>
+        {/* Página de confirmação — fiel à tela real (ConfirmacaoPage) */}
+        <div className="space-y-5 px-6 py-7 text-center">
+          <div className="flex justify-center">
+            <CalendarCheck className="size-10 text-primary" aria-hidden="true" />
           </div>
-
-          {/* Botões */}
-          <div className="mt-4 space-y-2">
-            <span className="flex w-full items-center justify-center gap-2 rounded-lg bg-success px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-success/25">
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Olá, Maria!</p>
+            <p className="text-base font-medium text-foreground">
+              Você confirma sua consulta com Dra. Ana Paula?
+            </p>
+            <p className="text-sm text-muted-foreground">24/08/2026 09:00</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm">
               <CheckCircle2 className="size-4" aria-hidden="true" />
               Confirmar presença
             </span>
-            <span className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground">
-              <CalendarClock className="size-4" aria-hidden="true" />
-              Preciso remarcar
+            <span className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm">
+              <XCircle className="size-4" aria-hidden="true" />
+              Não poderei ir
             </span>
           </div>
-
-          <p className="mt-3 inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Lock className="size-3" aria-hidden="true" />
-            Link exclusivo e seguro • a agenda atualiza sozinha
-          </p>
         </div>
       </div>
     </div>
