@@ -225,15 +225,21 @@ describe('Sprint V9 — Suíte E2E e Hardening do Vendor Admin', () => {
   })
 
   it('V9.E2E-4: Exibição da Página Institucional / Vendas no Domínio Raiz', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
-      <MemoryRouter>
-        <PaginaPublicaPlataforma />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <PaginaPublicaPlataforma />
+        </MemoryRouter>
+      </QueryClientProvider>
     )
 
-    expect(screen.getByText('PróClínica Cloud')).toBeInTheDocument()
-    expect(screen.getByText(/saas de gestão inteligente/i)).toBeInTheDocument()
-    expect(screen.getByText(/acesso aos consultórios/i)).toBeInTheDocument()
+    // Landing page de vendas: headline do hero e seções institucionais.
+    expect(
+      screen.getByRole('heading', { level: 1, name: /gestão completa da sua clínica/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /módulos & recursos/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /um plano para cada fase/i })).toBeInTheDocument()
   })
 
   it('V9.E2E-5: Tratativa de 404 (Página Não Encontrada) com botão de navegação', () => {
