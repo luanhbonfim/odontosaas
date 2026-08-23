@@ -43,7 +43,9 @@ function featuresDoPlano(plano: PlanoPublico): Feature[] {
     { label: 'Automação de WhatsApp', ativo: plano.whatsapp_waha_ativo },
     { label: 'Módulo Financeiro & TISS', ativo: plano.modulo_financeiro_ativo },
     { label: 'Controle de Estoque', ativo: plano.modulo_estoque_ativo },
-    { label: 'Assistente com IA para o dentista', ativo: true, emBreve: true },
+    // IA disponível a partir do Profissional (Essencial não inclui). Usa o módulo
+    // financeiro como proxy de tier — Essencial é o único sem ele.
+    { label: 'IA que responde sobre a sua clínica', ativo: plano.modulo_financeiro_ativo, emBreve: true },
   ]
 }
 
@@ -138,7 +140,7 @@ function CardPlano({
             )}
             <span className={f.ativo ? '' : 'line-through'}>
               {f.label}
-              {f.emBreve && (
+              {f.emBreve && f.ativo && (
                 <span className="ml-1.5 inline-block rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-primary">
                   em breve
                 </span>

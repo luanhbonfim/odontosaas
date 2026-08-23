@@ -22,7 +22,7 @@ const RECURSOS: Recurso[] = [
   {
     icon: Bot,
     categoria: 'Inteligência Artificial',
-    titulo: 'Assistente com IA para o dentista',
+    titulo: 'IA que entende a sua clínica',
     descricao:
       'Pergunte em linguagem natural e receba na hora: "Quanto faturei este mês?", "Quais insumos estão acabando?", "Quantas consultas tenho amanhã?". Sua clínica inteira na palma da mão.',
   },

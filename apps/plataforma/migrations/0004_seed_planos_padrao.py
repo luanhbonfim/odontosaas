@@ -15,10 +15,10 @@ PLANOS = [
         "periodicidade": "MENSAL",
         "preco_mensal": "30.00",
         "preco_anual": "288.00",  # ~20% off (12x 30 = 360)
-        "limite_dentistas": 1,
-        "limite_usuarios": 2,
-        "limite_pacientes_ativos": 300,
-        "limite_armazenamento_mb": 1024,
+        "limite_dentistas": 3,
+        "limite_usuarios": 5,
+        "limite_pacientes_ativos": 600,
+        "limite_armazenamento_mb": 1024,  # 1 GB
         "modulo_financeiro_ativo": False,
         "modulo_estoque_ativo": False,
         "sync_google_ativo": True,
@@ -30,10 +30,10 @@ PLANOS = [
         "periodicidade": "MENSAL",
         "preco_mensal": "79.00",
         "preco_anual": "758.00",  # ~20% off (12x 79 = 948)
-        "limite_dentistas": 3,
-        "limite_usuarios": 6,
-        "limite_pacientes_ativos": 1500,
-        "limite_armazenamento_mb": 5120,
+        "limite_dentistas": 6,
+        "limite_usuarios": 12,
+        "limite_pacientes_ativos": 2000,
+        "limite_armazenamento_mb": 5120,  # 5 GB
         "modulo_financeiro_ativo": True,
         "modulo_estoque_ativo": True,
         "sync_google_ativo": True,

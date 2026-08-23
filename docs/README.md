@@ -43,4 +43,22 @@ Padrão visual, componentes reutilizáveis, formulários e acessibilidade.
 
 ---
 
+## 🚀 [05-landing-page/](05-landing-page/) — Página Inicial / Vendas (Landing Page)
+Documentação da página pública comercial do PróClínica Cloud com exibição dinâmica de planos e captação de leads.
+
+* 📄 [`01-especificacao-landing-page.md`](05-landing-page/01-especificacao-landing-page.md): Especificação funcional, design dark luxury, seções e integrações.
+* 📄 [`02-backlog-sprints-landing-page.md`](05-landing-page/02-backlog-sprints-landing-page.md): Backlog de desenvolvimento das Sprints LP1 a LP5.
+* 📄 [`03-diretrizes-copywriting-e-conversao.md`](05-landing-page/03-diretrizes-copywriting-e-conversao.md): Diretrizes de copywriting, mensagens para WhatsApp e quebra de objeções.
+
+---
+
+## 🗺️ [06-roadmap/](06-roadmap/) — Roadmap de Sprints (novas funcionalidades)
+Sequência de validação dos planos/permissões e desenvolvimento das novas features.
+
+* 📄 [`00-plano-sprints-planos-e-novas-features.md`](06-roadmap/00-plano-sprints-planos-e-novas-features.md): Índice-mestre — valida planos/limites/permissões e sequencia as entregas.
+* 📄 [`01-backlog-armazenamento-nuvem.md`](06-roadmap/01-backlog-armazenamento-nuvem.md): Armazenamento em nuvem & anexos com cota real por plano (AS1–AS4).
+* 📄 [`02-backlog-ia-assistente-dentista.md`](06-roadmap/02-backlog-ia-assistente-dentista.md): Assistente com IA para o dentista via LangChain (IA1–IA4).
+
+---
+
 > 💡 *Ao criar ou atualizar documentação, certifique-se de manter os links relativos consistentes.*

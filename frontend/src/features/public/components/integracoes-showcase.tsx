@@ -5,9 +5,15 @@ import {
   CalendarClock,
   Check,
   CheckCheck,
+  CheckCircle2,
+  Clock,
   Layers,
+  Link2,
+  Lock,
   MessageCircle,
   Sparkles,
+  Stethoscope,
+  User,
   Ban,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -141,6 +147,84 @@ function Digitando() {
   )
 }
 
+/**
+ * Print de demonstração da CONFIRMAÇÃO POR LINK: janela de navegador mostrando
+ * a página segura que o paciente abre ao tocar no link do WhatsApp.
+ */
+function LinkConfirmacaoMockup() {
+  return (
+    <div className="relative mx-auto w-full max-w-sm">
+      <div
+        aria-hidden="true"
+        className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-primary/10 blur-2xl"
+      />
+      {/* Janela de navegador */}
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/15 ring-1 ring-border">
+        {/* Barra do navegador */}
+        <div className="flex items-center gap-2 border-b border-border bg-secondary/60 px-3 py-2.5">
+          <span className="flex gap-1.5" aria-hidden="true">
+            <span className="size-2.5 rounded-full bg-muted-foreground/30" />
+            <span className="size-2.5 rounded-full bg-muted-foreground/30" />
+            <span className="size-2.5 rounded-full bg-muted-foreground/30" />
+          </span>
+          <div className="ml-1 flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1">
+            <Lock className="size-3 shrink-0 text-success" aria-hidden="true" />
+            <span className="truncate text-[11px] text-muted-foreground">proclinica.app/c/9f2a</span>
+          </div>
+        </div>
+
+        {/* Página de confirmação */}
+        <div className="px-5 py-6 text-center">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/20">
+            <CalendarCheck className="size-6" aria-hidden="true" />
+          </span>
+          <p className="mt-3 text-sm font-bold text-foreground">Clínica Sorriso</p>
+          <h4 className="mt-1 text-base font-extrabold tracking-tight text-foreground">
+            Confirme sua consulta
+          </h4>
+
+          {/* Detalhes do agendamento */}
+          <div className="mt-4 space-y-2.5 rounded-xl border border-border bg-background/70 p-4 text-left">
+            <div className="flex items-center gap-2.5 text-xs text-foreground">
+              <User className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span className="font-medium">Maria Silva</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-xs text-foreground">
+              <CalendarClock className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span className="font-medium">Amanhã, 24/08 às 09:00</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-xs text-foreground">
+              <Stethoscope className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span className="font-medium">Dra. Ana Paula</span>
+            </div>
+            <div className="flex items-center gap-2.5 text-xs text-foreground">
+              <Clock className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span className="font-medium">Duração ~50 min</span>
+            </div>
+          </div>
+
+          {/* Botões */}
+          <div className="mt-4 space-y-2">
+            <span className="flex w-full items-center justify-center gap-2 rounded-lg bg-success px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-success/25">
+              <CheckCircle2 className="size-4" aria-hidden="true" />
+              Confirmar presença
+            </span>
+            <span className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground">
+              <CalendarClock className="size-4" aria-hidden="true" />
+              Preciso remarcar
+            </span>
+          </div>
+
+          <p className="mt-3 inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Lock className="size-3" aria-hidden="true" />
+            Link exclusivo e seguro • a agenda atualiza sozinha
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function IntegracoesShowcase() {
   return (
     <section
@@ -260,6 +344,41 @@ export function IntegracoesShowcase() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Destaque: Confirmação por link (print de demonstração) */}
+        <div className="mt-16 grid grid-cols-1 items-center gap-10 rounded-3xl border border-primary/20 bg-card/60 p-6 shadow-lg shadow-primary/10 backdrop-blur-md sm:p-8 lg:grid-cols-2 lg:gap-12">
+          <div className="order-2 lg:order-1">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+              <Link2 className="size-3.5" aria-hidden="true" />
+              Confirmação por link
+            </span>
+            <h3 className="mt-5 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+              Um toque no link e a presença está confirmada
+            </h3>
+            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+              Além do SIM/NÃO, cada consulta gera um <strong className="text-foreground">link
+              exclusivo e seguro</strong>. O paciente abre, vê os detalhes do agendamento e confirma
+              (ou pede para remarcar) com um único toque — e a sua agenda se atualiza sozinha, sem a
+              recepção precisar digitar nada.
+            </p>
+            <ul className="mt-5 grid gap-2 sm:grid-cols-2">
+              {[
+                'Link único por consulta',
+                'Página segura e simples',
+                'Confirma ou remarca em 1 toque',
+                'Agenda atualizada na hora',
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-2 text-sm text-foreground">
+                  <Check className="size-4 shrink-0 text-success" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="order-1 lg:order-2">
+            <LinkConfirmacaoMockup />
           </div>
         </div>
       </div>
