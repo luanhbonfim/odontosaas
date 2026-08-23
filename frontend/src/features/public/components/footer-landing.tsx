@@ -26,9 +26,11 @@ export function FooterLanding() {
           {/* Marca */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-2.5">
-              <span className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-white p-1.5 shadow-sm shadow-primary/10 ring-1 ring-primary/10">
-                <img src="/logo2.png" alt="PróClínica" className="h-full w-auto object-contain" />
-              </span>
+              <img
+                src="/logo-1-removebg-preview.png"
+                alt="PróClínica"
+                className="size-10 w-auto object-contain"
+              />
               <span className="text-base font-bold tracking-tight text-foreground">
                 PróClínica <span className="text-primary">Cloud</span>
               </span>

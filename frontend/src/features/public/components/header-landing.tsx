@@ -31,9 +31,11 @@ export function HeaderLanding() {
     >
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <a href="#topo" className="flex items-center gap-2.5" aria-label="PróClínica — início">
-          <span className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-white p-1.5 shadow-sm shadow-primary/10 ring-1 ring-primary/10">
-            <img src="/logo2.png" alt="PróClínica" className="h-full w-auto object-contain" />
-          </span>
+          <img
+            src="/logo-1-removebg-preview.png"
+            alt="PróClínica"
+            className="size-10 w-auto object-contain"
+          />
           <span className="text-base font-bold tracking-tight text-foreground">
             Pró<span className="text-primary">Clínica</span>
           </span>
