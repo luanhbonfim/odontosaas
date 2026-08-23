@@ -58,6 +58,7 @@ Sequência de validação dos planos/permissões e desenvolvimento das novas fea
 * 📄 [`00-plano-sprints-planos-e-novas-features.md`](06-roadmap/00-plano-sprints-planos-e-novas-features.md): Índice-mestre — valida planos/limites/permissões e sequencia as entregas.
 * 📄 [`01-backlog-armazenamento-nuvem.md`](06-roadmap/01-backlog-armazenamento-nuvem.md): Armazenamento em nuvem & anexos com cota real por plano (AS1–AS4).
 * 📄 [`02-backlog-ia-assistente-dentista.md`](06-roadmap/02-backlog-ia-assistente-dentista.md): Assistente com IA para o dentista via LangChain (IA1–IA4).
+* 📄 [`03-backlog-tiss-convenios.md`](06-roadmap/03-backlog-tiss-convenios.md): Padrão TISS & integração com convênios — guias ANS, lote e retorno/glosas (T1–T4).
 
 ---
 

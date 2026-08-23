@@ -50,9 +50,9 @@ const RECURSOS: Recurso[] = [
   {
     icon: Wallet,
     categoria: 'Financeiro',
-    titulo: 'Financeiro Odontológico & TISS',
+    titulo: 'Financeiro Odontológico & Convênios',
     descricao:
-      'Contas a pagar/receber, emissão de guias de convênios, fluxo de caixa em tempo real e quitação facilitada.',
+      'Contas a pagar/receber, controle de guias de convênio por status, fluxo de caixa em tempo real e quitação facilitada.',
   },
   {
     icon: Package,

@@ -55,6 +55,17 @@
 - [ ] AS3 — Consumo real & cota por plano (remove "em breve")
 - [ ] AS4 — Segurança, limpeza & deploy
 
+## 🧾 Sprint(s) T — Padrão TISS & Integração com Convênios
+> Detalhe completo em **[03-backlog-tiss-convenios.md](03-backlog-tiss-convenios.md)** (T1–T4).
+> Hoje só há controle **interno/manual** de guias — **não** é TISS. Estas sprints geram guias no
+> padrão ANS (GTO/XML), exportam lote e **importam retorno/glosas** (a integração real com o convênio).
+> Ao concluir, a landing passa a poder dizer "Financeiro & TISS" de verdade.
+
+- [ ] T1 — Cadastro TISS & dados de domínio
+- [ ] T2 — Geração & exportação de lote TISS (XML)
+- [ ] T3 — Retorno, demonstrativo & glosas
+- [ ] T4 — Integração eletrônica (webservice) & go-live
+
 ## 🤖 Sprint(s) IA — Assistente com IA para o Dentista
 > Detalhe completo em **[02-backlog-ia-assistente-dentista.md](02-backlog-ia-assistente-dentista.md)** (IA1–IA4).
 > Resumo: infra LLM (Claude API) + LangChain com tool-calling escopado por tenant/papel → tools de
@@ -72,7 +83,8 @@
 1. **Sprint V** (fundação: planos/permissões confiáveis) →
 2. **Sprint P** (pacientes — fecha o último limite não aplicado) →
 3. **Armazenamento AS1→AS4** (1 GB e acima, remove "em breve") →
-4. **IA IA1→IA4** (diferencial de venda, remove "em breve").
+4. **TISS T1→T4** (faturamento de convênio de verdade) →
+5. **IA IA1→IA4** (diferencial de venda, remove "em breve").
 
 ## 🧾 Definição de pronto (por bloco)
 - Enforcement testado nos 3 planos (no limite e acima).
