@@ -41,7 +41,7 @@ function featuresDoPlano(plano: PlanoPublico): Feature[] {
     { label: formatarArmazenamento(plano.limite_armazenamento_mb), ativo: true, emBreve: true },
     { label: 'Sincronização com Google Calendar', ativo: plano.sync_google_ativo },
     { label: 'Automação de WhatsApp', ativo: plano.whatsapp_waha_ativo },
-    { label: 'Módulo Financeiro & Convênios', ativo: plano.modulo_financeiro_ativo },
+    { label: 'Módulo Financeiro', ativo: plano.modulo_financeiro_ativo },
     { label: 'Controle de Estoque', ativo: plano.modulo_estoque_ativo },
     // IA disponível a partir do Profissional (Essencial não inclui). Usa o módulo
     // financeiro como proxy de tier — Essencial é o único sem ele.
