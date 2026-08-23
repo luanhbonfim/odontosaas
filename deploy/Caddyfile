@@ -27,11 +27,26 @@
 }
 
 # --- Apex/institucional: página de vendas/landing (domínio raiz) ---
-# Explícito e fixo (não usa env) para nunca depender do on-demand.
+# Serve o MESMO SPA (React) dos subdomínios; no host público o app renderiza a
+# landing de vendas (RootRouter -> is_public -> PaginaPublicaPlataforma).
+# Explícito e fixo (cert normal do apex, não depende do on-demand).
 proclinica.cloud, www.proclinica.cloud {
 	encode zstd gzip
-	root * /srv-landing
-	file_server
+
+	# Backend Django (o restante é o app React). Precisa de /api/* para o SPA
+	# resolver o tenant (/api/tenant-atual/) e puxar os planos públicos.
+	@backend path /api/* /admin /admin/* /static/* /media/* /health /health/* /integracoes/* /notificacoes/*
+	handle @backend {
+		reverse_proxy web:8000
+	}
+
+	# SPA (React/Vite): estáticos + fallback para index.html (React Router).
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
 	header -Server
 }
 
