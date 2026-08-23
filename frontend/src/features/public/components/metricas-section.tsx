@@ -30,14 +30,14 @@ const METRICAS: Metrica[] = [
   {
     icon: ShieldCheck,
     valor: '99.9%',
-    titulo: 'Uptime garantido',
-    descricao: 'Alta disponibilidade com isolamento total de dados por clínica.',
+    titulo: 'Sempre no ar',
+    descricao: 'Sua clínica funcionando quando você precisar, com os dados sempre protegidos.',
   },
 ]
 
 export function MetricasSection() {
   return (
-    <section aria-labelledby="metricas-titulo" className="border-b border-[#1E2D56] bg-[#0B132B]">
+    <section aria-labelledby="metricas-titulo" className="border-b border-border bg-secondary/30">
       <div className="mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
         <h2 id="metricas-titulo" className="sr-only">
           Resultados comprovados
@@ -46,14 +46,14 @@ export function MetricasSection() {
           {METRICAS.map(({ icon: Icon, valor, titulo, descricao }) => (
             <div
               key={titulo}
-              className="rounded-2xl border border-[#1E2D56] bg-[#111D3B]/70 p-6 backdrop-blur-md transition-colors hover:border-[#D4AF37]/50"
+              className="group rounded-2xl border border-border bg-card/70 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
             >
-              <span className="flex size-11 items-center justify-center rounded-xl border border-[#1E2D56] bg-[#0B132B]">
-                <Icon className="size-5 text-[#D4AF37]" aria-hidden="true" />
+              <span className="flex size-11 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 ring-1 ring-primary/10 transition-colors group-hover:bg-primary/15">
+                <Icon className="size-5 text-primary" aria-hidden="true" />
               </span>
-              <p className="mt-4 text-3xl font-extrabold tracking-tight text-slate-100">{valor}</p>
-              <p className="mt-1 text-sm font-semibold text-slate-200">{titulo}</p>
-              <p className="mt-1 text-sm leading-relaxed text-slate-400">{descricao}</p>
+              <p className="mt-4 text-3xl font-extrabold tracking-tight text-foreground">{valor}</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{titulo}</p>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{descricao}</p>
             </div>
           ))}
         </div>

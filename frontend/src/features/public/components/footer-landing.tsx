@@ -17,7 +17,7 @@ const LINKS_INSTITUCIONAIS = [
 
 export function FooterLanding() {
   return (
-    <footer className="bg-[#0B132B]" aria-labelledby="footer-titulo">
+    <footer className="bg-secondary/40" aria-labelledby="footer-titulo">
       <h2 id="footer-titulo" className="sr-only">
         Rodapé institucional
       </h2>
@@ -26,32 +26,32 @@ export function FooterLanding() {
           {/* Marca */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-xl border border-[#1E2D56] bg-[#111D3B] p-1.5">
-                <img src="/logo.png" alt="" className="h-full w-auto object-contain" />
+              <span className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-white p-1.5 shadow-sm shadow-primary/10 ring-1 ring-primary/10">
+                <img src="/logo2.png" alt="PróClínica" className="h-full w-auto object-contain" />
               </span>
-              <span className="text-base font-bold tracking-tight text-slate-100">
-                PróClínica <span className="text-[#D4AF37]">Cloud</span>
+              <span className="text-base font-bold tracking-tight text-foreground">
+                PróClínica <span className="text-primary">Cloud</span>
               </span>
             </div>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
               Plataforma SaaS de gestão inteligente para clínicas e consultórios odontológicos.
               Agenda, prontuário, financeiro e automação de WhatsApp em um só lugar.
             </p>
-            <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#1E2D56] bg-[#111D3B]/70 px-3 py-1.5 text-xs font-medium text-slate-300">
-              <ShieldCheck className="size-4 text-emerald-400" aria-hidden="true" />
+            <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+              <ShieldCheck className="size-4 text-success" aria-hidden="true" />
               Em conformidade com a LGPD
             </span>
           </div>
 
           {/* Navegação */}
           <nav aria-label="Links do rodapé">
-            <h3 className="text-sm font-semibold text-slate-200">Navegação</h3>
+            <h3 className="text-sm font-semibold text-foreground">Navegação</h3>
             <ul className="mt-4 space-y-2.5">
               {LINKS_NAV.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-slate-400 transition-colors hover:text-[#D4AF37]"
+                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
                   >
                     {link.label}
                   </a>
@@ -62,14 +62,14 @@ export function FooterLanding() {
 
           {/* Suporte / institucional */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-200">Suporte & Institucional</h3>
+            <h3 className="text-sm font-semibold text-foreground">Suporte & Institucional</h3>
             <ul className="mt-4 space-y-2.5">
               <li>
                 <a
                   href={linkWhatsApp(MSG_CONSULTOR)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-[#25D366]"
+                  className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-[#128C4A]"
                 >
                   <MessageCircle className="size-4" aria-hidden="true" />
                   Atendimento comercial
@@ -79,7 +79,7 @@ export function FooterLanding() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-slate-400 transition-colors hover:text-[#D4AF37]"
+                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
                   >
                     {link.label}
                   </a>
@@ -89,8 +89,8 @@ export function FooterLanding() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-[#1E2D56] pt-6">
-          <p className="text-center text-xs text-slate-500">
+        <div className="mt-12 border-t border-border pt-6">
+          <p className="text-center text-xs text-muted-foreground">
             © 2026 PróClínica Cloud. Todos os direitos reservados.
           </p>
         </div>

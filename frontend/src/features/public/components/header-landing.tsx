@@ -23,19 +23,19 @@ export function HeaderLanding() {
 
   return (
     <header
-      className={`sticky top-0 z-50 w-full border-b transition-colors ${
+      className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${
         comSombra
-          ? 'border-[#1E2D56] bg-[#0B132B]/90 backdrop-blur-md shadow-lg shadow-black/30'
-          : 'border-transparent bg-[#0B132B]/60 backdrop-blur-sm'
+          ? 'border-border bg-background/80 shadow-lg shadow-primary/5 backdrop-blur-xl'
+          : 'border-transparent bg-background/40 backdrop-blur-md'
       }`}
     >
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <a href="#topo" className="flex items-center gap-2.5" aria-label="PróClínica Cloud — início">
-          <span className="flex size-9 items-center justify-center rounded-xl border border-[#1E2D56] bg-[#111D3B] p-1.5">
-            <img src="/logo.png" alt="" className="h-full w-auto object-contain" />
+        <a href="#topo" className="flex items-center gap-2.5" aria-label="PróClínica — início">
+          <span className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-white p-1.5 shadow-sm shadow-primary/10 ring-1 ring-primary/10">
+            <img src="/logo2.png" alt="PróClínica" className="h-full w-auto object-contain" />
           </span>
-          <span className="text-base font-bold tracking-tight text-slate-100">
-            PróClínica <span className="text-[#D4AF37]">Cloud</span>
+          <span className="text-base font-bold tracking-tight text-foreground">
+            Pró<span className="text-primary">Clínica</span>
           </span>
         </a>
 
@@ -45,7 +45,7 @@ export function HeaderLanding() {
             <a
               key={link.href}
               href={link.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:text-[#D4AF37] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]"
+              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
               {link.label}
             </a>
@@ -58,14 +58,14 @@ export function HeaderLanding() {
             href={linkWhatsApp(MSG_CONSULTOR)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:text-[#25D366] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25D366]"
+            className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors hover:text-[#128C4A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#25D366]"
           >
             <MessageCircle className="size-4" aria-hidden="true" />
             Falar com Consultor
           </a>
           <a
             href="#planos"
-            className="inline-flex items-center rounded-md bg-[#D4AF37] px-4 py-2 text-sm font-semibold text-[#0B132B] shadow-md shadow-[#D4AF37]/20 transition-colors hover:bg-[#C29D26] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37]"
+            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition-all hover:shadow-lg hover:shadow-primary/40 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             Começar Agora
           </a>
@@ -75,7 +75,7 @@ export function HeaderLanding() {
         <button
           type="button"
           onClick={() => setAberto((v) => !v)}
-          className="inline-flex size-10 items-center justify-center rounded-md text-slate-200 transition-colors hover:bg-[#111D3B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37] md:hidden"
+          className="inline-flex size-10 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:hidden"
           aria-label={aberto ? 'Fechar menu' : 'Abrir menu'}
           aria-expanded={aberto}
           aria-controls="menu-mobile"
@@ -89,7 +89,7 @@ export function HeaderLanding() {
         <nav
           id="menu-mobile"
           aria-label="Navegação principal (mobile)"
-          className="border-t border-[#1E2D56] bg-[#0B132B]/95 px-4 py-4 backdrop-blur-md md:hidden"
+          className="border-t border-border bg-background/95 px-4 py-4 backdrop-blur-xl md:hidden"
         >
           <ul className="flex flex-col gap-1">
             {NAV_LINKS.map((link) => (
@@ -97,7 +97,7 @@ export function HeaderLanding() {
                 <a
                   href={link.href}
                   onClick={() => setAberto(false)}
-                  className="block rounded-md px-3 py-3 text-base font-medium text-slate-200 transition-colors hover:bg-[#111D3B] hover:text-[#D4AF37]"
+                  className="block rounded-md px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent hover:text-primary"
                 >
                   {link.label}
                 </a>
@@ -110,7 +110,7 @@ export function HeaderLanding() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setAberto(false)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[#1E2D56] px-4 py-3 text-sm font-medium text-slate-100 transition-colors hover:border-[#25D366] hover:text-[#25D366]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:border-[#25D366] hover:text-[#128C4A]"
             >
               <MessageCircle className="size-4" aria-hidden="true" />
               Falar com Consultor
@@ -118,7 +118,7 @@ export function HeaderLanding() {
             <a
               href="#planos"
               onClick={() => setAberto(false)}
-              className="inline-flex w-full items-center justify-center rounded-md bg-[#D4AF37] px-4 py-3 text-sm font-semibold text-[#0B132B] transition-colors hover:bg-[#C29D26]"
+              className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition-all hover:brightness-105"
             >
               Começar Agora
             </a>
