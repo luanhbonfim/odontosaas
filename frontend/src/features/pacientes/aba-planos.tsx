@@ -61,6 +61,61 @@ export function AbaPlanos({ pacienteId }: { pacienteId: number }) {
     }
   }
 
+  // Ações do plano (renovar/editar + excluir). Compartilhadas entre a coluna
+  // (desktop) e o card do mobile. Vencido só permite renovar; senão, editar.
+  const acoesPlano = (plano: Plano) => (
+    <div className="flex items-center justify-end gap-1">
+      {plano.vencido ? (
+        <RenovarPlanoDrawer
+          pacienteId={pacienteId}
+          plano={plano}
+          trigger={
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Renovar validade"
+              aria-label={`Renovar plano ${plano.convenio_nome}`}
+            >
+              <RotateCcw />
+            </Button>
+          }
+        />
+      ) : (
+        <PlanoFormDrawer
+          pacienteId={pacienteId}
+          plano={plano}
+          trigger={
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Editar plano"
+              aria-label={`Editar plano ${plano.convenio_nome}`}
+            >
+              <Pencil />
+            </Button>
+          }
+        />
+      )}
+      <ConfirmDialog
+        titulo="Excluir plano?"
+        descricao={`Remove o plano ${plano.convenio_nome}. Esta ação não pode ser desfeita.`}
+        rotuloConfirmar="Excluir"
+        destrutivo
+        onConfirmar={() => excluir(plano)}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Excluir plano"
+            aria-label={`Excluir plano ${plano.convenio_nome}`}
+          >
+            <Trash2 className="text-destructive" />
+          </Button>
+        }
+      />
+    </div>
+  )
+
   const colunas: ColumnDef<Plano, unknown>[] = [
     { id: 'convenio', header: 'Convênio', cell: ({ row }) => row.original.convenio_nome || traco },
     {
@@ -81,69 +136,17 @@ export function AbaPlanos({ pacienteId }: { pacienteId: number }) {
     {
       id: 'acoes',
       header: '',
-      cell: ({ row }) => (
-        <div className="flex justify-end gap-1">
-          {/* Vencido só permite renovar; caso contrário, editar. */}
-          {row.original.vencido ? (
-            <RenovarPlanoDrawer
-              pacienteId={pacienteId}
-              plano={row.original}
-              trigger={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  title="Renovar validade"
-                  aria-label={`Renovar plano ${row.original.convenio_nome}`}
-                >
-                  <RotateCcw />
-                </Button>
-              }
-            />
-          ) : (
-            <PlanoFormDrawer
-              pacienteId={pacienteId}
-              plano={row.original}
-              trigger={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  title="Editar plano"
-                  aria-label={`Editar plano ${row.original.convenio_nome}`}
-                >
-                  <Pencil />
-                </Button>
-              }
-            />
-          )}
-          <ConfirmDialog
-            titulo="Excluir plano?"
-            descricao={`Remove o plano ${row.original.convenio_nome}. Esta ação não pode ser desfeita.`}
-            rotuloConfirmar="Excluir"
-            destrutivo
-            onConfirmar={() => excluir(row.original)}
-            trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                title="Excluir plano"
-                aria-label={`Excluir plano ${row.original.convenio_nome}`}
-              >
-                <Trash2 className="text-destructive" />
-              </Button>
-            }
-          />
-        </div>
-      ),
+      cell: ({ row }) => acoesPlano(row.original),
     },
   ]
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex">
         <PlanoFormDrawer
           pacienteId={pacienteId}
           trigger={
-            <Button size="sm">
+            <Button size="sm" className="w-full sm:ml-auto sm:w-auto">
               <Plus /> Adicionar plano
             </Button>
           }
@@ -155,6 +158,35 @@ export function AbaPlanos({ pacienteId }: { pacienteId: number }) {
         data={data ?? []}
         carregando={isLoading}
         vazio="Nenhum plano cadastrado."
+        cardMobile={(plano) => {
+          const partes = [
+            plano.numero_carteirinha || null,
+            plano.validade ? <DateText iso={plano.validade} /> : null,
+          ].filter(Boolean)
+          return (
+            <div className="space-y-2.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold break-words">{plano.convenio_nome || '—'}</p>
+                  {partes.length > 0 && (
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                      {partes.map((parte, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5">
+                          {i > 0 && <span aria-hidden="true">·</span>}
+                          {parte}
+                        </span>
+                      ))}
+                    </p>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-1">{acoesPlano(plano)}</div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <BadgeStatus status={statusEfetivo(plano)} />
+              </div>
+            </div>
+          )
+        }}
       />
     </div>
   )

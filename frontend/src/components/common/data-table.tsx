@@ -46,6 +46,9 @@ type DataTableProps<T> = {
   vazio?: ReactNode
   paginacaoManual?: PaginacaoManual
   ordenacaoManual?: OrdenacaoManual
+  /** Card customizado no mobile (< lg). Recebe o item; DataTable envolve no card padrão.
+   *  Quando ausente, usa o card genérico (título + pares rótulo/valor + ações). */
+  cardMobile?: (item: T) => ReactNode
 }
 
 export function DataTable<T>({
@@ -55,6 +58,7 @@ export function DataTable<T>({
   vazio,
   paginacaoManual,
   ordenacaoManual,
+  cardMobile,
 }: DataTableProps<T>) {
   const [sortingCliente, setSortingCliente] = useState<SortingState>([])
   // Tabela só em telas largas (>= lg); em celular/tablet estreito vira cards (sem scroll lateral).
@@ -183,6 +187,14 @@ export function DataTable<T>({
             </div>
           ) : (
             linhas.map((row) => {
+              // Card customizado da tela (ex.: consultas), quando fornecido.
+              if (cardMobile) {
+                return (
+                  <div key={row.id} className="rounded-lg border bg-card p-4">
+                    {cardMobile(row.original)}
+                  </div>
+                )
+              }
               const cells = row.getVisibleCells()
               const comRotulo = cells.filter(
                 (c, i) => i > 0 && typeof c.column.columnDef.header === 'string' && c.column.columnDef.header,
@@ -216,7 +228,7 @@ export function DataTable<T>({
                           <span className="block text-xs text-muted-foreground">
                             {cell.column.columnDef.header as string}
                           </span>
-                          <span className="block truncate font-medium">
+                          <span className="block font-medium break-words">
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </span>
                         </div>

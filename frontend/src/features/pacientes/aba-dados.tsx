@@ -113,15 +113,19 @@ function VisaoDados({ paciente, onEditar }: { paciente: Paciente; onEditar: () =
   ]
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="mb-4 flex justify-end">
-          <Button variant="outline" size="sm" onClick={onEditar}>
+      <CardContent className="p-4 sm:p-6">
+        <div className="mb-4 flex">
+          <Button variant="outline" size="sm" onClick={onEditar} className="w-full sm:ml-auto sm:w-auto">
             <Pencil /> Editar
           </Button>
         </div>
-        <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+        {/* Pares rótulo/valor com divisória sutil no mobile (fica mais legível que só empilhado). */}
+        <div className="grid gap-x-8 sm:grid-cols-2 sm:gap-y-4">
           {linhas.map(([rotulo, valor]) => (
-            <div key={rotulo} className="flex flex-col gap-0.5">
+            <div
+              key={rotulo}
+              className="flex flex-col gap-0.5 border-b py-2 last:border-b-0 sm:border-b-0 sm:py-0"
+            >
               <span className="text-xs text-muted-foreground">{rotulo}</span>
               <span className="text-sm font-medium">{valor}</span>
             </div>

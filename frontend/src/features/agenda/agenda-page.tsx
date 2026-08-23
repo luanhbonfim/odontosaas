@@ -101,11 +101,19 @@ export function AgendaPage() {
               selectable
               selectMirror
               editable
-              // No mês, clicar num dia abre a visão daquele dia (não cria consulta).
+              // Mês: clicar num dia abre a visão daquele dia. Dia/Semana: um clique
+              // simples (ou toque no mobile) já abre a criação da consulta (padrão 1h).
               dateClick={(info) => {
                 if (info.view.type === 'dayGridMonth') {
                   calRef.current?.getApi().changeView('timeGridDay', info.dateStr)
+                  return
                 }
+                const fim = new Date(info.date.getTime() + 60 * 60 * 1000)
+                setModal({
+                  modo: 'criar',
+                  inicio: paraInputLocal(info.date),
+                  fim: paraInputLocal(fim),
+                })
               }}
               select={(info) => {
                 if (info.view.type === 'dayGridMonth') return

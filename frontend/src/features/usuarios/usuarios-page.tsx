@@ -93,6 +93,31 @@ export function UsuariosPage() {
             data={filtrados}
             carregando={isLoading}
             vazio="Nenhum usuário cadastrado."
+            cardMobile={(u) => {
+              const subinfo = [u.email, u.papel_display, u.dentista_nome]
+                .filter(Boolean)
+                .join(' · ')
+              return (
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold break-words">{u.nome_completo || u.email}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground break-words">{subinfo}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <AcoesUsuario usuario={u} />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {u.ativo ? (
+                      <StatusBadge variante="sucesso">Ativo</StatusBadge>
+                    ) : (
+                      <StatusBadge variante="erro">Bloqueado</StatusBadge>
+                    )}
+                  </div>
+                </div>
+              )
+            }}
           />
         </>
       )}

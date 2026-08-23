@@ -1,11 +1,12 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { ArrowLeft, Users } from 'lucide-react'
+import { ArrowLeft, CalendarDays, ClipboardList, FileText, HeartPulse, User, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { DataTable } from '@/components/common/data-table'
 import { EmptyState } from '@/components/common/empty-state'
 import { DateTime } from '@/components/common/formato'
+import { type ItemSegmento, SegmentadorRodape } from '@/components/common/segmentador-rodape'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -171,10 +172,11 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+      {/* Mobile: filtros empilhados (um abaixo do outro), 100% largura. sm+: em linha. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <select
           aria-label="Filtrar por status"
-          className={classeFiltro}
+          className={cn(classeFiltro, 'w-full sm:w-48')}
           value={filtroStatus}
           onChange={(e) => setFiltroStatus(e.target.value)}
         >
@@ -187,7 +189,7 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
         </select>
         <select
           aria-label="Filtrar por confirmação"
-          className={classeFiltro}
+          className={cn(classeFiltro, 'w-full sm:w-48')}
           value={filtroConfirmacao}
           onChange={(e) => setFiltroConfirmacao(e.target.value)}
         >
@@ -200,7 +202,7 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
         </select>
         <select
           aria-label="Filtrar por cobrança"
-          className={classeFiltro}
+          className={cn(classeFiltro, 'w-full sm:w-48')}
           value={filtroCobranca}
           onChange={(e) => setFiltroCobranca(e.target.value)}
         >
@@ -215,19 +217,64 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
         data={filtradas}
         carregando={isLoading}
         vazio="Nenhuma consulta."
+        cardMobile={(c) => {
+          const nome = c.procedimento_catalogo_nome || c.procedimento || 'Ficha'
+          const bloqueada = ['CANCELADA', 'FALTOU'].includes(c.status ?? '')
+          const dentista = nomePorDentista.get(c.dentista)
+          return (
+            <div className="space-y-2.5">
+              <div>
+                {bloqueada ? (
+                  <p className="font-semibold">{nome}</p>
+                ) : (
+                  <Link
+                    to={`/pacientes/${pacienteId}/consultas/${c.id}`}
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    {nome}
+                  </Link>
+                )}
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  <DateTime iso={c.inicio} />
+                  {dentista ? ` · ${dentista}` : ''}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <BadgeStatus status={c.status} />
+                <BadgeStatus status={c.status_confirmacao} />
+                <BadgeCobranca convenioNome={c.convenio_nome} />
+              </div>
+              {Array.isArray(c.dentes) && c.dentes.length > 0 ? (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>Dentes:</span>
+                  <CelulaDentes dentes={c.dentes} />
+                </div>
+              ) : null}
+            </div>
+          )
+        }}
       />
     </div>
   )
 }
+
+const ABAS_PACIENTE: ItemSegmento[] = [
+  { id: 'dados', rotulo: 'Dados', icone: User },
+  { id: 'planos', rotulo: 'Planos', icone: ClipboardList },
+  { id: 'guias', rotulo: 'Guias', icone: FileText },
+  { id: 'consultas', rotulo: 'Consultas', icone: CalendarDays },
+  { id: 'anamneses', rotulo: 'Anamnese', icone: HeartPulse },
+]
 
 export function PacienteDetalhePage() {
   const { id } = useParams()
   const novo = id === undefined
   const pacienteId = Number(id)
   const { data: paciente, isLoading, isError } = usePaciente(pacienteId)
+  const [aba, setAba] = useState('dados')
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 md:pb-0">
       <div>
         <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2">
           <Link to="/pacientes">
@@ -251,8 +298,9 @@ export function PacienteDetalhePage() {
           descricao="O paciente pode ter sido removido ou o link está incorreto."
         />
       ) : (
-        <Tabs defaultValue="dados">
-          <TabsList>
+        <Tabs value={aba} onValueChange={setAba}>
+          {/* No mobile a navegação das abas vai para o rodapé (SegmentadorRodape). */}
+          <TabsList className="hidden md:flex">
             <TabsTrigger value="dados">Dados</TabsTrigger>
             <TabsTrigger value="planos">Planos</TabsTrigger>
             <TabsTrigger value="guias">Guias</TabsTrigger>
@@ -279,6 +327,8 @@ export function PacienteDetalhePage() {
           <TabsContent value="anamneses">
             {novo ? <AvisoSalvarPrimeiro /> : <AbaAnamneses pacienteId={pacienteId} />}
           </TabsContent>
+
+          <SegmentadorRodape itens={ABAS_PACIENTE} ativo={aba} aoMudar={setAba} />
         </Tabs>
       )}
     </div>

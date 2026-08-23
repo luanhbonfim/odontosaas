@@ -120,7 +120,29 @@ export function DashboardPage() {
           <CardTitle>Próximas consultas</CardTitle>
         </CardHeader>
         <CardContent>
-          <DataTable columns={colunasConsultas} data={proximasConsultas} />
+          <DataTable
+            columns={colunasConsultas}
+            data={proximasConsultas}
+            cardMobile={(c) => (
+              <div className="space-y-2.5">
+                <div className="min-w-0">
+                  <p className="font-semibold break-words">{c.paciente}</p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                    <PhoneText valor={c.telefone} />
+                    <span aria-hidden="true">·</span>
+                    <DateTime iso={c.inicio} />
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <StatusBadge variante={c.status}>{c.rotulo}</StatusBadge>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>Valor:</span>
+                  <Money valor={c.valor} />
+                </div>
+              </div>
+            )}
+          />
         </CardContent>
       </Card>
 

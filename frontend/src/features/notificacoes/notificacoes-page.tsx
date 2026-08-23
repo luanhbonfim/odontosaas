@@ -903,6 +903,45 @@ function FilaTab() {
         data={itens}
         carregando={isLoading}
         vazio="Nenhuma mensagem na fila."
+        cardMobile={(item) => (
+          <div className="space-y-2.5">
+            <div className="min-w-0">
+              <p className="font-semibold break-words">{item.paciente_nome}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground break-words">{rotuloFila(item)}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {item.telefone_ok ? (
+                <StatusBadge variante="sucesso">OK</StatusBadge>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+                  <TriangleAlert className="size-3.5" /> Sem WhatsApp válido
+                </span>
+              )}
+            </div>
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <span>Consulta em:</span>
+                <DateTime iso={item.consulta_inicio} />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span>Previsto:</span>
+                {item.atrasado ? (
+                  <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-500">
+                    <Clock className="size-3.5" /> Sai no próximo envio
+                  </span>
+                ) : (
+                  <span className="tabular-nums">
+                    {new Date(item.previsto_para).toLocaleString('pt-BR', {
+                      dateStyle: 'short',
+                      timeStyle: 'medium',
+                      timeZone: 'America/Sao_Paulo',
+                    })}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       />
     </div>
   )
@@ -989,6 +1028,35 @@ function HistoricoTab() {
         data={data ?? []}
         carregando={isLoading}
         vazio="Nenhuma notificação registrada."
+        cardMobile={(log) => {
+          const tipo = ROTULO_TIPO_HISTORICO[log.tipo ?? ''] ?? log.tipo ?? '—'
+          const direcao = log.direcao === 'RECEBIDA' ? 'Recebida' : 'Enviada'
+          return (
+            <div className="space-y-2.5">
+              <div className="min-w-0">
+                <p className="font-semibold break-words">{log.paciente_nome}</p>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                  <span>{tipo}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{direcao}</span>
+                  <span aria-hidden="true">·</span>
+                  <DateTime iso={log.enviado_em ?? log.criado_em} />
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <StatusBadge variante={VARIANTE_LOG[log.status ?? ''] ?? 'neutro'}>
+                  {log.status}
+                </StatusBadge>
+              </div>
+              {log.resposta_paciente ? (
+                <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <span className="shrink-0">Resposta:</span>
+                  <span className="break-words">{log.resposta_paciente}</span>
+                </div>
+              ) : null}
+            </div>
+          )
+        }}
       />
     </div>
   )

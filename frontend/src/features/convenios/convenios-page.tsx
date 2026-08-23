@@ -45,6 +45,43 @@ export function ConveniosPage() {
     }
   }
 
+  // Ações do convênio (editar + excluir). Compartilhadas entre a coluna (desktop)
+  // e o card do mobile.
+  const acoesConvenio = (convenio: Convenio) => (
+    <div className="flex items-center justify-end gap-1">
+      <ConvenioFormDrawer
+        convenio={convenio}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Editar convênio"
+            aria-label={`Editar ${convenio.nome}`}
+          >
+            <Pencil />
+          </Button>
+        }
+      />
+      <ConfirmDialog
+        titulo="Excluir convênio?"
+        descricao={`Remove ${convenio.nome}. Convênios com planos vinculados não podem ser excluídos.`}
+        rotuloConfirmar="Excluir"
+        destrutivo
+        onConfirmar={() => excluir(convenio)}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Excluir convênio"
+            aria-label={`Excluir ${convenio.nome}`}
+          >
+            <Trash2 className="text-destructive" />
+          </Button>
+        }
+      />
+    </div>
+  )
+
   const colunas: ColumnDef<Convenio, unknown>[] = [
     { accessorKey: 'nome', header: 'Nome' },
     {
@@ -65,40 +102,7 @@ export function ConveniosPage() {
     {
       id: 'acoes',
       header: '',
-      cell: ({ row }) => (
-        <div className="flex justify-end gap-1">
-          <ConvenioFormDrawer
-            convenio={row.original}
-            trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                title="Editar convênio"
-                aria-label={`Editar ${row.original.nome}`}
-              >
-                <Pencil />
-              </Button>
-            }
-          />
-          <ConfirmDialog
-            titulo="Excluir convênio?"
-            descricao={`Remove ${row.original.nome}. Convênios com planos vinculados não podem ser excluídos.`}
-            rotuloConfirmar="Excluir"
-            destrutivo
-            onConfirmar={() => excluir(row.original)}
-            trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                title="Excluir convênio"
-                aria-label={`Excluir ${row.original.nome}`}
-              >
-                <Trash2 className="text-destructive" />
-              </Button>
-            }
-          />
-        </div>
-      ),
+      cell: ({ row }) => acoesConvenio(row.original),
     },
   ]
 
@@ -130,6 +134,26 @@ export function ConveniosPage() {
           data={data ?? []}
           carregando={isLoading}
           vazio="Nenhum convênio cadastrado."
+          cardMobile={(convenio) => (
+            <div className="space-y-2.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold break-words">{convenio.nome}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {convenio.pacientes ?? 0} paciente{(convenio.pacientes ?? 0) === 1 ? '' : 's'}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">{acoesConvenio(convenio)}</div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {convenio.ativo ? (
+                  <StatusBadge variante="sucesso">Ativo</StatusBadge>
+                ) : (
+                  <StatusBadge variante="neutro">Inativo</StatusBadge>
+                )}
+              </div>
+            </div>
+          )}
         />
       )}
     </div>

@@ -107,6 +107,32 @@ export function DentistasPage() {
             data={filtrados}
             carregando={isLoading}
             vazio="Nenhum dentista cadastrado."
+            cardMobile={(d) => {
+              const especialidades = (d.especialidades_nomes ?? []).join(', ')
+              const subinfo = [`CRO ${d.cro}`, especialidades].filter(Boolean).join(' · ')
+              return (
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold break-words">{d.nome_completo}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground break-words">{subinfo}</p>
+                    </div>
+                    {podeEscrever && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        <AcoesDentista dentista={d} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {d.ativo ? (
+                      <StatusBadge variante="sucesso">Ativo</StatusBadge>
+                    ) : (
+                      <StatusBadge variante="neutro">Inativo</StatusBadge>
+                    )}
+                  </div>
+                </div>
+              )
+            }}
           />
         </>
       )}

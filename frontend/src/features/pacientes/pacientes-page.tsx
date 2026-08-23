@@ -22,6 +22,61 @@ import { type Paciente, TAMANHO_PAGINA, useExcluirPaciente, usePacientes } from 
 
 const traco = <span className="text-muted-foreground">—</span>
 
+/** Ação de excluir paciente (lixeira). Compartilhada entre a coluna (desktop) e o
+ *  card do mobile: sem registros -> lixeira vermelha com confirmação; com registros
+ *  -> lixeira desabilitada + tooltip explicando o porquê. */
+function AcaoExcluirPaciente({
+  p,
+  onExcluir,
+}: {
+  p: Paciente
+  onExcluir: (p: Paciente) => void
+}) {
+  if (!p.pode_excluir) {
+    const motivo =
+      'Não é possível excluir: este paciente já tem registros (consultas, planos ou anamneses).'
+    return (
+      <div className="group relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Excluir ${p.nome_completo} (indisponível)`}
+          className="cursor-not-allowed"
+          onClick={() => toast.info(motivo)}
+        >
+          <Trash2 className="text-muted-foreground" />
+        </Button>
+        {/* Tooltip estilizado (CSS puro): aparece à esquerda no hover. */}
+        <span
+          role="tooltip"
+          className="pointer-events-none absolute top-1/2 right-full z-30 mr-2 w-56 -translate-y-1/2 rounded-lg border bg-popover px-3 py-2 text-xs leading-snug text-popover-foreground opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
+        >
+          {motivo}
+        </span>
+      </div>
+    )
+  }
+  return (
+    <ConfirmDialog
+      titulo="Excluir paciente?"
+      descricao={`Remove ${p.nome_completo}. Esta ação não pode ser desfeita.`}
+      rotuloConfirmar="Excluir"
+      destrutivo
+      onConfirmar={() => onExcluir(p)}
+      trigger={
+        <Button
+          variant="ghost"
+          size="icon"
+          title="Excluir paciente"
+          aria-label={`Excluir ${p.nome_completo}`}
+        >
+          <Trash2 className="text-destructive" />
+        </Button>
+      }
+    />
+  )
+}
+
 // `id` das colunas ordenáveis = campo aceito pelo backend em `?ordering=`.
 const COLUNAS_BASE: ColumnDef<Paciente, unknown>[] = [
   {
@@ -103,58 +158,11 @@ export function PacientesPage() {
         id: 'acoes',
         header: '',
         enableSorting: false,
-        cell: ({ row }) => {
-          const p = row.original
-          // Sem registros -> lixeira ativa (vermelha) com confirmação.
-          // Com registros -> lixeira cinza/desabilitada + tooltip no hover.
-          if (!p.pode_excluir) {
-            const motivo =
-              'Não é possível excluir: este paciente já tem registros (consultas, planos ou anamneses).'
-            return (
-              <div className="flex justify-end">
-                <div className="group relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Excluir ${p.nome_completo} (indisponível)`}
-                    className="cursor-not-allowed"
-                    onClick={() => toast.info(motivo)}
-                  >
-                    <Trash2 className="text-muted-foreground" />
-                  </Button>
-                  {/* Tooltip estilizado (CSS puro): aparece à esquerda no hover. */}
-                  <span
-                    role="tooltip"
-                    className="pointer-events-none absolute top-1/2 right-full z-30 mr-2 w-56 -translate-y-1/2 rounded-lg border bg-popover px-3 py-2 text-xs leading-snug text-popover-foreground opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
-                  >
-                    {motivo}
-                  </span>
-                </div>
-              </div>
-            )
-          }
-          return (
-            <div className="flex justify-end">
-              <ConfirmDialog
-                titulo="Excluir paciente?"
-                descricao={`Remove ${p.nome_completo}. Esta ação não pode ser desfeita.`}
-                rotuloConfirmar="Excluir"
-                destrutivo
-                onConfirmar={() => excluirPaciente(p)}
-                trigger={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Excluir paciente"
-                    aria-label={`Excluir ${p.nome_completo}`}
-                  >
-                    <Trash2 className="text-destructive" />
-                  </Button>
-                }
-              />
-            </div>
-          )
-        },
+        cell: ({ row }) => (
+          <div className="flex justify-end">
+            <AcaoExcluirPaciente p={row.original} onExcluir={excluirPaciente} />
+          </div>
+        ),
       },
     ]
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -236,6 +244,49 @@ export function PacientesPage() {
             vazio="Nenhum paciente encontrado."
             paginacaoManual={{ pagina, totalPaginas, aoMudarPagina: setPagina }}
             ordenacaoManual={{ valor: ordenacao, aoMudar: setOrdenacao }}
+            cardMobile={(p) => {
+              const partes = [
+                p.cpf ? <Cpf valor={p.cpf} /> : null,
+                p.telefone_whatsapp ? <PhoneText valor={p.telefone_whatsapp} /> : null,
+                p.dentista_responsavel_nome || null,
+              ].filter(Boolean)
+              return (
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link
+                        to={`/pacientes/${p.id}`}
+                        className="font-semibold text-primary break-words hover:underline"
+                      >
+                        {p.nome_completo}
+                      </Link>
+                      {partes.length > 0 && (
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                          {partes.map((parte, i) => (
+                            <span key={i} className="inline-flex items-center gap-1.5">
+                              {i > 0 && <span aria-hidden="true">·</span>}
+                              {parte}
+                            </span>
+                          ))}
+                        </p>
+                      )}
+                    </div>
+                    {podeExcluir && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        <AcaoExcluirPaciente p={p} onExcluir={excluirPaciente} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {p.ativo ? (
+                      <StatusBadge variante="sucesso">Ativo</StatusBadge>
+                    ) : (
+                      <StatusBadge variante="neutro">Inativo</StatusBadge>
+                    )}
+                  </div>
+                </div>
+              )
+            }}
           />
         </>
       )}

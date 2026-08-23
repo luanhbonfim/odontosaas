@@ -59,6 +59,40 @@ export function AbaGuias({ pacienteId }: { pacienteId: number }) {
     }
   }
 
+  // Ações da guia (transições de status + excluir). Compartilhadas entre a coluna
+  // (desktop) e o card do mobile.
+  const acoesGuia = (guia: Guia) => (
+    <div className="flex flex-wrap items-center justify-end gap-1">
+      {(TRANSICOES[guia.status ?? ''] ?? []).map((t) => (
+        <Button
+          key={t.status}
+          variant="outline"
+          size="sm"
+          onClick={() => transicionar(guia, t.status, t.rotulo)}
+        >
+          {t.rotulo}
+        </Button>
+      ))}
+      <ConfirmDialog
+        titulo="Excluir guia?"
+        descricao={`Remove a guia ${guia.numero_guia}. Esta ação não pode ser desfeita.`}
+        rotuloConfirmar="Excluir"
+        destrutivo
+        onConfirmar={() => excluir(guia)}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Excluir guia"
+            aria-label={`Excluir guia ${guia.numero_guia}`}
+          >
+            <Trash2 className="text-destructive" />
+          </Button>
+        }
+      />
+    </div>
+  )
+
   const colunas: ColumnDef<Guia, unknown>[] = [
     {
       accessorKey: 'numero_guia',
@@ -87,44 +121,18 @@ export function AbaGuias({ pacienteId }: { pacienteId: number }) {
     {
       id: 'acoes',
       header: '',
-      cell: ({ row }) => (
-        <div className="flex flex-wrap items-center justify-end gap-1">
-          {(TRANSICOES[row.original.status ?? ''] ?? []).map((t) => (
-            <Button
-              key={t.status}
-              variant="outline"
-              size="sm"
-              onClick={() => transicionar(row.original, t.status, t.rotulo)}
-            >
-              {t.rotulo}
-            </Button>
-          ))}
-          <ConfirmDialog
-            titulo="Excluir guia?"
-            descricao={`Remove a guia ${row.original.numero_guia}. Esta ação não pode ser desfeita.`}
-            rotuloConfirmar="Excluir"
-            destrutivo
-            onConfirmar={() => excluir(row.original)}
-            trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                title="Excluir guia"
-                aria-label={`Excluir guia ${row.original.numero_guia}`}
-              >
-                <Trash2 className="text-destructive" />
-              </Button>
-            }
-          />
-        </div>
-      ),
+      cell: ({ row }) => acoesGuia(row.original),
     },
   ]
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button size="sm" onClick={() => navigate(`/pacientes/${pacienteId}/guias/nova`)}>
+        <Button
+          size="sm"
+          className="w-full sm:w-auto"
+          onClick={() => navigate(`/pacientes/${pacienteId}/guias/nova`)}
+        >
           <Plus /> Adicionar guia
         </Button>
       </div>
@@ -134,6 +142,31 @@ export function AbaGuias({ pacienteId }: { pacienteId: number }) {
         data={data ?? []}
         carregando={isLoading}
         vazio="Nenhuma guia emitida."
+        cardMobile={(g) => (
+          <div className="space-y-2.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <Link
+                  to={`/pacientes/${pacienteId}/guias/${g.id}`}
+                  className="font-semibold text-primary break-words hover:underline"
+                >
+                  {g.numero_guia}
+                </Link>
+                <p className="mt-0.5 text-xs text-muted-foreground break-words">
+                  {g.consulta_procedimento || g.procedimento || '—'}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">{acoesGuia(g)}</div>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <BadgeStatus status={g.status} />
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Valor:</span>
+              <Money valor={g.valor ?? 0} />
+            </div>
+          </div>
+        )}
       />
     </div>
   )

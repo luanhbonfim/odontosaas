@@ -42,11 +42,11 @@ export function AbaAnamneses({ pacienteId }: { pacienteId: number }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex">
         <AnamneseFormDrawer
           pacienteId={pacienteId}
           trigger={
-            <Button size="sm">
+            <Button size="sm" className="w-full sm:ml-auto sm:w-auto">
               <Plus /> Nova anamnese
             </Button>
           }

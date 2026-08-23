@@ -39,6 +39,43 @@ export function ProcedimentosPage() {
     }
   }
 
+  // Ações do procedimento (editar + excluir). Compartilhadas entre a coluna
+  // (desktop) e o card do mobile.
+  const acoesProcedimento = (procedimento: Procedimento) => (
+    <div className="flex items-center justify-end gap-1">
+      <ProcedimentoFormDrawer
+        procedimento={procedimento}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Editar procedimento"
+            aria-label={`Editar ${procedimento.nome}`}
+          >
+            <Pencil />
+          </Button>
+        }
+      />
+      <ConfirmDialog
+        titulo="Excluir procedimento?"
+        descricao={`Remove ${procedimento.nome}. Procedimentos usados em consultas não podem ser excluídos.`}
+        rotuloConfirmar="Excluir"
+        destrutivo
+        onConfirmar={() => excluir(procedimento)}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Excluir procedimento"
+            aria-label={`Excluir ${procedimento.nome}`}
+          >
+            <Trash2 className="text-destructive" />
+          </Button>
+        }
+      />
+    </div>
+  )
+
   const colunas: ColumnDef<Procedimento, unknown>[] = [
     { accessorKey: 'nome', header: 'Nome' },
     {
@@ -54,40 +91,7 @@ export function ProcedimentosPage() {
     {
       id: 'acoes',
       header: '',
-      cell: ({ row }) => (
-        <div className="flex justify-end gap-1">
-          <ProcedimentoFormDrawer
-            procedimento={row.original}
-            trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                title="Editar procedimento"
-                aria-label={`Editar ${row.original.nome}`}
-              >
-                <Pencil />
-              </Button>
-            }
-          />
-          <ConfirmDialog
-            titulo="Excluir procedimento?"
-            descricao={`Remove ${row.original.nome}. Procedimentos usados em consultas não podem ser excluídos.`}
-            rotuloConfirmar="Excluir"
-            destrutivo
-            onConfirmar={() => excluir(row.original)}
-            trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                title="Excluir procedimento"
-                aria-label={`Excluir ${row.original.nome}`}
-              >
-                <Trash2 className="text-destructive" />
-              </Button>
-            }
-          />
-        </div>
-      ),
+      cell: ({ row }) => acoesProcedimento(row.original),
     },
   ]
 
@@ -119,6 +123,23 @@ export function ProcedimentosPage() {
           data={data ?? []}
           carregando={isLoading}
           vazio="Nenhum procedimento cadastrado."
+          cardMobile={(procedimento) => (
+            <div className="space-y-2.5">
+              <div className="flex items-start justify-between gap-3">
+                <p className="min-w-0 font-semibold break-words">{procedimento.nome}</p>
+                <div className="flex shrink-0 items-center gap-1">
+                  {acoesProcedimento(procedimento)}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {procedimento.ativo ? (
+                  <StatusBadge variante="sucesso">Ativo</StatusBadge>
+                ) : (
+                  <StatusBadge variante="neutro">Inativo</StatusBadge>
+                )}
+              </div>
+            </div>
+          )}
         />
       )}
     </div>
