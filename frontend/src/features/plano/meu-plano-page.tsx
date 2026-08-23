@@ -353,7 +353,7 @@ export function MeuPlanoPage() {
             </CardContent>
           </Card>
 
-          {/* Armazenamento */}
+          {/* Armazenamento — recurso futuro (uploads/nuvem); ainda sem consumo real. */}
           <Card className="border">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -362,22 +362,17 @@ export function MeuPlanoPage() {
               <HardDrive className="size-4 text-primary" />
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-bold text-foreground">{capacidade.armazenamento_mb.atual_mb} MB</span>
-                <span className="text-xs text-muted-foreground">de {capacidade.armazenamento_mb.limite_mb} MB</span>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-foreground">
+                  {(capacidade.armazenamento_mb.limite_mb / 1024).toFixed(0)} GB
+                </span>
+                <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                  em breve
+                </span>
               </div>
-
-              <div className="space-y-1">
-                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all rounded-full"
-                    style={{ width: `${Math.min(capacidade.armazenamento_mb.percentual, 100)}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>{capacidade.armazenamento_mb.percentual}% utilizado</span>
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Espaço para anexos (raio-X, exames e fotos) — disponível em breve.
+              </p>
             </CardContent>
           </Card>
         </div>

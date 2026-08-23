@@ -50,9 +50,11 @@ export type MeuPlanoData = {
       atingiu_limite: boolean
     }
     armazenamento_mb: {
-      atual_mb: number
+      // Recurso futuro (uploads/nuvem): atual_mb/percentual vêm null até implementar.
+      atual_mb: number | null
       limite_mb: number
-      percentual: number
+      percentual: number | null
+      em_breve?: boolean
     }
   }
   modulos: {

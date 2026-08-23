@@ -207,7 +207,7 @@ export function IntegracoesShowcase() {
                   <MessageCircle className="size-5" aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">Clínica OdontoSaaS</p>
+                  <p className="truncate text-sm font-semibold">Clínica Sorriso</p>
                   <p className="text-[10px] text-white/80">digitando...</p>
                 </div>
               </div>

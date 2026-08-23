@@ -31,14 +31,14 @@ function formatarArmazenamento(mb: number): string {
   return `${mb} MB de armazenamento`
 }
 
-type Feature = { label: string; ativo: boolean }
+type Feature = { label: string; ativo: boolean; emBreve?: boolean }
 
 function featuresDoPlano(plano: PlanoPublico): Feature[] {
   return [
     { label: formatarLimite(plano.limite_dentistas, 'dentistas'), ativo: true },
     { label: formatarLimite(plano.limite_usuarios, 'usuários'), ativo: true },
     { label: formatarLimite(plano.limite_pacientes_ativos, 'pacientes ativos'), ativo: true },
-    { label: formatarArmazenamento(plano.limite_armazenamento_mb), ativo: true },
+    { label: formatarArmazenamento(plano.limite_armazenamento_mb), ativo: true, emBreve: true },
     { label: 'Sincronização com Google Calendar', ativo: plano.sync_google_ativo },
     { label: 'Automação de WhatsApp', ativo: plano.whatsapp_waha_ativo },
     { label: 'Módulo Financeiro & TISS', ativo: plano.modulo_financeiro_ativo },
@@ -135,7 +135,14 @@ function CardPlano({
             ) : (
               <X className="mt-0.5 size-4 shrink-0 text-muted-foreground/50" aria-hidden="true" />
             )}
-            <span className={f.ativo ? '' : 'line-through'}>{f.label}</span>
+            <span className={f.ativo ? '' : 'line-through'}>
+              {f.label}
+              {f.emBreve && (
+                <span className="ml-1.5 inline-block rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-primary">
+                  em breve
+                </span>
+              )}
+            </span>
           </li>
         ))}
       </ul>

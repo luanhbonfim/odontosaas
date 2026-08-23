@@ -101,9 +101,12 @@ class MeuPlanoView(APIView):
                     "atingiu_limite": bool(limite_pacientes and total_pacientes >= limite_pacientes),
                 },
                 "armazenamento_mb": {
-                    "atual_mb": 45,
+                    # Uploads/armazenamento ainda não implementados (fase de nuvem):
+                    # não há consumo real para medir. Sinalizado como "em breve".
+                    "atual_mb": None,
                     "limite_mb": limite_armazenamento_mb,
-                    "percentual": round((45 / limite_armazenamento_mb * 100), 1),
+                    "percentual": None,
+                    "em_breve": True,
                 },
             },
             "modulos": (
