@@ -1,6 +1,6 @@
 import { AxiosError } from 'axios'
 import { http, HttpResponse } from 'msw'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { server } from '@/test/server'
 import { api, normalizarErro } from './client'
@@ -144,6 +144,41 @@ describe('camada de API', () => {
 
     expect(sessaoExpiradaDisparada).toBe(false)
     window.removeEventListener('sessao-expirada', ouvinte)
+  })
+
+  it('renova o access proativamente ao voltar o foco da janela com token vencido', async () => {
+    const payloadVencido = btoa(JSON.stringify({ exp: 1 })) // exp no passado
+    tokenStore.definir({ access: `h.${payloadVencido}.s`, refresh: 'r1' })
+
+    let renovacoes = 0
+    server.use(
+      http.post('/api/auth/token/refresh/', () => {
+        renovacoes += 1
+        return HttpResponse.json({ access: 'renovado-proativo' })
+      }),
+    )
+
+    window.dispatchEvent(new Event('focus'))
+    await vi.waitFor(() => expect(tokenStore.access).toBe('renovado-proativo'))
+    expect(renovacoes).toBe(1)
+  })
+
+  it('não renova ao voltar o foco se o access ainda está válido', async () => {
+    const payloadValido = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }))
+    tokenStore.definir({ access: `h.${payloadValido}.s`, refresh: 'r1' })
+
+    let renovacoes = 0
+    server.use(
+      http.post('/api/auth/token/refresh/', () => {
+        renovacoes += 1
+        return HttpResponse.json({ access: 'nao-deveria-chamar' })
+      }),
+    )
+
+    window.dispatchEvent(new Event('focus'))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(renovacoes).toBe(0)
+    expect(tokenStore.access).toBe(`h.${payloadValido}.s`)
   })
 
   it('normalizarErro: usa "detail" como mensagem', () => {

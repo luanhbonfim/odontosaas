@@ -87,6 +87,19 @@ def custom_exception_handler(exc, context):
     ):
         return response
 
+    # 2b. Ignora "credenciais não fornecidas" pontual em endpoints de bootstrap de
+    # sessão (GET /api/auth/me/, /api/meu-plano/): acontece quando o access token
+    # em memória do frontend expira/some (aba reciclada pelo navegador, idle longo)
+    # e a primeira requisição sai sem Authorization; o interceptor do frontend
+    # renova o token e refaz a chamada sozinho na sequência, então não é um erro
+    # operacional real. AuthenticationFailed (token inválido/adulterado) continua
+    # sendo registrado normalmente nesses endpoints.
+    if isinstance(exc, NotAuthenticated) and metodo == "GET" and (
+        endpoint.rstrip("/").endswith("/auth/me")
+        or endpoint.rstrip("/").endswith("/meu-plano")
+    ):
+        return response
+
     # 3. Extrai mensagem amigável e legível do erro com sanitização de campos confidenciais
     CAMPOS_SENSIVEIS = ("senha", "password", "token", "secret", "access", "refresh", "key", "authorization")
     mensagem = ""

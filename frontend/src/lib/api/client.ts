@@ -41,6 +41,33 @@ async function obterTokenRenovado(): Promise<string> {
   return renovacaoEmAndamento
 }
 
+// Considera que o access precisa renovar se não existe ou se já venceu (com margem).
+function accessPrecisaRenovar(margemSegundos = 10): boolean {
+  if (!tokenStore.access) return true
+  const exp = tokenStore.exp
+  if (exp == null) return false
+  return Date.now() / 1000 >= exp - margemSegundos
+}
+
+// Ao voltar para a aba/janela depois de um período ocioso, o access pode ter vencido
+// (lifetime de 30min) enquanto nada disparava requisição. Sem isso, a primeira query
+// real (ex.: sidebar/topbar remontando) bateria com 401 antes do retry automático,
+// gerando ruído no log de erros do backend mesmo com a sessão se recuperando sozinha.
+function renovarSeVoltouOcioso() {
+  if (!tokenStore.refresh || !accessPrecisaRenovar()) return
+  obterTokenRenovado().catch(() => {
+    tokenStore.limpar()
+    window.dispatchEvent(new Event('sessao-expirada'))
+  })
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') renovarSeVoltouOcioso()
+  })
+  window.addEventListener('focus', renovarSeVoltouOcioso)
+}
+
 // Resposta: no 401 tenta renovar o access UMA vez e refaz a requisição.
 // No 403 de clínica bloqueada/suspensa, desloga imediatamente os usuários conectados.
 api.interceptors.response.use(

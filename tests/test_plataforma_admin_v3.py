@@ -373,6 +373,36 @@ def test_captura_automatica_erro_operacional_drf(tenant_v3):
 
 
 # --------------------------------------------------------------------------
+# 7b. NotAuthenticated pontual em /auth/me/ e /meu-plano/ não deve virar erro operacional
+# --------------------------------------------------------------------------
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("endpoint", ["/api/auth/me/", "/api/meu-plano/"])
+def test_not_authenticated_bootstrap_sessao_nao_gera_erro_operacional(tenant_v3, endpoint):
+    """Access token expirado/ausente ao remontar a sessão não deve poluir o painel de
+    erros do vendor: o interceptor do frontend renova e refaz a chamada sozinho."""
+    from rest_framework.exceptions import NotAuthenticated
+    from rest_framework.test import APIRequestFactory
+
+    from apps.core.handlers import custom_exception_handler
+
+    factory = APIRequestFactory()
+    request = factory.get(endpoint)
+    request.tenant = tenant_v3
+
+    exc = NotAuthenticated()
+    context = {"request": request, "view": None}
+
+    response = custom_exception_handler(exc, context)
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    connection.set_schema_to_public()
+    assert not RegistroErroOperacional.objects.filter(
+        schema_tenant=tenant_v3.schema_name,
+        endpoint=endpoint,
+    ).exists()
+
+
+# --------------------------------------------------------------------------
 # 8. Teste de Desabilitação Dinâmica de Módulos (Plano / Overrides)
 # --------------------------------------------------------------------------
 @pytest.mark.django_db(transaction=True)
