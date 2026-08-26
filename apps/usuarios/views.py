@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from apps.core.mixins import ExclusaoProtegidaMixin
 from apps.usuarios.perfis import pode_gerenciar
 from apps.usuarios.serializers import (
     MFARequired,
@@ -137,18 +138,25 @@ class MeView(APIView):
         return Response(serializer.data)
 
 
-class UsuarioViewSet(viewsets.ModelViewSet):
+class UsuarioViewSet(ExclusaoProtegidaMixin, viewsets.ModelViewSet):
     """CRUD dos usuários da equipe (permissões do módulo "usuarios": Gerente/Admin).
 
-    Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia cargos abaixo do
-    seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
-    todos.
+    Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia/exclui cargos abaixo
+    do seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
+    e exclui todos, exceto a si mesmo.
+
+    Exclusão é física (o normal é só **bloquear o acesso** via `ativo=False`); a conta
+    só pode ser excluída de fato quando não há dados vinculados que impeçam (hoje o
+    vínculo com Dentista e com o histórico de auditoria é `SET_NULL`, então em geral
+    a exclusão é permitida — a proteção aqui é defensiva para vínculos futuros).
     """
 
     queryset = get_user_model().objects.all().order_by("nome_completo", "email")
     serializer_class = UsuarioSerializer
-    # Usuários não são excluídos (bloqueia-se o acesso); sem DELETE/PUT.
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    # Sem PUT (troca de papel/edição é sempre parcial via PATCH, com as regras de
+    # hierarquia/auto-edição abaixo).
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    mensagem_protegido = "Não é possível excluir: há registros vinculados a este usuário."
 
     def _checar_hierarquia(self, *papeis):
         ator = self.request.user
@@ -201,6 +209,13 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                             f"Não é possível reativar o usuário: o limite de {limite} usuários ativos do plano foi atingido."
                         )
         return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        alvo = self.get_object()
+        if alvo.pk == request.user.pk:
+            raise PermissionDenied("Você não pode excluir a si mesmo.")
+        self._checar_hierarquia(alvo.papel)
+        return super().destroy(request, *args, **kwargs)
 
 
 class EncerrarSuporteTenantView(APIView):

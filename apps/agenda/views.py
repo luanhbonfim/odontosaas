@@ -6,9 +6,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.core.mixins import FiltraPorPacienteMixin
+from apps.financeiro.models import LancamentoFinanceiro
 
 from .models import Anamnese, Consulta
 from .serializers import AnamneseSerializer, ConsultaSerializer
+
+_STATUS_EXCLUIVEIS = (Consulta.Status.AGENDADA, Consulta.Status.CANCELADA)
 
 
 class ConsultaViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
@@ -18,11 +21,20 @@ class ConsultaViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
     serializer_class = ConsultaSerializer
 
     def destroy(self, request, *args, **kwargs):
-        """Só consultas AGENDADA podem ser excluídas; realizadas usam a action 'estornar'."""
+        """AGENDADA ou CANCELADA podem ser excluídas; realizadas usam a action 'estornar'.
+
+        Bloqueia se houver lançamento financeiro PAGO vinculado (dado vinculado real —
+        o FK é SET_NULL, então sem essa checagem a exclusão órfã silenciosamente um
+        recebimento já quitado)."""
         consulta = self.get_object()
-        if consulta.status != Consulta.Status.AGENDADA:
+        if consulta.status not in _STATUS_EXCLUIVEIS:
             return Response(
-                {"detail": "Só é possível excluir uma consulta agendada."},
+                {"detail": "Só é possível excluir uma consulta agendada ou cancelada."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        if consulta.lancamentos.filter(status=LancamentoFinanceiro.Status.PAGO).exists():
+            return Response(
+                {"detail": "Não é possível excluir: há um lançamento financeiro pago vinculado a esta consulta."},
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
         return super().destroy(request, *args, **kwargs)

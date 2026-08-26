@@ -136,14 +136,14 @@ def test_excluir_so_agendada_e_campo_convenio():
         inicio = (timezone.now() + timedelta(days=1)).replace(microsecond=0)
         fim = inicio + timedelta(minutes=30)
 
-        def agendar():
+        def agendar(ini=inicio, f=fim):
             return client.post(
                 "/api/consultas/",
                 {
                     "paciente": pac,
                     "dentista": den,
-                    "inicio": inicio.isoformat(),
-                    "fim": fim.isoformat(),
+                    "inicio": ini.isoformat(),
+                    "fim": f.isoformat(),
                 },
                 format="json",
                 HTTP_HOST=host,
@@ -161,6 +161,60 @@ def test_excluir_so_agendada_e_campo_convenio():
                 f"/api/consultas/{c2['id']}/", {"status": novo}, format="json", HTTP_HOST=host
             )
         assert client.delete(f"/api/consultas/{c2['id']}/", HTTP_HOST=host).status_code == 400
+
+        # CANCELADA -> também pode excluir (204) (outro horário: o de c2 ficou ocupado/REALIZADA)
+        c3 = agendar(ini=fim, f=fim + timedelta(minutes=30))
+        client.patch(f"/api/consultas/{c3['id']}/", {"status": "CANCELADA"}, format="json", HTTP_HOST=host)
+        assert client.delete(f"/api/consultas/{c3['id']}/", HTTP_HOST=host).status_code == 204
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_excluir_consulta_cancelada_bloqueada_por_lancamento_pago():
+    """Consulta cancelada com lançamento financeiro já PAGO (ex.: estornada por engano
+    depois de recebida) não pode ser excluída — o vínculo é dado real, não formalidade."""
+    from apps.financeiro.models import LancamentoFinanceiro
+
+    host = "delcons-pago.localhost"
+    clinica = _criar_clinica("delcons_pago_tenant", host)
+    client = APIClient()
+    try:
+        pac, den = _base(client, host)
+        inicio = (timezone.now() + timedelta(days=1)).replace(microsecond=0)
+        fim = inicio + timedelta(minutes=30)
+
+        consulta = client.post(
+            "/api/consultas/",
+            {
+                "paciente": pac,
+                "dentista": den,
+                "inicio": inicio.isoformat(),
+                "fim": fim.isoformat(),
+                "valor": "150.00",
+            },
+            format="json",
+            HTTP_HOST=host,
+        ).json()
+
+        for novo in ("EM_ATENDIMENTO", "REALIZADA"):
+            client.patch(
+                f"/api/consultas/{consulta['id']}/", {"status": novo}, format="json", HTTP_HOST=host
+            )
+
+        LancamentoFinanceiro.objects.filter(consulta_id=consulta["id"]).update(
+            status=LancamentoFinanceiro.Status.PAGO
+        )
+
+        # Estorna por engano: volta para CANCELADA, mas o lançamento PAGO não é mexido
+        resp_estorno = client.post(f"/api/consultas/{consulta['id']}/estornar/", HTTP_HOST=host)
+        assert resp_estorno.status_code == 200
+        assert resp_estorno.json()["status"] == "CANCELADA"
+
+        resp_delete = client.delete(f"/api/consultas/{consulta['id']}/", HTTP_HOST=host)
+        assert resp_delete.status_code == 400
+        assert "pago" in resp_delete.json()["detail"].lower()
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)

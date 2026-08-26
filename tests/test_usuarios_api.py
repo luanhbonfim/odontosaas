@@ -280,3 +280,90 @@ def test_auto_edicao_so_nome_e_senha():
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)
         cache.clear()
+
+
+@pytest.mark.no_auto_auth
+@pytest.mark.django_db(transaction=True)
+def test_exclusao_usuario_respeita_hierarquia_e_auto_exclusao():
+    """Exclusão real de Usuario: Admin exclui qualquer cargo abaixo do seu; Gerente só
+    cargos abaixo do dele; ninguém exclui a si mesmo (nem Admin)."""
+    host = "exclui.localhost"
+    clinica = _criar_clinica("exclui_tenant", host)
+    try:
+        with schema_context(clinica.schema_name):
+            sincronizar_grupos()
+            admin = Usuario.objects.create_user(email="admin@c.com", password="Senha12345", papel="ADMIN")
+            gerente = Usuario.objects.create_user(
+                email="gerente@c.com", password="Senha12345", papel="DENTISTA_GERENTE"
+            )
+            recep = Usuario.objects.create_user(email="recep@c.com", password="Senha12345", papel="RECEPCAO")
+
+        def login(email):
+            cache.clear()
+            client = APIClient()
+            tok = client.post(
+                "/api/auth/token/",
+                {"email": email, "password": "Senha12345"},
+                format="json",
+                HTTP_HOST=host,
+            ).json()["access"]
+            client.credentials(HTTP_AUTHORIZATION=f"Bearer {tok}")
+            return client
+
+        client_gerente = login("gerente@c.com")
+        # Gerente NÃO exclui Admin (cargo acima)
+        assert client_gerente.delete(f"/api/usuarios/{admin.id}/", HTTP_HOST=host).status_code == 403
+        # Gerente exclui Recepção (cargo abaixo) -> some de fato do banco
+        assert client_gerente.delete(f"/api/usuarios/{recep.id}/", HTTP_HOST=host).status_code == 204
+        with schema_context(clinica.schema_name):
+            assert not Usuario.objects.filter(id=recep.id).exists()
+
+        client_admin = login("admin@c.com")
+        # Ninguém exclui a si mesmo
+        assert client_admin.delete(f"/api/usuarios/{admin.id}/", HTTP_HOST=host).status_code == 403
+        # Admin exclui Gerente (cargo abaixo do Admin)
+        assert client_admin.delete(f"/api/usuarios/{gerente.id}/", HTTP_HOST=host).status_code == 204
+        with schema_context(clinica.schema_name):
+            assert not Usuario.objects.filter(id=gerente.id).exists()
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+        cache.clear()
+
+
+@pytest.mark.no_auto_auth
+@pytest.mark.django_db(transaction=True)
+def test_exclusao_usuario_com_dentista_vinculado_desvincula_sem_bloquear():
+    """Dentista.usuario é SET_NULL (vínculo opcional de login): excluir a conta não é
+    bloqueado e não apaga o cadastro profissional, só desvincula o login."""
+    from apps.dentistas.models import Dentista
+
+    host = "exclui-dent.localhost"
+    clinica = _criar_clinica("exclui_dent_tenant", host)
+    try:
+        with schema_context(clinica.schema_name):
+            sincronizar_grupos()
+            Usuario.objects.create_user(email="admin@c.com", password="Senha12345", papel="ADMIN")
+            dent_user = Usuario.objects.create_user(email="dent@c.com", password="Senha12345", papel="DENTISTA")
+            dentista = Dentista.objects.create(usuario=dent_user, nome_completo="Dr. X", cro="CRO123")
+
+        cache.clear()
+        client = APIClient()
+        tok = client.post(
+            "/api/auth/token/",
+            {"email": "admin@c.com", "password": "Senha12345"},
+            format="json",
+            HTTP_HOST=host,
+        ).json()["access"]
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {tok}")
+
+        assert client.delete(f"/api/usuarios/{dent_user.id}/", HTTP_HOST=host).status_code == 204
+
+        with schema_context(clinica.schema_name):
+            assert not Usuario.objects.filter(id=dent_user.id).exists()
+            dentista.refresh_from_db()
+            assert dentista.usuario_id is None
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+        cache.clear()
