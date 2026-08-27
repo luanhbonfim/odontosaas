@@ -85,3 +85,14 @@ export function useAtualizarUsuario() {
     onSuccess: () => invalidarEquipe(qc),
   })
 }
+
+/** Exclui definitivamente um usuário e invalida a listagem. */
+export function useExcluirUsuario() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`/usuarios/${id}/`)
+    },
+    onSuccess: () => invalidarEquipe(qc),
+  })
+}

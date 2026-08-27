@@ -6,14 +6,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AcoesUsuario } from './acoes-usuario'
 import type { Usuario } from './use-usuarios'
 
-const { atualizarMock, sessaoMock } = vi.hoisted(() => ({
+const { atualizarMock, excluirMock, sessaoMock } = vi.hoisted(() => ({
   atualizarMock: vi.fn(),
+  excluirMock: vi.fn(),
   sessaoMock: vi.fn(),
 }))
-// Mantém `podeGerenciar` real; só troca o hook de atualização.
+// Mantém `podeGerenciar` real; só troca os hooks de mutação.
 vi.mock('./use-usuarios', async (importOriginal) => {
   const real = await importOriginal<typeof import('./use-usuarios')>()
-  return { ...real, useAtualizarUsuario: () => ({ mutateAsync: atualizarMock }) }
+  return {
+    ...real,
+    useAtualizarUsuario: () => ({ mutateAsync: atualizarMock }),
+    useExcluirUsuario: () => ({ mutateAsync: excluirMock }),
+  }
 })
 vi.mock('@/features/auth/use-sessao', () => ({ useSessao: sessaoMock }))
 // O drawer é testado à parte; aqui só renderizamos o seu gatilho (botão editar).
@@ -78,10 +83,24 @@ describe('AcoesUsuario', () => {
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 
-  it('para o próprio usuário, só edita (sem bloquear)', () => {
+  it('para o próprio usuário, só edita (sem bloquear nem excluir)', () => {
     sessaoMock.mockReturnValue({ usuario: { id: 5, papel: 'DENTISTA_GERENTE' } })
     render(<AcoesUsuario usuario={EU_GERENTE} />)
     expect(screen.getByRole('button', { name: /editar/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /bloquear/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /excluir/i })).not.toBeInTheDocument()
+  })
+
+  it('excluir pede confirmação e chama a exclusão', async () => {
+    excluirMock.mockResolvedValue({})
+    const user = userEvent.setup()
+    render(<AcoesUsuario usuario={RECEP_ATIVO} />)
+
+    await user.click(screen.getByRole('button', { name: /excluir x@c\.com/i }))
+    expect(await screen.findByText('Excluir usuário?')).toBeInTheDocument()
+    expect(excluirMock).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: /^excluir$/i }))
+    await waitFor(() => expect(excluirMock).toHaveBeenCalledWith(7))
   })
 })

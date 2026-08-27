@@ -5,10 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/lib/api/client'
 
-import { useAtualizarUsuario, useCriarUsuario, useUsuarios } from './use-usuarios'
+import { useAtualizarUsuario, useCriarUsuario, useExcluirUsuario, useUsuarios } from './use-usuarios'
 
 vi.mock('@/lib/api/client', () => ({
-  api: { get: vi.fn(), post: vi.fn(), patch: vi.fn() },
+  api: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }))
 
 function criarWrapper() {
@@ -56,6 +56,17 @@ describe('hooks de usuarios', () => {
     const { result } = renderHook(() => useAtualizarUsuario(), { wrapper: Wrapper })
     await result.current.mutateAsync({ id: 3, dados: { ativo: false } })
     expect(api.patch).toHaveBeenCalledWith('/usuarios/3/', { ativo: false })
+    expect(invalidar).toHaveBeenCalledWith({ queryKey: ['usuarios'] })
+  })
+
+  it('useExcluirUsuario deleta e invalida a listagem', async () => {
+    vi.mocked(api.delete).mockResolvedValue({ data: {} })
+    const { client, Wrapper } = criarWrapper()
+    const invalidar = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useExcluirUsuario(), { wrapper: Wrapper })
+
+    await result.current.mutateAsync(4)
+    expect(api.delete).toHaveBeenCalledWith('/usuarios/4/')
     expect(invalidar).toHaveBeenCalledWith({ queryKey: ['usuarios'] })
   })
 })
