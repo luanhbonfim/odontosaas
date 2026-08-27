@@ -174,6 +174,7 @@ function VisualizacaoConsulta({
   aoFechar: () => void
 }) {
   const transicao = useTransicaoConsulta()
+  const remover = useRemoverConsulta()
 
   async function finalizar() {
     try {
@@ -182,6 +183,16 @@ function VisualizacaoConsulta({
       aoFechar()
     } catch (excecao) {
       toast.error((excecao as ErroApi).mensagem ?? 'Não foi possível finalizar o atendimento.')
+    }
+  }
+
+  async function excluir() {
+    try {
+      await remover.mutateAsync(consulta.id)
+      toast.success('Consulta excluída.')
+      aoFechar()
+    } catch (excecao) {
+      toast.error((excecao as ErroApi).mensagem ?? 'Não foi possível excluir a consulta.')
     }
   }
 
@@ -215,7 +226,27 @@ function VisualizacaoConsulta({
             </div>
           ))}
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex-wrap">
+          {/* Excluir: só cancelada pode (agendada excluiria pelo formulário de edição). */}
+          {consulta.status === 'CANCELADA' && (
+            <ConfirmDialog
+              titulo="Excluir consulta?"
+              descricao="A consulta cancelada será removida definitivamente."
+              rotuloConfirmar="Excluir"
+              destrutivo
+              onConfirmar={excluir}
+              trigger={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  aria-label="Excluir consulta"
+                  className="mr-auto text-destructive hover:text-destructive"
+                >
+                  Excluir
+                </Button>
+              }
+            />
+          )}
           {consulta.status === 'EM_ATENDIMENTO' && (
             <Button type="button" onClick={finalizar} disabled={transicao.isPending}>
               Finalizar atendimento

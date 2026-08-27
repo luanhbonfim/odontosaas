@@ -352,6 +352,59 @@ describe('ConsultaModal', () => {
     expect(aoFechar).toHaveBeenCalled()
   })
 
+  it('exclui uma consulta cancelada (visualização)', async () => {
+    removerMock.mockResolvedValue({})
+    const aoFechar = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <ConsultaModal
+        estado={{
+          modo: 'visualizar',
+          consulta: {
+            id: 11,
+            paciente: 10,
+            paciente_nome: 'Maria Souza',
+            dentista: 5,
+            dentista_nome: 'Dra. Ana',
+            inicio: '2026-08-10T15:00:00Z',
+            fim: '2026-08-10T15:30:00Z',
+            valor: '200.00',
+            status: 'CANCELADA',
+          } as never,
+        }}
+        aoFechar={aoFechar}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Excluir consulta' }))
+    expect(await screen.findByText('Excluir consulta?')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^excluir$/i }))
+    await waitFor(() => expect(removerMock).toHaveBeenCalledWith(11))
+    expect(aoFechar).toHaveBeenCalled()
+  })
+
+  it('modo visualização: consulta realizada não mostra opção de excluir', () => {
+    render(
+      <ConsultaModal
+        estado={{
+          modo: 'visualizar',
+          consulta: {
+            id: 12,
+            paciente: 10,
+            paciente_nome: 'Maria Souza',
+            dentista: 5,
+            dentista_nome: 'Dra. Ana',
+            inicio: '2026-08-10T15:00:00Z',
+            fim: '2026-08-10T15:30:00Z',
+            valor: '200.00',
+            status: 'REALIZADA',
+          } as never,
+        }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: 'Excluir consulta' })).toBeNull()
+  })
+
   it('modo visualização: dados somente-leitura, sem botão de salvar', () => {
     render(
       <ConsultaModal
