@@ -15,7 +15,7 @@ import { ProcedimentosPage } from '@/features/procedimentos/procedimentos-page'
 import { DentistasPage } from '@/features/dentistas/dentistas-page'
 import { IntegracoesPage } from '@/features/integracoes/integracoes-page'
 import { NotificacoesPage } from '@/features/notificacoes/notificacoes-page'
-import { ConsultaPage } from '@/features/pacientes/consulta-page'
+import { FichaPage } from '@/features/pacientes/ficha-page'
 import { GuiaPage } from '@/features/pacientes/guia-page'
 import { PacienteDetalhePage } from '@/features/pacientes/paciente-detalhe-page'
 import { PacientesPage } from '@/features/pacientes/pacientes-page'
@@ -148,7 +148,8 @@ export function App() {
             <Route path="pacientes/novo" element={<PacienteDetalhePage />} />
             <Route path="pacientes/:pacienteId/guias/nova" element={<GuiaPage />} />
             <Route path="pacientes/:pacienteId/guias/:guiaId" element={<GuiaPage />} />
-            <Route path="pacientes/:pacienteId/consultas/:consultaId" element={<ConsultaPage />} />
+            <Route path="pacientes/:pacienteId/fichas/nova" element={<FichaPage />} />
+            <Route path="pacientes/:pacienteId/fichas/:fichaId" element={<FichaPage />} />
             <Route path="pacientes/:id" element={<PacienteDetalhePage />} />
             <Route path="dentistas" element={<DentistasPage />} />
             <Route path="convenios" element={<ConveniosPage />} />

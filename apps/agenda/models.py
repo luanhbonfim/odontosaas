@@ -69,11 +69,6 @@ class Consulta(ModeloBase):
     # Preenchido ao sincronizar com o Google Calendar (Sprint 5).
     google_event_id = models.CharField(max_length=255, blank=True)
     observacoes = models.TextField(blank=True)
-    # Ficha clínica do atendimento (preenchida pelo dentista): dentes tratados
-    # (odontograma, lista de {dente, procedimento}) e anotações livres. Vazio =
-    # ficha não preenchida.
-    dentes = models.JSONField(default=list, blank=True)
-    anotacoes = models.TextField(blank=True)
     # Token do link público de confirmação (gerado ao enviar a confirmação).
     confirmacao_token = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
@@ -132,6 +127,31 @@ class Anamnese(ModeloBase):
 
     def __str__(self):
         return f"Anamnese de {self.paciente.nome_completo}"
+
+
+class Ficha(ModeloBase):
+    """Ficha clínica de atendimento: odontograma + anotações. Pode existir sem
+    consulta vinculada (ficha avulsa), ou vinculada a no máximo uma consulta
+    (uma consulta não pode ter mais de uma ficha)."""
+
+    paciente = models.ForeignKey(Paciente, on_delete=models.PROTECT, related_name="fichas")
+    consulta = models.OneToOneField(
+        Consulta,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ficha",
+    )
+    dentes = models.JSONField(default=list, blank=True)
+    anotacoes = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Ficha"
+        verbose_name_plural = "Fichas"
+        ordering = ["-criado_em"]
+
+    def __str__(self):
+        return f"Ficha de {self.paciente.nome_completo}"
 
 
 class AgendaEvento(ModeloBase):

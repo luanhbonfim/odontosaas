@@ -1,5 +1,14 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { ArrowLeft, CalendarDays, ClipboardList, FileText, HeartPulse, User, Users } from 'lucide-react'
+import {
+  ArrowLeft,
+  CalendarDays,
+  ClipboardList,
+  FileText,
+  HeartPulse,
+  Stethoscope,
+  User,
+  Users,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
@@ -17,9 +26,9 @@ import { cn } from '@/lib/utils'
 
 import { AbaAnamneses } from './aba-anamneses'
 import { AbaDados } from './aba-dados'
+import { AbaFichas } from './aba-fichas'
 import { AbaGuias } from './aba-guias'
 import { AbaPlanos } from './aba-planos'
-import type { ProcedimentoDente } from './odontograma'
 import { BadgeCobranca, BadgeStatus } from './status'
 import { type Consulta, useConsultasDoPaciente, usePaciente } from './use-paciente-detalhe'
 
@@ -47,32 +56,7 @@ function AvisoSalvarPrimeiro() {
   )
 }
 
-/** Dentes tratados na consulta: números resumidos (detalhe no hover) ou aviso. */
-function CelulaDentes({ dentes }: { dentes: unknown }) {
-  const lista = (dentes as ProcedimentoDente[] | undefined) ?? []
-  const itens = lista.filter((d) => d.dente > 0)
-  if (itens.length === 0) {
-    return (
-      <span className="text-xs font-medium text-amber-600 dark:text-amber-500">
-        Ficha não preenchida
-      </span>
-    )
-  }
-  const numeros = itens.map((d) => d.dente)
-  const detalhe = itens
-    .map((d) => `Dente ${d.dente}${d.procedimento ? `: ${d.procedimento}` : ''}`)
-    .join('\n')
-  const visiveis = numeros.slice(0, 4).join(', ')
-  const resto = numeros.length - 4
-  return (
-    <span title={detalhe} className="cursor-default tabular-nums">
-      {visiveis}
-      {resto > 0 && <span className="text-muted-foreground"> +{resto}</span>}
-    </span>
-  )
-}
-
-// --- Aba: Consultas ---
+// --- Aba: Consultas (histórico, somente leitura — a notação clínica vive na aba Fichas) ---
 function AbaConsultas({ pacienteId }: { pacienteId: number }) {
   const { data, isLoading } = useConsultasDoPaciente(pacienteId)
   const { data: dentistas } = useDentistas()
@@ -108,29 +92,14 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
     [consultas, filtroStatus, filtroConfirmacao, filtroCobranca],
   )
 
-  // Colunas ordenáveis (accessorFn) — como nas guias; a de dentes é só exibição.
+  // Colunas ordenáveis (accessorFn) — como nas guias. Histórico: sem link/edição.
   const colunas: ColumnDef<Consulta, unknown>[] = [
     {
       id: 'procedimento',
       header: 'Procedimento',
       accessorFn: (c) => c.procedimento_catalogo_nome ?? c.procedimento ?? '',
-      // Clicável abre a ficha (odontograma + anotações). Canceladas/faltou não
-      // têm o que registrar -> viram texto simples (não clicáveis).
-      cell: ({ row }) => {
-        const nome = row.original.procedimento_catalogo_nome || row.original.procedimento || 'Ficha'
-        const bloqueada = ['CANCELADA', 'FALTOU'].includes(row.original.status ?? '')
-        if (bloqueada) {
-          return <span className="text-muted-foreground">{nome}</span>
-        }
-        return (
-          <Link
-            to={`/pacientes/${pacienteId}/consultas/${row.original.id}`}
-            className="font-medium text-primary hover:underline"
-          >
-            {nome}
-          </Link>
-        )
-      },
+      cell: ({ row }) =>
+        row.original.procedimento_catalogo_nome || row.original.procedimento || vazio,
     },
     {
       id: 'inicio',
@@ -143,12 +112,6 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
       header: 'Dentista',
       accessorFn: (c) => nomePorDentista.get(c.dentista) ?? '',
       cell: ({ row }) => nomePorDentista.get(row.original.dentista) ?? vazio,
-    },
-    {
-      id: 'dentes',
-      header: 'Dentes',
-      enableSorting: false,
-      cell: ({ row }) => <CelulaDentes dentes={row.original.dentes} />,
     },
     {
       id: 'confirmacao',
@@ -218,22 +181,12 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
         carregando={isLoading}
         vazio="Nenhuma consulta."
         cardMobile={(c) => {
-          const nome = c.procedimento_catalogo_nome || c.procedimento || 'Ficha'
-          const bloqueada = ['CANCELADA', 'FALTOU'].includes(c.status ?? '')
+          const nome = c.procedimento_catalogo_nome || c.procedimento || 'Consulta'
           const dentista = nomePorDentista.get(c.dentista)
           return (
             <div className="space-y-2.5">
               <div>
-                {bloqueada ? (
-                  <p className="font-semibold">{nome}</p>
-                ) : (
-                  <Link
-                    to={`/pacientes/${pacienteId}/consultas/${c.id}`}
-                    className="font-semibold text-primary hover:underline"
-                  >
-                    {nome}
-                  </Link>
-                )}
+                <p className="font-semibold">{nome}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   <DateTime iso={c.inicio} />
                   {dentista ? ` · ${dentista}` : ''}
@@ -244,12 +197,6 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
                 <BadgeStatus status={c.status_confirmacao} />
                 <BadgeCobranca convenioNome={c.convenio_nome} />
               </div>
-              {Array.isArray(c.dentes) && c.dentes.length > 0 ? (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span>Dentes:</span>
-                  <CelulaDentes dentes={c.dentes} />
-                </div>
-              ) : null}
             </div>
           )
         }}
@@ -263,6 +210,7 @@ const ABAS_PACIENTE: ItemSegmento[] = [
   { id: 'planos', rotulo: 'Planos', icone: ClipboardList },
   { id: 'guias', rotulo: 'Guias', icone: FileText },
   { id: 'consultas', rotulo: 'Consultas', icone: CalendarDays },
+  { id: 'fichas', rotulo: 'Fichas', icone: Stethoscope },
   { id: 'anamneses', rotulo: 'Anamnese', icone: HeartPulse },
 ]
 
@@ -305,6 +253,7 @@ export function PacienteDetalhePage() {
             <TabsTrigger value="planos">Planos</TabsTrigger>
             <TabsTrigger value="guias">Guias</TabsTrigger>
             <TabsTrigger value="consultas">Consultas</TabsTrigger>
+            <TabsTrigger value="fichas">Fichas</TabsTrigger>
             <TabsTrigger value="anamneses">Anamneses</TabsTrigger>
           </TabsList>
 
@@ -323,6 +272,9 @@ export function PacienteDetalhePage() {
           </TabsContent>
           <TabsContent value="consultas">
             {novo ? <AvisoSalvarPrimeiro /> : <AbaConsultas pacienteId={pacienteId} />}
+          </TabsContent>
+          <TabsContent value="fichas">
+            {novo ? <AvisoSalvarPrimeiro /> : <AbaFichas pacienteId={pacienteId} />}
           </TabsContent>
           <TabsContent value="anamneses">
             {novo ? <AvisoSalvarPrimeiro /> : <AbaAnamneses pacienteId={pacienteId} />}

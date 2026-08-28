@@ -19,7 +19,7 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from apps.agenda.views import AnamneseViewSet, ConsultaViewSet
+from apps.agenda.views import AnamneseViewSet, ConsultaViewSet, FichaViewSet
 from apps.auditoria.views import RegistroAuditoriaViewSet
 from apps.convenios.views import ConvenioViewSet
 from apps.dentistas.views import DentistaViewSet, EspecialidadeViewSet
@@ -71,6 +71,7 @@ router.register("planos", PlanoOdontologicoViewSet, basename="plano")
 router.register("guias", GuiaViewSet, basename="guia")
 router.register("consultas", ConsultaViewSet, basename="consulta")
 router.register("anamneses", AnamneseViewSet, basename="anamnese")
+router.register("fichas", FichaViewSet, basename="ficha")
 router.register("config-notificacao", ConfiguracaoNotificacaoViewSet, basename="config-notificacao")
 router.register("templates-mensagem", TemplateMensagemViewSet, basename="template-mensagem")
 router.register("logs-notificacao", LogNotificacaoViewSet, basename="log-notificacao")

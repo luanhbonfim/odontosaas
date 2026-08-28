@@ -8,8 +8,8 @@ from rest_framework.response import Response
 from apps.core.mixins import FiltraPorPacienteMixin
 from apps.financeiro.models import LancamentoFinanceiro
 
-from .models import Anamnese, Consulta
-from .serializers import AnamneseSerializer, ConsultaSerializer
+from .models import Anamnese, Consulta, Ficha
+from .serializers import AnamneseSerializer, ConsultaSerializer, FichaSerializer
 
 _STATUS_EXCLUIVEIS = (Consulta.Status.AGENDADA, Consulta.Status.CANCELADA)
 
@@ -80,3 +80,10 @@ class AnamneseViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
 
     queryset = Anamnese.objects.all()
     serializer_class = AnamneseSerializer
+
+
+class FichaViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
+    """CRUD de fichas clínicas (odontograma + anotações). Filtra por `?paciente=`."""
+
+    queryset = Ficha.objects.all()
+    serializer_class = FichaSerializer

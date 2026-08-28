@@ -3,7 +3,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Anamnese, Consulta
+from .models import Anamnese, Consulta, Ficha
 
 
 class ConsultaSerializer(serializers.ModelSerializer):
@@ -39,8 +39,6 @@ class ConsultaSerializer(serializers.ModelSerializer):
             "google_event_id",
             "sync_google",
             "observacoes",
-            "dentes",
-            "anotacoes",
             "ativo",
             "criado_em",
             "atualizado_em",
@@ -154,5 +152,42 @@ class AnamneseSerializer(serializers.ModelSerializer):
         if consulta and paciente and consulta.paciente_id != paciente.id:
             raise serializers.ValidationError(
                 {"consulta": "A consulta deve ser do mesmo paciente da anamnese."}
+            )
+        return attrs
+
+
+class FichaSerializer(serializers.ModelSerializer):
+    paciente_nome = serializers.CharField(source="paciente.nome_completo", read_only=True)
+    consulta_inicio = serializers.DateTimeField(
+        source="consulta.inicio", read_only=True, default=None
+    )
+    consulta_dentista_nome = serializers.CharField(
+        source="consulta.dentista.nome_completo", read_only=True, default=None
+    )
+
+    class Meta:
+        model = Ficha
+        fields = [
+            "id",
+            "paciente",
+            "paciente_nome",
+            "consulta",
+            "consulta_inicio",
+            "consulta_dentista_nome",
+            "dentes",
+            "anotacoes",
+            "ativo",
+            "criado_em",
+            "atualizado_em",
+        ]
+        read_only_fields = ["criado_em", "atualizado_em"]
+
+    def validate(self, attrs):
+        """A consulta vinculada deve ser do mesmo paciente da ficha (mesma regra da anamnese)."""
+        consulta = attrs.get("consulta") or getattr(self.instance, "consulta", None)
+        paciente = attrs.get("paciente") or getattr(self.instance, "paciente", None)
+        if consulta and paciente and consulta.paciente_id != paciente.id:
+            raise serializers.ValidationError(
+                {"consulta": "A consulta deve ser do mesmo paciente da ficha."}
             )
         return attrs

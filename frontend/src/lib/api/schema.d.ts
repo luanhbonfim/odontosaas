@@ -84,6 +84,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/encerrar-suporte/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Encerra sessão de suporte no tenant
+         * @description Encerra a sessão de suporte ativa (impersonate) para a clínica do tenant atual.
+         *     Invocado pelo botão 'Encerrar Suporte' no banner superior do app.
+         */
+        post: operations["auth_encerrar_suporte_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/me/": {
         parameters: {
             query?: never;
@@ -361,7 +382,13 @@ export interface paths {
         /** @description CRUD de consultas (opera no schema do tenant). Filtra por `?paciente=`. */
         put: operations["consultas_update"];
         post?: never;
-        /** @description Só consultas AGENDADA podem ser excluídas; realizadas usam a action 'estornar'. */
+        /**
+         * @description AGENDADA ou CANCELADA podem ser excluídas; realizadas usam a action 'estornar'.
+         *
+         *     Bloqueia se houver lançamento financeiro PAGO vinculado (dado vinculado real —
+         *     o FK é SET_NULL, então sem essa checagem a exclusão órfã silenciosamente um
+         *     recebimento já quitado).
+         */
         delete: operations["consultas_destroy"];
         options?: never;
         head?: never;
@@ -461,6 +488,74 @@ export interface paths {
         patch: operations["consumos_insumo_partial_update"];
         trace?: never;
     };
+    "/api/conta/mfa/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Status do 2FA do usuário logado. */
+        get: operations["conta_mfa_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conta/mfa/confirmar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Confirma a ativação: valida o código contra o segredo pendente e persiste. */
+        post: operations["conta_mfa_confirmar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conta/mfa/desativar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Desativa o 2FA da própria conta (exige um código atual válido). */
+        post: operations["conta_mfa_desativar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conta/mfa/iniciar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gera um segredo PENDENTE (não ativa ainda) e devolve o otpauth p/ o QR. */
+        post: operations["conta_mfa_iniciar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/convenios/": {
         parameters: {
             query?: never;
@@ -514,12 +609,7 @@ export interface paths {
          */
         get: operations["dentistas_list"];
         put?: never;
-        /**
-         * @description CRUD de dentistas (opera no schema do tenant da requisição).
-         *
-         *     O login do profissional NÃO é gerenciado aqui: a conta de acesso (Usuario) é
-         *     criada em Equipe e atrelada a um dentista pelo próprio cadastro de usuário.
-         */
+        /** @description Valida o limite de dentistas ativos do plano antes de criar. */
         post: operations["dentistas_create"];
         delete?: never;
         options?: never;
@@ -653,6 +743,44 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/fichas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de fichas clínicas (odontograma + anotações). Filtra por `?paciente=`. */
+        get: operations["fichas_list"];
+        put?: never;
+        /** @description CRUD de fichas clínicas (odontograma + anotações). Filtra por `?paciente=`. */
+        post: operations["fichas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fichas/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de fichas clínicas (odontograma + anotações). Filtra por `?paciente=`. */
+        get: operations["fichas_retrieve"];
+        /** @description CRUD de fichas clínicas (odontograma + anotações). Filtra por `?paciente=`. */
+        put: operations["fichas_update"];
+        post?: never;
+        /** @description CRUD de fichas clínicas (odontograma + anotações). Filtra por `?paciente=`. */
+        delete: operations["fichas_destroy"];
+        options?: never;
+        head?: never;
+        /** @description CRUD de fichas clínicas (odontograma + anotações). Filtra por `?paciente=`. */
+        patch: operations["fichas_partial_update"];
         trace?: never;
     };
     "/api/guias/": {
@@ -954,6 +1082,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/meu-plano/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Detalhes do plano contratado da clínica
+         * @description Retorna os detalhes da assinatura da clínica atual, limites contratados,
+         *     consumo em tempo real de dentistas, usuários e pacientes, além de dados para upgrade.
+         */
+        get: operations["meu_plano_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/movimentacoes-estoque/": {
         parameters: {
             query?: never;
@@ -1134,6 +1283,766 @@ export interface paths {
         patch: operations["planos_partial_update"];
         trace?: never;
     };
+    "/api/plataforma-admin/auth/login/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Endpoint de autenticação para operadores do Vendor Admin.
+         *     Executa exclusivamente no host público e valida credenciais de staff/superuser.
+         *     Inclui bloqueio por tentativas excessivas (proteção contra força bruta).
+         */
+        post: operations["plataforma_admin_auth_login_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/celery/tarefas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Lista todas as tarefas periódicas configuradas no banco. */
+        get: operations["plataforma_admin_celery_tarefas_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/celery/tarefas/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Detalhes de uma tarefa periódica específica. */
+        get: operations["plataforma_admin_celery_tarefas_retrieve_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Atualiza em runtime o status (enabled), intervalo ou cron da tarefa. */
+        patch: operations["plataforma_admin_celery_tarefas_partial_update"];
+        trace?: never;
+    };
+    "/api/plataforma-admin/celery/tarefas/{id}/disparar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Força o disparo imediato da tarefa no Celery. */
+        post: operations["plataforma_admin_celery_tarefas_disparar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/celery/tarefas/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Status de conectividade do Redis e contagem de workers. */
+        get: operations["plataforma_admin_celery_tarefas_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/config-login/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Configurações de Login & Sessão da plataforma (singleton, schema public).
+         *     Leitura e escrita restritas a SuperAdmin. Toda alteração é auditada e invalida
+         *     o cache de configuração (efeito em até ~30s nos throttles/login).
+         */
+        get: operations["plataforma_admin_config_login_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Configurações de Login & Sessão da plataforma (singleton, schema public).
+         *     Leitura e escrita restritas a SuperAdmin. Toda alteração é auditada e invalida
+         *     o cache de configuração (efeito em até ~30s nos throttles/login).
+         */
+        patch: operations["plataforma_admin_config_login_partial_update"];
+        trace?: never;
+    };
+    "/api/plataforma-admin/master-admin/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retorna informações sobre a conta Master atual e cobertura de sincronização. */
+        get: operations["plataforma_admin_master_admin_retrieve"];
+        put?: never;
+        /** @description Atualiza a senha (e opcionalmente o e-mail) do Admin Master em todos os schemas. */
+        post: operations["plataforma_admin_master_admin_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/mfa/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Status do 2FA do operador logado. */
+        get: operations["plataforma_admin_mfa_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/mfa/confirmar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Confirma a ativação: valida o código contra o segredo pendente e persiste. */
+        post: operations["plataforma_admin_mfa_confirmar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/mfa/desativar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Desativa o 2FA do PRÓPRIO operador (exige um código atual válido). */
+        post: operations["plataforma_admin_mfa_desativar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/mfa/iniciar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gera um segredo PENDENTE (não ativa ainda) e devolve o otpauth p/ o QR. */
+        post: operations["plataforma_admin_mfa_iniciar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/mfa/operadores/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Lista operadores COM 2FA ativo (para o SuperAdmin resetar, se necessário). */
+        get: operations["plataforma_admin_mfa_operadores_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/mfa/resetar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description SuperAdmin desativa/reseta o 2FA de OUTRO operador por e-mail (recuperação). */
+        post: operations["plataforma_admin_mfa_resetar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/planos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description CRUD completo de planos comerciais do SaaS.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        get: operations["plataforma_admin_planos_list"];
+        put?: never;
+        /**
+         * @description CRUD completo de planos comerciais do SaaS.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        post: operations["plataforma_admin_planos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/planos/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description CRUD completo de planos comerciais do SaaS.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        get: operations["plataforma_admin_planos_retrieve"];
+        /**
+         * @description CRUD completo de planos comerciais do SaaS.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        put: operations["plataforma_admin_planos_update"];
+        post?: never;
+        /**
+         * @description CRUD completo de planos comerciais do SaaS.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        delete: operations["plataforma_admin_planos_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description CRUD completo de planos comerciais do SaaS.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        patch: operations["plataforma_admin_planos_partial_update"];
+        trace?: never;
+    };
+    "/api/plataforma-admin/studio/executar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Executa query SQL no Database Studio. */
+        post: operations["plataforma_admin_studio_executar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/studio/schemas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Lista todos os schemas com contagem de tabelas. */
+        get: operations["plataforma_admin_studio_schemas_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/studio/tables/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retorna o dicionário de dados (tabelas e colunas) do schema informado. */
+        get: operations["plataforma_admin_studio_tables_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Governança, listagem e ciclo de vida de tenants (clínicas).
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        get: operations["plataforma_admin_tenants_list"];
+        put?: never;
+        /**
+         * @description Governança, listagem e ciclo de vida de tenants (clínicas).
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        post: operations["plataforma_admin_tenants_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Governança, listagem e ciclo de vida de tenants (clínicas).
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        get: operations["plataforma_admin_tenants_retrieve"];
+        /**
+         * @description Governança, listagem e ciclo de vida de tenants (clínicas).
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        put: operations["plataforma_admin_tenants_update"];
+        post?: never;
+        /**
+         * @description Governança, listagem e ciclo de vida de tenants (clínicas).
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        delete: operations["plataforma_admin_tenants_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Governança, listagem e ciclo de vida de tenants (clínicas).
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        patch: operations["plataforma_admin_tenants_partial_update"];
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/alternar-status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Alias para alternar_status (com hífen). */
+        post: operations["plataforma_admin_tenants_alternar_status_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/alternar_status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ativa, bloqueia ou altera o status de assinatura da clínica. */
+        post: operations["plataforma_admin_tenants_alternar_status_create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/auditoria/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consulta os logs de auditoria (alterações cadastrais, parâmetros, status, etc.). */
+        get: operations["plataforma_admin_tenants_auditoria_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/encerrar_suporte/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Encerra e invalida todas as sessões de suporte ativas para esta clínica. */
+        post: operations["plataforma_admin_tenants_encerrar_suporte_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/erros/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consulta logs de erro operacionais filtrados para a clínica. */
+        get: operations["plataforma_admin_tenants_erros_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/expurgar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Exclusão física definitiva (drop schema) com confirmação estrita. */
+        post: operations["plataforma_admin_tenants_expurgar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/google/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consulta e parametrização do Google Calendar para o tenant. */
+        get: operations["plataforma_admin_tenants_google_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Consulta e parametrização do Google Calendar para o tenant. */
+        patch: operations["plataforma_admin_tenants_google_partial_update"];
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/google/reconciliar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Força disparo manual de reconciliação do Google Calendar no tenant. */
+        post: operations["plataforma_admin_tenants_google_reconciliar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/impersonate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Emite token de suporte de curta duração para impersonation. */
+        post: operations["plataforma_admin_tenants_impersonate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/metricas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Calcula e retorna métricas operacionais agregadas do tenant. */
+        get: operations["plataforma_admin_tenants_metricas_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/overrides/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consulta e atualiza overrides específicos de limites da clínica. */
+        get: operations["plataforma_admin_tenants_overrides_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Consulta e atualiza overrides específicos de limites da clínica. */
+        patch: operations["plataforma_admin_tenants_overrides_partial_update"];
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/renovar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Renova a vigência da clínica conforme a periodicidade do plano e a reativa.
+         *
+         *     Estende a partir do MAIOR entre hoje e a vigência atual (se ainda no futuro),
+         *     somando +30 dias (mensal), +365 (anual) ou tornando permanente (sem vencimento).
+         *     Reativa a clínica (ativo=True, status=ATIVA).
+         */
+        post: operations["plataforma_admin_tenants_renovar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/reset-admin-senha/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Redefine forçadamente a senha do admin da clínica. */
+        post: operations["plataforma_admin_tenants_reset_admin_senha_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/suporte/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consulta o histórico de sessões de suporte (impersonate) desta clínica. */
+        get: operations["plataforma_admin_tenants_suporte_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/trocar-plano/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Troca o plano comercial da clínica, com política de vigência escolhida.
+         *
+         *     Body: `plano_id` (obrigatório) + `vigencia_modo`:
+         *       - "agora": recalcula o vencimento a partir de HOJE pela periodicidade do novo
+         *         plano (reativa a clínica).
+         *       - "manter": só troca o plano; mantém o vencimento atual inalterado.
+         *       - "proximo_ciclo": soma o período do novo plano ao vencimento atual (a nova
+         *         vigência começa a valer a partir do próximo vencimento).
+         */
+        post: operations["plataforma_admin_tenants_trocar_plano_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/whatsapp/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consulta e parametrização do WhatsApp / WAHA para o tenant. */
+        get: operations["plataforma_admin_tenants_whatsapp_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Consulta e parametrização do WhatsApp / WAHA para o tenant. */
+        patch: operations["plataforma_admin_tenants_whatsapp_partial_update"];
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/whatsapp/reiniciar-sessao/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Reinicia a sessão WAHA da clínica. */
+        post: operations["plataforma_admin_tenants_whatsapp_reiniciar_sessao_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/{id}/whatsapp/restart/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Alias para whatsapp/reiniciar-sessao. */
+        post: operations["plataforma_admin_tenants_whatsapp_restart_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/tenants/provisionar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Provisiona um novo tenant de forma atômica. */
+        post: operations["plataforma_admin_tenants_provisionar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma/planos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Lista pública (sem autenticação) dos planos ATIVOS, para a página de vendas.
+         *     Servida no host público (schema public); `PlanoAssinatura` é SHARED_APP.
+         */
+        get: operations["plataforma_planos_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/procedimentos/": {
         parameters: {
             query?: never;
@@ -1220,18 +2129,28 @@ export interface paths {
         /**
          * @description CRUD dos usuários da equipe (permissões do módulo "usuarios": Gerente/Admin).
          *
-         *     Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia cargos abaixo do
-         *     seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
-         *     todos.
+         *     Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia/exclui cargos abaixo
+         *     do seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
+         *     e exclui todos, exceto a si mesmo.
+         *
+         *     Exclusão é física (o normal é só **bloquear o acesso** via `ativo=False`); a conta
+         *     só pode ser excluída de fato quando não há dados vinculados que impeçam (hoje o
+         *     vínculo com Dentista e com o histórico de auditoria é `SET_NULL`, então em geral
+         *     a exclusão é permitida — a proteção aqui é defensiva para vínculos futuros).
          */
         get: operations["usuarios_list"];
         put?: never;
         /**
          * @description CRUD dos usuários da equipe (permissões do módulo "usuarios": Gerente/Admin).
          *
-         *     Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia cargos abaixo do
-         *     seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
-         *     todos.
+         *     Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia/exclui cargos abaixo
+         *     do seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
+         *     e exclui todos, exceto a si mesmo.
+         *
+         *     Exclusão é física (o normal é só **bloquear o acesso** via `ativo=False`); a conta
+         *     só pode ser excluída de fato quando não há dados vinculados que impeçam (hoje o
+         *     vínculo com Dentista e com o histórico de auditoria é `SET_NULL`, então em geral
+         *     a exclusão é permitida — a proteção aqui é defensiva para vínculos futuros).
          */
         post: operations["usuarios_create"];
         delete?: never;
@@ -1250,22 +2169,44 @@ export interface paths {
         /**
          * @description CRUD dos usuários da equipe (permissões do módulo "usuarios": Gerente/Admin).
          *
-         *     Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia cargos abaixo do
-         *     seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
-         *     todos.
+         *     Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia/exclui cargos abaixo
+         *     do seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
+         *     e exclui todos, exceto a si mesmo.
+         *
+         *     Exclusão é física (o normal é só **bloquear o acesso** via `ativo=False`); a conta
+         *     só pode ser excluída de fato quando não há dados vinculados que impeçam (hoje o
+         *     vínculo com Dentista e com o histórico de auditoria é `SET_NULL`, então em geral
+         *     a exclusão é permitida — a proteção aqui é defensiva para vínculos futuros).
          */
         get: operations["usuarios_retrieve"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * @description CRUD dos usuários da equipe (permissões do módulo "usuarios": Gerente/Admin).
+         *
+         *     Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia/exclui cargos abaixo
+         *     do seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
+         *     e exclui todos, exceto a si mesmo.
+         *
+         *     Exclusão é física (o normal é só **bloquear o acesso** via `ativo=False`); a conta
+         *     só pode ser excluída de fato quando não há dados vinculados que impeçam (hoje o
+         *     vínculo com Dentista e com o histórico de auditoria é `SET_NULL`, então em geral
+         *     a exclusão é permitida — a proteção aqui é defensiva para vínculos futuros).
+         */
+        delete: operations["usuarios_destroy"];
         options?: never;
         head?: never;
         /**
          * @description CRUD dos usuários da equipe (permissões do módulo "usuarios": Gerente/Admin).
          *
-         *     Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia cargos abaixo do
-         *     seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
-         *     todos.
+         *     Respeita a **hierarquia**: um Gerente só cria/edita/bloqueia/exclui cargos abaixo
+         *     do seu (Dentista/Recepção) — não mexe em Admin nem em outro Gerente. Admin gerencia
+         *     e exclui todos, exceto a si mesmo.
+         *
+         *     Exclusão é física (o normal é só **bloquear o acesso** via `ativo=False`); a conta
+         *     só pode ser excluída de fato quando não há dados vinculados que impeçam (hoje o
+         *     vínculo com Dentista e com o histórico de auditoria é `SET_NULL`, então em geral
+         *     a exclusão é permitida — a proteção aqui é defensiva para vínculos futuros).
          */
         patch: operations["usuarios_partial_update"];
         trace?: never;
@@ -1315,10 +2256,119 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em: string;
         };
+        /** @description Serializer completo para detalhes e edição cadastral de uma clínica. */
+        ClinicaDetailVendor: {
+            readonly id: number;
+            readonly schema_name: string;
+            nome_fantasia: string;
+            razao_social?: string;
+            cnpj?: string | null;
+            telefone?: string;
+            /** @description Nome completo do responsável assinante */
+            responsavel_nome?: string;
+            /** @description CPF do responsável assinante */
+            responsavel_cpf?: string;
+            /** @description Telefone/WhatsApp do responsável */
+            responsavel_telefone?: string;
+            /**
+             * Format: email
+             * @description E-mail de contato institucional do responsável
+             */
+            responsavel_email?: string | null;
+            plano_assinatura?: number | null;
+            /** @default  */
+            readonly plano_nome: string;
+            /**
+             * @description Estado atual da assinatura do SaaS
+             *
+             *     * `TRIAL` - Em período de testes
+             *     * `ATIVA` - Assinatura ativa
+             *     * `INADIMPLENTE` - Inadimplente / Pagamento pendente
+             *     * `CANCELADA` - Cancelada
+             */
+            status_assinatura?: components["schemas"]["StatusAssinaturaEnum"];
+            readonly status_efetivo: string;
+            /** @description ID do cliente no gateway de pagamentos (Asaas/Stripe) */
+            gateway_customer_id?: string;
+            /** @description ID da assinatura recorrente no gateway */
+            gateway_subscription_id?: string;
+            /**
+             * Format: date
+             * @description Data final da vigência / vencimento da fatura atual
+             */
+            vigencia_fim?: string | null;
+            readonly dias_restantes_vigencia: number | null;
+            /** @description Override manual do limite de dentistas (ignora plano se definido) */
+            override_limite_dentistas?: number | null;
+            /** @description Override manual do limite de usuários (ignora plano se definido) */
+            override_limite_usuarios?: number | null;
+            /** @description Overrides de flags de módulos/recursos específicos para esta clínica */
+            override_recursos?: unknown;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em: string;
+            readonly dominios: components["schemas"]["DominioVendor"][];
+            readonly limite_dentistas_efetivo: number;
+            readonly limite_usuarios_efetivo: number;
+            readonly modulos_efetivos: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Serializer simplificado para listagem de clínicas no painel do vendor. */
+        ClinicaListVendor: {
+            readonly id: number;
+            schema_name: string;
+            nome_fantasia: string;
+            razao_social?: string;
+            cnpj?: string | null;
+            telefone?: string;
+            /** @description Nome completo do responsável assinante */
+            responsavel_nome?: string;
+            /** @description CPF do responsável assinante */
+            responsavel_cpf?: string;
+            /** @description Telefone/WhatsApp do responsável */
+            responsavel_telefone?: string;
+            /**
+             * Format: email
+             * @description E-mail de contato institucional do responsável
+             */
+            responsavel_email?: string | null;
+            plano_assinatura?: number | null;
+            /** @default  */
+            readonly plano_nome: string;
+            /**
+             * @description Estado atual da assinatura do SaaS
+             *
+             *     * `TRIAL` - Em período de testes
+             *     * `ATIVA` - Assinatura ativa
+             *     * `INADIMPLENTE` - Inadimplente / Pagamento pendente
+             *     * `CANCELADA` - Cancelada
+             */
+            status_assinatura?: components["schemas"]["StatusAssinaturaEnum"];
+            readonly status_efetivo: string;
+            /**
+             * Format: date
+             * @description Data final da vigência / vencimento da fatura atual
+             */
+            vigencia_fim?: string | null;
+            readonly dias_restantes_vigencia: number | null;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em: string;
+            readonly dominios: components["schemas"]["DominioVendor"][];
+            readonly limite_dentistas_efetivo: number;
+            readonly limite_usuarios_efetivo: number;
+            readonly modulos_efetivos: {
+                [key: string]: unknown;
+            };
+        };
         /** @description Resumo da clínica (tenant) atual — usado no `/api/auth/me/`. */
         ClinicaResumo: {
             schema: string;
             nome_fantasia: string;
+            modulos?: {
+                [key: string]: boolean;
+            };
         };
         /** @description Estado da conexão Google Calendar de um alvo (clínica ou um dentista). */
         ConexaoGoogle: {
@@ -1379,8 +2429,6 @@ export interface components {
             readonly google_event_id: string;
             readonly sync_google: string | null;
             observacoes?: string;
-            dentes?: unknown;
-            anotacoes?: string;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em: string;
@@ -1442,6 +2490,12 @@ export interface components {
          * @enum {string}
          */
         DirecaoEnum: "ENVIADA" | "RECEBIDA";
+        /** @description Serializer para domínios de uma clínica. */
+        DominioVendor: {
+            readonly id: number;
+            domain: string;
+            is_primary?: boolean;
+        };
         Especialidade: {
             readonly id: number;
             nome: string;
@@ -1473,6 +2527,22 @@ export interface components {
          * @enum {string}
          */
         FaturaStatusEnum: "ABERTA" | "ENVIADA" | "PAGA" | "GLOSADA";
+        Ficha: {
+            readonly id: number;
+            paciente: number;
+            readonly paciente_nome: string;
+            consulta?: number | null;
+            /** Format: date-time */
+            readonly consulta_inicio: string;
+            readonly consulta_dentista_nome: string;
+            dentes?: unknown;
+            anotacoes?: string;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em: string;
+            /** Format: date-time */
+            readonly atualizado_em: string;
+        };
         Guia: {
             readonly id: number;
             plano: number;
@@ -1611,6 +2681,18 @@ export interface components {
          * @enum {string}
          */
         MovimentacaoEstoqueTipoEnum: "ENTRADA" | "SAIDA";
+        /**
+         * @description Serializer de obtenção de token JWT compatível com multi-tenancy.
+         *     - Se a requisição chega no schema público (host do Vendor), autentica o operador
+         *       localizando seu cadastro em um tenant ativo onde possua flag is_staff ou is_superuser.
+         *     - Se a requisição chega no subdomínio do tenant, autentica normalmente no schema local.
+         */
+        MultiTenantTokenObtainPair: {
+            /** Format: email */
+            email: string;
+            password: string;
+            codigo_mfa?: string;
+        };
         Paciente: {
             readonly id: number;
             nome_completo: string;
@@ -1690,6 +2772,64 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em?: string;
         };
+        /** @description Serializer completo para detalhes e edição cadastral de uma clínica. */
+        PatchedClinicaDetailVendor: {
+            readonly id?: number;
+            readonly schema_name?: string;
+            nome_fantasia?: string;
+            razao_social?: string;
+            cnpj?: string | null;
+            telefone?: string;
+            /** @description Nome completo do responsável assinante */
+            responsavel_nome?: string;
+            /** @description CPF do responsável assinante */
+            responsavel_cpf?: string;
+            /** @description Telefone/WhatsApp do responsável */
+            responsavel_telefone?: string;
+            /**
+             * Format: email
+             * @description E-mail de contato institucional do responsável
+             */
+            responsavel_email?: string | null;
+            plano_assinatura?: number | null;
+            /** @default  */
+            readonly plano_nome: string;
+            /**
+             * @description Estado atual da assinatura do SaaS
+             *
+             *     * `TRIAL` - Em período de testes
+             *     * `ATIVA` - Assinatura ativa
+             *     * `INADIMPLENTE` - Inadimplente / Pagamento pendente
+             *     * `CANCELADA` - Cancelada
+             */
+            status_assinatura?: components["schemas"]["StatusAssinaturaEnum"];
+            readonly status_efetivo?: string;
+            /** @description ID do cliente no gateway de pagamentos (Asaas/Stripe) */
+            gateway_customer_id?: string;
+            /** @description ID da assinatura recorrente no gateway */
+            gateway_subscription_id?: string;
+            /**
+             * Format: date
+             * @description Data final da vigência / vencimento da fatura atual
+             */
+            vigencia_fim?: string | null;
+            readonly dias_restantes_vigencia?: number | null;
+            /** @description Override manual do limite de dentistas (ignora plano se definido) */
+            override_limite_dentistas?: number | null;
+            /** @description Override manual do limite de usuários (ignora plano se definido) */
+            override_limite_usuarios?: number | null;
+            /** @description Overrides de flags de módulos/recursos específicos para esta clínica */
+            override_recursos?: unknown;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em?: string;
+            readonly dominios?: components["schemas"]["DominioVendor"][];
+            readonly limite_dentistas_efetivo?: number;
+            readonly limite_usuarios_efetivo?: number;
+            readonly modulos_efetivos?: {
+                [key: string]: unknown;
+            };
+        };
         PatchedConfiguracaoNotificacao: {
             readonly id?: number;
             dias_antecedencia?: number;
@@ -1738,8 +2878,6 @@ export interface components {
             readonly google_event_id?: string;
             readonly sync_google?: string | null;
             observacoes?: string;
-            dentes?: unknown;
-            anotacoes?: string;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em?: string;
@@ -1803,6 +2941,22 @@ export interface components {
             /** Format: date */
             data_emissao?: string | null;
             readonly quantidade_lancamentos?: number;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em?: string;
+            /** Format: date-time */
+            readonly atualizado_em?: string;
+        };
+        PatchedFicha: {
+            readonly id?: number;
+            paciente?: number;
+            readonly paciente_nome?: string;
+            consulta?: number | null;
+            /** Format: date-time */
+            readonly consulta_inicio?: string;
+            readonly consulta_dentista_nome?: string;
+            dentes?: unknown;
+            anotacoes?: string;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em?: string;
@@ -1906,6 +3060,46 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em?: string;
         };
+        /** @description Serializer para CRUD de planos comerciais no painel do vendor. */
+        PatchedPlanoAssinaturaVendor: {
+            readonly id?: number;
+            nome?: string;
+            /**
+             * @description Ciclo de cobrança/renovação padrão do plano
+             *
+             *     * `MENSAL` - Mensal
+             *     * `ANUAL` - Anual
+             *     * `PERMANENTE` - Permanente (Vitalício)
+             */
+            periodicidade?: components["schemas"]["PeriodicidadeEnum"];
+            /** Format: decimal */
+            preco_mensal?: string;
+            /**
+             * Format: decimal
+             * @description Valor anual com desconto (opcional)
+             */
+            preco_anual?: string | null;
+            /** @description Vazio = ilimitado */
+            limite_dentistas?: number | null;
+            /** @description Vazio = ilimitado */
+            limite_usuarios?: number | null;
+            /** @description Vazio = ilimitado */
+            limite_pacientes_ativos?: number | null;
+            /** @description Cota em MB para uploads futuros */
+            limite_armazenamento_mb?: number;
+            /** @description Habilita módulo financeiro */
+            modulo_financeiro_ativo?: boolean;
+            /** @description Habilita módulo de estoque/insumos */
+            modulo_estoque_ativo?: boolean;
+            /** @description Habilita integração com Google Calendar */
+            sync_google_ativo?: boolean;
+            /** @description Habilita automações de WhatsApp */
+            whatsapp_waha_ativo?: boolean;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em?: string;
+            readonly total_clinicas?: number;
+        };
         PatchedPlanoOdontologico: {
             readonly id?: number;
             paciente?: number;
@@ -1972,6 +3166,53 @@ export interface components {
             readonly dentista_id?: number | null;
             readonly dentista_nome?: string | null;
         };
+        /**
+         * @description * `MENSAL` - Mensal
+         *     * `ANUAL` - Anual
+         *     * `PERMANENTE` - Permanente (Vitalício)
+         * @enum {string}
+         */
+        PeriodicidadeEnum: "MENSAL" | "ANUAL" | "PERMANENTE";
+        /** @description Serializer para CRUD de planos comerciais no painel do vendor. */
+        PlanoAssinaturaVendor: {
+            readonly id: number;
+            nome: string;
+            /**
+             * @description Ciclo de cobrança/renovação padrão do plano
+             *
+             *     * `MENSAL` - Mensal
+             *     * `ANUAL` - Anual
+             *     * `PERMANENTE` - Permanente (Vitalício)
+             */
+            periodicidade?: components["schemas"]["PeriodicidadeEnum"];
+            /** Format: decimal */
+            preco_mensal?: string;
+            /**
+             * Format: decimal
+             * @description Valor anual com desconto (opcional)
+             */
+            preco_anual?: string | null;
+            /** @description Vazio = ilimitado */
+            limite_dentistas?: number | null;
+            /** @description Vazio = ilimitado */
+            limite_usuarios?: number | null;
+            /** @description Vazio = ilimitado */
+            limite_pacientes_ativos?: number | null;
+            /** @description Cota em MB para uploads futuros */
+            limite_armazenamento_mb?: number;
+            /** @description Habilita módulo financeiro */
+            modulo_financeiro_ativo?: boolean;
+            /** @description Habilita módulo de estoque/insumos */
+            modulo_estoque_ativo?: boolean;
+            /** @description Habilita integração com Google Calendar */
+            sync_google_ativo?: boolean;
+            /** @description Habilita automações de WhatsApp */
+            whatsapp_waha_ativo?: boolean;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em: string;
+            readonly total_clinicas: number;
+        };
         PlanoOdontologico: {
             readonly id: number;
             paciente: number;
@@ -1996,6 +3237,42 @@ export interface components {
          * @enum {string}
          */
         PlanoOdontologicoStatusEnum: "ATIVO" | "SUSPENSO" | "CANCELADO";
+        /** @description Planos expostos publicamente na landing page (sem dados sensíveis). */
+        PlanoPublico: {
+            readonly id: number;
+            nome: string;
+            /**
+             * @description Ciclo de cobrança/renovação padrão do plano
+             *
+             *     * `MENSAL` - Mensal
+             *     * `ANUAL` - Anual
+             *     * `PERMANENTE` - Permanente (Vitalício)
+             */
+            periodicidade?: components["schemas"]["PeriodicidadeEnum"];
+            /** Format: decimal */
+            preco_mensal?: string;
+            /**
+             * Format: decimal
+             * @description Valor anual com desconto (opcional)
+             */
+            preco_anual?: string | null;
+            /** @description Vazio = ilimitado */
+            limite_dentistas?: number | null;
+            /** @description Vazio = ilimitado */
+            limite_usuarios?: number | null;
+            /** @description Vazio = ilimitado */
+            limite_pacientes_ativos?: number | null;
+            /** @description Cota em MB para uploads futuros */
+            limite_armazenamento_mb?: number;
+            /** @description Habilita módulo financeiro */
+            modulo_financeiro_ativo?: boolean;
+            /** @description Habilita módulo de estoque/insumos */
+            modulo_estoque_ativo?: boolean;
+            /** @description Habilita integração com Google Calendar */
+            sync_google_ativo?: boolean;
+            /** @description Habilita automações de WhatsApp */
+            whatsapp_waha_ativo?: boolean;
+        };
         Procedimento: {
             readonly id: number;
             nome: string;
@@ -2015,6 +3292,14 @@ export interface components {
             /** Format: date-time */
             readonly criado_em: string;
         };
+        /**
+         * @description * `TRIAL` - Em período de testes
+         *     * `ATIVA` - Assinatura ativa
+         *     * `INADIMPLENTE` - Inadimplente / Pagamento pendente
+         *     * `CANCELADA` - Cancelada
+         * @enum {string}
+         */
+        StatusAssinaturaEnum: "TRIAL" | "ATIVA" | "INADIMPLENTE" | "CANCELADA";
         /**
          * @description * `PENDENTE` - Pendente
          *     * `CONFIRMADA` - Confirmada
@@ -2048,12 +3333,6 @@ export interface components {
          * @enum {string}
          */
         TemplateMensagemTipoEnum: "CONFIRMACAO" | "AGRADECIMENTO" | "LEMBRETE" | "CANCELAMENTO" | "REAGENDAMENTO";
-        TokenObtainPair: {
-            email: string;
-            password: string;
-            readonly access: string;
-            readonly refresh: string;
-        };
         TokenRefresh: {
             readonly access: string;
             refresh: string;
@@ -2306,6 +3585,25 @@ export interface operations {
             };
         };
     };
+    auth_encerrar_suporte_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
     auth_me_retrieve: {
         parameters: {
             query?: never;
@@ -2334,9 +3632,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TokenObtainPair"];
-                "application/x-www-form-urlencoded": components["schemas"]["TokenObtainPair"];
-                "multipart/form-data": components["schemas"]["TokenObtainPair"];
+                "application/json": components["schemas"]["MultiTenantTokenObtainPair"];
+                "application/x-www-form-urlencoded": components["schemas"]["MultiTenantTokenObtainPair"];
+                "multipart/form-data": components["schemas"]["MultiTenantTokenObtainPair"];
             };
         };
         responses: {
@@ -2345,7 +3643,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TokenObtainPair"];
+                    "application/json": components["schemas"]["MultiTenantTokenObtainPair"];
                 };
             };
         };
@@ -3144,6 +4442,78 @@ export interface operations {
             };
         };
     };
+    conta_mfa_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    conta_mfa_confirmar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    conta_mfa_desativar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    conta_mfa_iniciar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     convenios_list: {
         parameters: {
             query?: never;
@@ -3737,6 +5107,149 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Fatura"];
+                };
+            };
+        };
+    };
+    fichas_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ficha"][];
+                };
+            };
+        };
+    };
+    fichas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Ficha"];
+                "application/x-www-form-urlencoded": components["schemas"]["Ficha"];
+                "multipart/form-data": components["schemas"]["Ficha"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ficha"];
+                };
+            };
+        };
+    };
+    fichas_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Ficha. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ficha"];
+                };
+            };
+        };
+    };
+    fichas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Ficha. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Ficha"];
+                "application/x-www-form-urlencoded": components["schemas"]["Ficha"];
+                "multipart/form-data": components["schemas"]["Ficha"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ficha"];
+                };
+            };
+        };
+    };
+    fichas_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Ficha. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fichas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Ficha. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedFicha"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedFicha"];
+                "multipart/form-data": components["schemas"]["PatchedFicha"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ficha"];
                 };
             };
         };
@@ -4370,6 +5883,24 @@ export interface operations {
             };
         };
     };
+    meu_plano_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dados do plano, limites e consumo em tempo real */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     movimentacoes_estoque_list: {
         parameters: {
             query?: never;
@@ -4808,6 +6339,1240 @@ export interface operations {
             };
         };
     };
+    plataforma_admin_auth_login_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_celery_tarefas_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_celery_tarefas_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_celery_tarefas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_celery_tarefas_disparar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_celery_tarefas_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_config_login_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_config_login_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_master_admin_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_master_admin_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_mfa_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_mfa_confirmar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_mfa_desativar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_mfa_iniciar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_mfa_operadores_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_mfa_resetar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_planos_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanoAssinaturaVendor"][];
+                };
+            };
+        };
+    };
+    plataforma_admin_planos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanoAssinaturaVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["PlanoAssinaturaVendor"];
+                "multipart/form-data": components["schemas"]["PlanoAssinaturaVendor"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanoAssinaturaVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_planos_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Plano de assinatura. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanoAssinaturaVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_planos_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Plano de assinatura. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanoAssinaturaVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["PlanoAssinaturaVendor"];
+                "multipart/form-data": components["schemas"]["PlanoAssinaturaVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanoAssinaturaVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_planos_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Plano de assinatura. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_planos_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Plano de assinatura. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPlanoAssinaturaVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPlanoAssinaturaVendor"];
+                "multipart/form-data": components["schemas"]["PatchedPlanoAssinaturaVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanoAssinaturaVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_studio_executar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_studio_schemas_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_studio_tables_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_tenants_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaListVendor"][];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_tenants_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["PatchedClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_alternar_status_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_alternar_status_create_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_auditoria_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_encerrar_suporte_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_erros_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_expurgar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_google_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_google_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["PatchedClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_google_reconciliar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_impersonate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_metricas_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_overrides_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_overrides_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["PatchedClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_renovar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_reset_admin_senha_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_suporte_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_trocar_plano_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_whatsapp_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_whatsapp_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["PatchedClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_whatsapp_reiniciar_sessao_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_whatsapp_restart_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_provisionar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicaDetailVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClinicaDetailVendor"];
+                "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_planos_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanoPublico"][];
+                };
+            };
+        };
+    };
     procedimentos_list: {
         parameters: {
             query?: never;
@@ -5157,6 +7922,27 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Usuario"];
                 };
+            };
+        };
+    };
+    usuarios_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Usuário. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

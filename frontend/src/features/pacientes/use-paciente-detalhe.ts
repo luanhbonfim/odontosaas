@@ -9,6 +9,7 @@ export type Plano = components['schemas']['PlanoOdontologico']
 export type Guia = components['schemas']['Guia']
 export type Consulta = components['schemas']['Consulta']
 export type Anamnese = components['schemas']['Anamnese']
+export type Ficha = components['schemas']['Ficha']
 
 /** Campos graváveis de um plano (o paciente vem do contexto da ficha).
  * `convenio` (id do catálogo) alimenta a `operadora` no backend. */
@@ -141,25 +142,6 @@ export function useConsulta(id: number) {
   })
 }
 
-/** Ficha clínica gravável da consulta: dentes tratados (odontograma) + anotações. */
-export type FichaConsulta = {
-  dentes: { dente: number; procedimento: string }[]
-  anotacoes: string
-}
-
-/** Salva a ficha da consulta (dentes + anotações) e revalida a lista/consulta. */
-export function useSalvarFichaConsulta(pacienteId: number) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ id, dados }: { id: number; dados: FichaConsulta }) =>
-      (await api.patch<Consulta>(`/consultas/${id}/`, dados)).data,
-    onSuccess: (_data, { id }) => {
-      qc.invalidateQueries({ queryKey: ['consultas', 'paciente', pacienteId] })
-      qc.invalidateQueries({ queryKey: ['consulta', id] })
-    },
-  })
-}
-
 const chaveAnamneses = (pacienteId: number) => ['anamneses', 'paciente', pacienteId]
 
 export function useAnamnesesDoPaciente(id: number) {
@@ -188,5 +170,54 @@ export function useCriarAnamnese(pacienteId: number) {
     mutationFn: async (dados: AnamneseEntrada) =>
       (await api.post<Anamnese>('/anamneses/', dados)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: chaveAnamneses(pacienteId) }),
+  })
+}
+
+const chaveFichas = (pacienteId: number) => ['fichas', 'paciente', pacienteId]
+
+export function useFichasDoPaciente(id: number) {
+  return useQuery({
+    queryKey: chaveFichas(id),
+    queryFn: async () => (await api.get<Ficha[]>('/fichas/', { params: { paciente: id } })).data,
+    enabled: Number.isFinite(id),
+  })
+}
+
+/** Uma ficha específica (para a página de edição). */
+export function useFicha(id: number) {
+  return useQuery({
+    queryKey: ['ficha', id],
+    queryFn: async () => (await api.get<Ficha>(`/fichas/${id}/`)).data,
+    enabled: Number.isFinite(id) && id > 0,
+  })
+}
+
+/** Campos graváveis de uma ficha (o paciente vem do contexto da ficha do paciente). */
+export type FichaEntrada = {
+  paciente: number
+  consulta?: number | null
+  dentes: { dente: number; procedimento: string }[]
+  anotacoes: string
+}
+
+/** Cria uma ficha para o paciente e revalida a aba. */
+export function useCriarFicha(pacienteId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (dados: FichaEntrada) => (await api.post<Ficha>('/fichas/', dados)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: chaveFichas(pacienteId) }),
+  })
+}
+
+/** Atualiza (parcial) uma ficha e revalida a lista/ficha. */
+export function useAtualizarFicha(pacienteId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, dados }: { id: number; dados: Partial<FichaEntrada> }) =>
+      (await api.patch<Ficha>(`/fichas/${id}/`, dados)).data,
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: chaveFichas(pacienteId) })
+      qc.invalidateQueries({ queryKey: ['ficha', id] })
+    },
   })
 }

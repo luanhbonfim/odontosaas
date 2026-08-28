@@ -51,6 +51,7 @@ vi.mock('./use-paciente-detalhe', () => ({
   usePlanosDoPaciente: () => ({ data: [PLANO], isLoading: false }),
   useGuiasDoPaciente: () => ({ data: [], isLoading: false }),
   useConsultasDoPaciente: () => ({ data: [CONSULTA, CONSULTA_CANCELADA], isLoading: false }),
+  useFichasDoPaciente: () => ({ data: [], isLoading: false }),
   useAnamnesesDoPaciente: () => ({ data: [], isLoading: false }),
   useCriarAnamnese: () => ({ mutateAsync: vi.fn() }),
   useCriarPlano: () => ({ mutateAsync: vi.fn() }),
@@ -122,20 +123,28 @@ describe('PacienteDetalhePage', () => {
     expect(await screen.findByText('Amil')).toBeInTheDocument()
   })
 
-  it('aba Consultas: dentista, cobrança, aviso de ficha e link para a ficha', async () => {
+  it('aba Consultas: é só histórico (dentista, cobrança, sem link nem coluna de dentes)', async () => {
     pacienteMock.mockReturnValue({ data: PACIENTE, isLoading: false, isError: false })
     renderRota('/pacientes/5', '/pacientes/:id')
     await userEvent.setup().click(screen.getByRole('tab', { name: 'Consultas' }))
 
     expect(await screen.findAllByText('Dra. Ana')).not.toHaveLength(0)
-    // Sem convênio -> Particular; sem dentes -> ficha não preenchida (na tabela;
-    // "Particular" também existe como opção de filtro, por isso escopamos à tabela).
+    // Sem convênio -> Particular ("Particular" também existe como opção de
+    // filtro, por isso escopamos à tabela).
     const tabela = screen.getByRole('table')
     expect(within(tabela).getAllByText('Particular').length).toBeGreaterThan(0)
-    expect(within(tabela).getAllByText('Ficha não preenchida').length).toBeGreaterThan(0)
-    // AGENDADA é link para a ficha; CANCELADA (id 2) NÃO é clicável.
-    const links = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
-    expect(links).toContain('/pacientes/5/consultas/1')
-    expect(links).not.toContain('/pacientes/5/consultas/2')
+    // Procedimento é sempre texto simples agora (a notação clínica vive na
+    // aba Fichas) — nem AGENDADA nem CANCELADA viram link.
+    expect(within(tabela).getByText('Limpeza')).toBeInTheDocument()
+    expect(within(tabela).getByText('Canal')).toBeInTheDocument()
+    expect(within(tabela).queryByRole('link')).toBeNull()
+    expect(screen.queryByText(/ficha não preenchida/i)).toBeNull()
+  })
+
+  it('aba Fichas: existe e mostra o aviso de vazio', async () => {
+    pacienteMock.mockReturnValue({ data: PACIENTE, isLoading: false, isError: false })
+    renderRota('/pacientes/5', '/pacientes/:id')
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'Fichas' }))
+    expect(await screen.findByText('Nenhuma ficha registrada.')).toBeInTheDocument()
   })
 })
