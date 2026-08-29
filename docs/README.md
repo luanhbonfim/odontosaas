@@ -59,6 +59,9 @@ Sequência de validação dos planos/permissões e desenvolvimento das novas fea
 * 📄 [`01-backlog-armazenamento-nuvem.md`](06-roadmap/01-backlog-armazenamento-nuvem.md): Armazenamento em nuvem & anexos com cota real por plano (AS1–AS4).
 * 📄 [`02-backlog-ia-assistente-dentista.md`](06-roadmap/02-backlog-ia-assistente-dentista.md): Assistente com IA para o dentista via LangChain (IA1–IA4).
 * 📄 [`03-backlog-tiss-convenios.md`](06-roadmap/03-backlog-tiss-convenios.md): Padrão TISS & integração com convênios — guias ANS, lote e retorno/glosas (T1–T4).
+* 📄 [`04-backlog-emissao-nfse.md`](06-roadmap/04-backlog-emissao-nfse.md): Emissão de NFS-e (nota fiscal de serviço) via provedor agregador (NF1–NF4).
+* 📄 [`05-backlog-consulta-credito-spc-serasa.md`](06-roadmap/05-backlog-consulta-credito-spc-serasa.md): Consulta de crédito do paciente (SPC/Serasa), com consentimento LGPD (CR1–CR4).
+* 📄 [`06-backlog-gateway-cobranca-pacientes.md`](06-roadmap/06-backlog-gateway-cobranca-pacientes.md): Gateway de pagamento para a clínica cobrar o paciente (boleto/Pix/cartão) (GP1–GP4).
 
 ---
 
