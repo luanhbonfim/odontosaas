@@ -128,12 +128,12 @@
 
 ## 📦 Sprint F7 — Estoque
 
-- [ ] CRUD de **Categorias** e **Insumos** (unidade, estoque mínimo) com `DataTable`
-- [ ] Coluna/badge de **saldo** e **alerta de estoque baixo** (âmbar/vermelho)
-- [ ] Registrar **movimentações** (entrada/saída) com validação de quantidade > 0
-- [ ] Tela **"Alertas de reposição"** (consumindo `/api/insumos/alertas/`)
-- [ ] **Consumo de insumo por consulta** (registrar itens usados; baixa automática ao realizar)
-- [ ] Testes: CRUD, saldo/alerta, movimentações, consumo
+- [x] CRUD de **Categorias** e **Insumos** (unidade, estoque mínimo) com `DataTable`
+- [x] Coluna/badge de **saldo** e **alerta de estoque baixo** (âmbar/vermelho)
+- [x] Registrar **movimentações** (entrada/saída) com validação de quantidade > 0
+- [x] Tela **"Alertas de reposição"** (consumindo `/api/insumos/alertas/`)
+- [x] **Consumo de insumo por consulta** (registrar itens usados; baixa automática ao realizar) — `ConsumoConsultaDialog`, botão "Registrar insumos" em `VisualizacaoConsulta` (EM_ATENDIMENTO/REALIZADA)
+- [x] Testes: CRUD, saldo/alerta, movimentações, consumo
 
 ---
 
