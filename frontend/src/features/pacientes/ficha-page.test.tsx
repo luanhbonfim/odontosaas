@@ -57,7 +57,14 @@ describe('FichaPage', () => {
     fichaMock.mockReturnValue({ data: undefined, isLoading: false })
     fichasMock.mockReturnValue({ data: [] })
     consultasMock.mockReturnValue({
-      data: [{ id: 10, inicio: '2026-08-10T13:00:00Z', procedimento: 'Limpeza' }],
+      data: [
+        {
+          id: 10,
+          inicio: '2026-08-10T13:00:00Z',
+          procedimento: 'Limpeza',
+          status_confirmacao: 'CONFIRMADA',
+        },
+      ],
     })
     criarMock.mockResolvedValue({})
     const user = userEvent.setup()
@@ -75,8 +82,18 @@ describe('FichaPage', () => {
     fichasMock.mockReturnValue({ data: [{ id: 1, consulta: 10 }] })
     consultasMock.mockReturnValue({
       data: [
-        { id: 10, inicio: '2026-08-10T13:00:00Z', procedimento: 'Limpeza' },
-        { id: 11, inicio: '2026-08-11T13:00:00Z', procedimento: 'Canal' },
+        {
+          id: 10,
+          inicio: '2026-08-10T13:00:00Z',
+          procedimento: 'Limpeza',
+          status_confirmacao: 'CONFIRMADA',
+        },
+        {
+          id: 11,
+          inicio: '2026-08-11T13:00:00Z',
+          procedimento: 'Canal',
+          status_confirmacao: 'CONFIRMADA',
+        },
       ],
     })
     renderRota('/pacientes/5/fichas/nova')
@@ -84,6 +101,55 @@ describe('FichaPage', () => {
     const select = screen.getByLabelText(/consulta vinculada/i)
     expect(within(select).queryByText(/Canal/)).toBeInTheDocument()
     expect(within(select).queryByText(/Limpeza/)).toBeNull()
+  })
+
+  it('só lista consultas com confirmação CONFIRMADA', () => {
+    fichaMock.mockReturnValue({ data: undefined, isLoading: false })
+    fichasMock.mockReturnValue({ data: [] })
+    consultasMock.mockReturnValue({
+      data: [
+        {
+          id: 10,
+          inicio: '2026-08-10T13:00:00Z',
+          procedimento: 'Limpeza',
+          status_confirmacao: 'PENDENTE',
+        },
+        {
+          id: 11,
+          inicio: '2026-08-11T13:00:00Z',
+          procedimento: 'Canal',
+          status_confirmacao: 'CONFIRMADA',
+        },
+      ],
+    })
+    renderRota('/pacientes/5/fichas/nova')
+
+    const select = screen.getByLabelText(/consulta vinculada/i)
+    expect(within(select).queryByText(/Canal/)).toBeInTheDocument()
+    expect(within(select).queryByText(/Limpeza/)).toBeNull()
+  })
+
+  it('mantém a consulta já vinculada visível na edição mesmo se não estiver mais confirmada', () => {
+    fichaMock.mockReturnValue({
+      data: { id: 3, paciente: 5, consulta: 10, dentes: [], anotacoes: '' },
+      isLoading: false,
+    })
+    fichasMock.mockReturnValue({ data: [{ id: 3, consulta: 10 }] })
+    consultasMock.mockReturnValue({
+      data: [
+        {
+          id: 10,
+          inicio: '2026-08-10T13:00:00Z',
+          procedimento: 'Limpeza',
+          status_confirmacao: 'RECUSADA',
+        },
+      ],
+    })
+    renderRota('/pacientes/5/fichas/3')
+
+    const select = screen.getByLabelText(/consulta vinculada/i)
+    expect(within(select).queryByText(/Limpeza/)).toBeInTheDocument()
+    expect(select).toHaveValue('10')
   })
 
   it('edição pré-preenche odontograma, anotações e consulta vinculada', () => {
@@ -99,7 +165,14 @@ describe('FichaPage', () => {
     })
     fichasMock.mockReturnValue({ data: [{ id: 3, consulta: 10 }] })
     consultasMock.mockReturnValue({
-      data: [{ id: 10, inicio: '2026-08-10T13:00:00Z', procedimento: 'Limpeza' }],
+      data: [
+        {
+          id: 10,
+          inicio: '2026-08-10T13:00:00Z',
+          procedimento: 'Limpeza',
+          status_confirmacao: 'CONFIRMADA',
+        },
+      ],
     })
     renderRota('/pacientes/5/fichas/3')
 

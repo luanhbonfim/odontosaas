@@ -32,6 +32,10 @@
   --success-foreground: oklch(0.985 0 0);
   --warning: oklch(0.78 0.16 80);
   --warning-foreground: oklch(0.24 0.02 60);
+  /* "info" (agendada, convênio): azul — evita colidir com o dourado da marca
+     (--primary) e com o âmbar de --warning, que ficam com matiz muito parecida. */
+  --info: oklch(0.6 0.19 240);
+  --info-foreground: oklch(0.985 0 0);
 
   --border: oklch(0.9 0.022 350);
   --input: oklch(0.9 0.022 350);
@@ -79,6 +83,8 @@
   --success-foreground: oklch(0.19 0.02 145);
   --warning: oklch(0.82 0.16 80);
   --warning-foreground: oklch(0.24 0.02 60);
+  --info: oklch(0.72 0.16 240);
+  --info-foreground: oklch(0.19 0.02 240);
 
   --border: oklch(0.36 0.025 350);
   --input: oklch(0.36 0.025 350);
@@ -125,6 +131,8 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

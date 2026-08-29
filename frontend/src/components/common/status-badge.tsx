@@ -10,7 +10,7 @@ const cores: Record<VarianteStatus, string> = {
   sucesso: 'bg-success',
   pendente: 'bg-warning',
   erro: 'bg-destructive', // vermelho (cancelada)
-  info: 'bg-primary',
+  info: 'bg-info',
   neutro: 'bg-muted-foreground',
   faltou: 'bg-red-900 dark:bg-red-700', // vermelho escuro (tom distinto do cancelado)
 }

@@ -64,14 +64,23 @@ export function FichaPage() {
     }
   }, [ficha])
 
-  // Só consultas do paciente que ainda não têm ficha (exceto a própria, em edição).
+  // Só consultas CONFIRMADAS do paciente que ainda não têm ficha (exceto a
+  // própria, em edição) — mantém a consulta já vinculada visível mesmo que
+  // ela não esteja mais confirmada, pra não sumir o vínculo existente.
   const consultasDisponiveis = useMemo(() => {
     const vinculadas = new Set(
       (fichas ?? [])
         .filter((f) => f.consulta && f.id !== ficha?.id)
         .map((f) => f.consulta as number),
     )
-    return (consultas ?? []).filter((c) => !vinculadas.has(c.id))
+    const disponiveis = (consultas ?? []).filter(
+      (c) => c.status_confirmacao === 'CONFIRMADA' && !vinculadas.has(c.id),
+    )
+    if (ficha?.consulta && !disponiveis.some((c) => c.id === ficha.consulta)) {
+      const atual = (consultas ?? []).find((c) => c.id === ficha.consulta)
+      if (atual) disponiveis.push(atual)
+    }
+    return disponiveis
   }, [consultas, fichas, ficha])
 
   function voltar() {
