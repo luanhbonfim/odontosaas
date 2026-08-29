@@ -17,12 +17,17 @@ um lançamento do **Financeiro**, sem sair do sistema.
 - **Não integrar prefeitura por prefeitura.** São 2000+ municípios com layouts/instabilidades
   diferentes — usar um **provedor agregador** (candidatos 2026: **Focus NFe**, **PlugNotas**, **eNotas**,
   **Nuvem Fiscal**, **Notaas**) que abstrai isso numa API única.
-- **A "Nacional NFS-e"** (padronização da Receita Federal, adoção crescente pelos municípios) tende a
-  simplificar isso nos próximos anos — vale checar cobertura do provedor escolhido na hora da NF1.
-- **Cada clínica é a emitente** (o CNPJ dela, não o nosso) — mesmo problema estrutural do boleto direto:
-  cada tenant precisa da própria **inscrição municipal**, regime tributário, CNAE e alíquota de ISS
-  configurados. Alguns provedores oferecem emissão sem certificado digital próprio (usam certificado do
-  próprio provedor via procuração eletrônica) — verificar se aplica ao município da clínica.
+- **A "NFS-e Nacional"** (Receita Federal/Serpro, emissor gratuito, adesão crescente pelos municípios em
+  2026 — LC 214/2025) já permite autenticar só com **login gov.br** (senha; nível prata/ouro pra MEI),
+  **sem certificado digital ICP-Brasil**. Confirmar se o município da clínica já aderiu.
+- **Sem CNPJ/MEI também dá pra emitir hoje**: dentista autônomo (só CPF) pode se cadastrar como
+  contribuinte do ISS direto na prefeitura e emitir com CPF — não precisa abrir MEI. **Atenção:** a
+  partir de **2027** (LC 214/2025), quem atua com habitualidade vai precisar de **CNPJ Técnico** — essa
+  via só-CPF tem prazo de validade, reavaliar antes de ir pra produção.
+- **Cada clínica é a emitente** (o CPF/CNPJ dela, não o nosso) — mesmo problema estrutural do boleto
+  direto: cada tenant precisa dos próprios dados fiscais (inscrição municipal/cadastro de ISS, regime
+  tributário, CNAE, alíquota) configurados. Provedores agregadores também costumam oferecer emissão via
+  procuração eletrônica (usam certificado deles) como alternativa ao login gov.br — comparar na NF1.
 - Guardar **XML e PDF/DANFSE** da nota emitida (auditoria + reenvio ao paciente).
 
 ---
