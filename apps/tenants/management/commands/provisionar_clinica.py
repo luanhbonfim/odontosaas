@@ -33,18 +33,27 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         schema = options["schema"]
         dominio = options["dominio"]
+        cnpj = options["cnpj"]
 
         if Clinica.objects.filter(schema_name=schema).exists():
             raise CommandError(f"Já existe uma clínica com o schema '{schema}'.")
         if Dominio.objects.filter(domain=dominio).exists():
             raise CommandError(f"O domínio '{dominio}' já está em uso.")
+        if cnpj:
+            existente = Clinica.objects.filter(cnpj=cnpj).first()
+            if existente:
+                raise CommandError(
+                    f"Já existe uma clínica com o CNPJ '{cnpj}': '{existente.nome_fantasia}' "
+                    f"(schema '{existente.schema_name}'). Confira se não é a mesma clínica antes "
+                    "de tentar de novo com outro CNPJ."
+                )
 
         # Salvar a Clinica cria o schema e roda as migrations do tenant.
         clinica = Clinica(
             schema_name=schema,
             nome_fantasia=options["nome"],
             razao_social=options["razao_social"],
-            cnpj=options["cnpj"],
+            cnpj=cnpj,
         )
         clinica.save()
         Dominio.objects.create(domain=dominio, tenant=clinica, is_primary=True)

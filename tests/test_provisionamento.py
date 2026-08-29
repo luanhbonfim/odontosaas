@@ -66,3 +66,27 @@ def test_provisionar_recusa_dominio_duplicado():
             nome="Inédita",
             dominio="localhost",
         )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_provisionar_recusa_cnpj_duplicado():
+    """Erro amigável (nomeando a clínica existente) em vez do IntegrityError cru."""
+    call_command(
+        "provisionar_clinica",
+        schema="clinica_cnpj_a",
+        nome="Clínica A",
+        dominio="clinica-cnpj-a.localhost",
+        cnpj="11222333000181",
+    )
+    try:
+        with pytest.raises(CommandError, match="Clínica A"):
+            call_command(
+                "provisionar_clinica",
+                schema="clinica_cnpj_b",
+                nome="Clínica B",
+                dominio="clinica-cnpj-b.localhost",
+                cnpj="11222333000181",
+            )
+        assert not Clinica.objects.filter(schema_name="clinica_cnpj_b").exists()
+    finally:
+        Clinica.objects.get(schema_name="clinica_cnpj_a").delete(force_drop=True)
