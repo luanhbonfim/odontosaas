@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useDentistas } from '@/features/dentistas/use-dentistas'
+import { ConsumoConsultaDialog } from '@/features/estoque/consumo-consulta-dialog'
 import { useEnviarConfirmacao } from '@/features/notificacoes/use-notificacoes'
 import { useProcedimentos } from '@/features/procedimentos/use-procedimentos'
 import { useSessao } from '@/features/auth/use-sessao'
@@ -243,6 +244,16 @@ function VisualizacaoConsulta({
                   className="mr-auto text-destructive hover:text-destructive"
                 >
                   Excluir
+                </Button>
+              }
+            />
+          )}
+          {['EM_ATENDIMENTO', 'REALIZADA'].includes(consulta.status ?? '') && (
+            <ConsumoConsultaDialog
+              consultaId={consulta.id}
+              trigger={
+                <Button type="button" variant="outline">
+                  Registrar insumos
                 </Button>
               }
             />

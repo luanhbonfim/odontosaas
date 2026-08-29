@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ConsultaModal } from './consulta-modal'
@@ -55,6 +56,9 @@ vi.mock('@/features/pacientes/use-pacientes', () => ({ usePacientes: pacientesMo
 vi.mock('@/features/pacientes/use-paciente-detalhe', () => ({
   usePlanosDoPaciente: planosMock,
   usePaciente: pacienteMock,
+}))
+vi.mock('@/features/estoque/consumo-consulta-dialog', () => ({
+  ConsumoConsultaDialog: ({ trigger }: { trigger: ReactNode }) => trigger,
 }))
 vi.mock('@/features/auth/use-sessao', () => ({
   useSessao: () => ({
@@ -321,6 +325,45 @@ describe('ConsultaModal', () => {
     await user.click(screen.getByRole('button', { name: /finalizar atendimento/i }))
     await waitFor(() => expect(transicaoMock).toHaveBeenCalledWith({ id: 9, acao: 'finalizar' }))
     expect(aoFechar).toHaveBeenCalled()
+  })
+
+  it('"Registrar insumos" aparece em EM_ATENDIMENTO e REALIZADA, não em CANCELADA', () => {
+    const base = {
+      id: 9,
+      paciente: 10,
+      paciente_nome: 'Maria Souza',
+      dentista: 5,
+      dentista_nome: 'Dra. Ana',
+      inicio: '2026-08-10T15:00:00Z',
+      fim: '2026-08-10T15:30:00Z',
+      valor: '200.00',
+    }
+
+    const emAtendimento = render(
+      <ConsultaModal
+        estado={{ modo: 'visualizar', consulta: { ...base, status: 'EM_ATENDIMENTO' } as never }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Registrar insumos' })).toBeInTheDocument()
+    emAtendimento.unmount()
+
+    const realizada = render(
+      <ConsultaModal
+        estado={{ modo: 'visualizar', consulta: { ...base, status: 'REALIZADA' } as never }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Registrar insumos' })).toBeInTheDocument()
+    realizada.unmount()
+
+    render(
+      <ConsultaModal
+        estado={{ modo: 'visualizar', consulta: { ...base, status: 'CANCELADA' } as never }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: 'Registrar insumos' })).toBeNull()
   })
 
   it('exclui uma consulta agendada (na edição)', async () => {

@@ -457,10 +457,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). */
+        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). Filtra por `?consulta=`. */
         get: operations["consumos_insumo_list"];
         put?: never;
-        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). */
+        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). Filtra por `?consulta=`. */
         post: operations["consumos_insumo_create"];
         delete?: never;
         options?: never;
@@ -475,16 +475,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). */
+        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). Filtra por `?consulta=`. */
         get: operations["consumos_insumo_retrieve"];
-        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). */
+        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). Filtra por `?consulta=`. */
         put: operations["consumos_insumo_update"];
         post?: never;
-        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). */
+        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). Filtra por `?consulta=`. */
         delete: operations["consumos_insumo_destroy"];
         options?: never;
         head?: never;
-        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). */
+        /** @description CRUD dos insumos consumidos por consulta (base da baixa automática). Filtra por `?consulta=`. */
         patch: operations["consumos_insumo_partial_update"];
         trace?: never;
     };
@@ -1110,10 +1110,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description CRUD das movimentações de estoque (entradas/saídas). */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
         get: operations["movimentacoes_estoque_list"];
         put?: never;
-        /** @description CRUD das movimentações de estoque (entradas/saídas). */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
         post: operations["movimentacoes_estoque_create"];
         delete?: never;
         options?: never;
@@ -1128,16 +1128,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description CRUD das movimentações de estoque (entradas/saídas). */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
         get: operations["movimentacoes_estoque_retrieve"];
-        /** @description CRUD das movimentações de estoque (entradas/saídas). */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
         put: operations["movimentacoes_estoque_update"];
         post?: never;
-        /** @description CRUD das movimentações de estoque (entradas/saídas). */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
         delete: operations["movimentacoes_estoque_destroy"];
         options?: never;
         head?: never;
-        /** @description CRUD das movimentações de estoque (entradas/saídas). */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
         patch: operations["movimentacoes_estoque_partial_update"];
         trace?: never;
     };
@@ -2448,6 +2448,7 @@ export interface components {
             readonly id: number;
             consulta: number;
             insumo: number;
+            readonly insumo_nome: string;
             /** Format: decimal */
             quantidade: string;
             ativo?: boolean;
@@ -2574,6 +2575,7 @@ export interface components {
             nome: string;
             descricao?: string;
             categoria?: number | null;
+            readonly categoria_nome: string;
             unidade?: components["schemas"]["UnidadeEnum"];
             /** Format: decimal */
             estoque_minimo?: string;
@@ -2664,6 +2666,7 @@ export interface components {
         MovimentacaoEstoque: {
             readonly id: number;
             insumo: number;
+            readonly insumo_nome: string;
             tipo: components["schemas"]["MovimentacaoEstoqueTipoEnum"];
             /** Format: decimal */
             quantidade: string;
@@ -2888,6 +2891,7 @@ export interface components {
             readonly id?: number;
             consulta?: number;
             insumo?: number;
+            readonly insumo_nome?: string;
             /** Format: decimal */
             quantidade?: string;
             ativo?: boolean;
@@ -2985,6 +2989,7 @@ export interface components {
             nome?: string;
             descricao?: string;
             categoria?: number | null;
+            readonly categoria_nome?: string;
             unidade?: components["schemas"]["UnidadeEnum"];
             /** Format: decimal */
             estoque_minimo?: string;
@@ -3020,6 +3025,7 @@ export interface components {
         PatchedMovimentacaoEstoque: {
             readonly id?: number;
             insumo?: number;
+            readonly insumo_nome?: string;
             tipo?: components["schemas"]["MovimentacaoEstoqueTipoEnum"];
             /** Format: decimal */
             quantidade?: string;

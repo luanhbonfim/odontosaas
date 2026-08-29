@@ -11,6 +11,7 @@ import { ConfirmacaoPage } from '@/features/confirmacao/confirmacao-page'
 import { useAuth } from '@/features/auth/use-auth'
 import { DashboardPage } from '@/features/dashboard/dashboard-page'
 import { ConveniosPage } from '@/features/convenios/convenios-page'
+import { EstoquePage } from '@/features/estoque/estoque-page'
 import { ProcedimentosPage } from '@/features/procedimentos/procedimentos-page'
 import { DentistasPage } from '@/features/dentistas/dentistas-page'
 import { IntegracoesPage } from '@/features/integracoes/integracoes-page'
@@ -156,7 +157,7 @@ export function App() {
             <Route path="procedimentos" element={<ProcedimentosPage />} />
             {/* Módulos contratáveis/opcionais via plano */}
             <Route element={<RequireModulo modulo="estoque" />}>
-              <Route path="estoque" element={<EmConstrucao titulo="Estoque" />} />
+              <Route path="estoque" element={<EstoquePage />} />
             </Route>
 
             <Route element={<RequireModulo modulo="financeiro" />}>
