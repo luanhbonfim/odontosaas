@@ -88,16 +88,6 @@
 - [ ] NF3 — Cancelamento & tratamento de erros
 - [ ] NF4 — Painel & relatórios
 
-## 🔍 Sprint(s) CR — Consulta de Crédito (SPC/Serasa)
-> Detalhe completo em **[05-backlog-consulta-credito-spc-serasa.md](05-backlog-consulta-credito-spc-serasa.md)** (CR1–CR4).
-> Resumo: botão "Consultar crédito" na ficha do paciente (score/negativação), com **consentimento
-> LGPD obrigatório** antes de qualquer consulta — apoia decisão de parcelamento em tratamentos caros.
-
-- [ ] CR1 — Provedor, contrato & consentimento (LGPD)
-- [ ] CR2 — Consulta na ficha do paciente
-- [ ] CR3 — Auditoria & controle de uso
-- [ ] CR4 — Testes & go-live
-
 ## 💳 Sprint(s) GP — Gateway de Pagamento (cobrança de pacientes)
 > Detalhe completo em **[06-backlog-gateway-cobranca-pacientes.md](06-backlog-gateway-cobranca-pacientes.md)** (GP1–GP4).
 > **Não confundir** com `docs/02-backlog-tenants/03-planos-pagamentos.md` (esse é sobre cobrar a
@@ -118,8 +108,8 @@
 3. **Armazenamento AS1→AS4** (1 GB e acima, remove "em breve") →
 4. **TISS T1→T4** (faturamento de convênio de verdade) →
 5. **IA IA1→IA4** (diferencial de venda, remove "em breve") →
-6. **NF1→NF4 / CR1→CR4 / GP1→GP4** (anotadas em 2026-08, ainda sem priorização definida entre si —
-   decidir na hora conforme demanda real das clínicas piloto).
+6. **NF1→NF4 / GP1→GP4** (anotadas em 2026-08, ainda sem priorização definida entre si — decidir
+   na hora conforme demanda real das clínicas piloto).
 
 ## 🧾 Definição de pronto (por bloco)
 - Enforcement testado nos 3 planos (no limite e acima).
