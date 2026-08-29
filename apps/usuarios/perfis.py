@@ -149,11 +149,22 @@ class PermissaoModulo(DjangoModelPermissions):
                     raise PermissionDenied(
                         "O módulo financeiro está desabilitado para esta clínica pelo plano contratado."
                     )
-            elif "/api/estoque/" in caminho:
-                if hasattr(tenant, "recurso_habilitado") and not tenant.recurso_habilitado("estoque"):
-                    raise PermissionDenied(
-                        "O módulo de estoque está desabilitado para esta clínica pelo plano contratado."
+            elif (
+                any(
+                    p in caminho
+                    for p in (
+                        "/api/insumos/",
+                        "/api/categorias-insumo/",
+                        "/api/movimentacoes-estoque/",
+                        "/api/consumos-insumo/",
                     )
+                )
+                and hasattr(tenant, "recurso_habilitado")
+                and not tenant.recurso_habilitado("estoque")
+            ):
+                raise PermissionDenied(
+                    "O módulo de estoque está desabilitado para esta clínica pelo plano contratado."
+                )
 
         tem_model = getattr(view, "queryset", None) is not None or hasattr(view, "get_queryset")
         if not tem_model:

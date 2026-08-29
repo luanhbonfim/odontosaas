@@ -45,6 +45,7 @@ def test_crud_insumo_com_categoria():
         assert resp.status_code == 201, resp.content
         insumo_id = resp.json()["id"]
         assert resp.json()["saldo"] == "0.00"  # sem movimentações ainda
+        assert resp.json()["categoria_nome"] == "Descartáveis"
 
         # LIST
         resp = client.get("/api/insumos/", HTTP_HOST=host)
@@ -98,6 +99,48 @@ def test_saldo_calculado_por_movimentacoes():
         )
         assert resp.status_code == 400
         assert "quantidade" in resp.json()
+
+        # insumo_nome exposto e filtro ?insumo= funciona
+        resp = client.get("/api/movimentacoes-estoque/", HTTP_HOST=host)
+        assert all(m["insumo_nome"] == "Gaze" for m in resp.json())
+
+        outro_id = client.post(
+            "/api/insumos/", {"nome": "Outro", "unidade": "UN"}, format="json", HTTP_HOST=host
+        ).json()["id"]
+        client.post(
+            "/api/movimentacoes-estoque/",
+            {"insumo": outro_id, "tipo": "ENTRADA", "quantidade": "1"},
+            format="json",
+            HTTP_HOST=host,
+        )
+        resp = client.get(
+            "/api/movimentacoes-estoque/", {"insumo": insumo_id}, HTTP_HOST=host
+        )
+        assert len(resp.json()) == 3
+        assert all(m["insumo"] == insumo_id for m in resp.json())
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_insumo_com_movimentacao_nao_pode_ser_excluido():
+    host = "apiexcluiinsumo.localhost"
+    clinica = _criar_clinica("api_exclui_insumo", host)
+    client = APIClient()
+    try:
+        insumo_id = client.post(
+            "/api/insumos/", {"nome": "Resina"}, format="json", HTTP_HOST=host
+        ).json()["id"]
+        client.post(
+            "/api/movimentacoes-estoque/",
+            {"insumo": insumo_id, "tipo": "ENTRADA", "quantidade": "1"},
+            format="json",
+            HTTP_HOST=host,
+        )
+        resp = client.delete(f"/api/insumos/{insumo_id}/", HTTP_HOST=host)
+        assert resp.status_code == 400
+        assert "vinculad" in resp.json()["detail"].lower()
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)
@@ -173,6 +216,7 @@ def test_crud_consumo_insumo():
             HTTP_HOST=host,
         )
         assert resp.status_code == 201, resp.content
+        assert resp.json()["insumo_nome"] == "Luva"
 
         # quantidade <= 0 é rejeitada
         resp = client.post(
@@ -186,6 +230,49 @@ def test_crud_consumo_insumo():
 
         # LIST
         assert len(client.get("/api/consumos-insumo/", HTTP_HOST=host).json()) == 1
+
+        # Filtro ?consulta= isola os consumos de outra consulta
+        with schema_context("api_consumo"):
+            outra_consulta = Consulta.objects.create(
+                paciente=paciente, dentista=dentista, inicio=inicio, fim=inicio + timedelta(minutes=30)
+            )
+            outra_id = outra_consulta.id
+        client.post(
+            "/api/consumos-insumo/",
+            {"consulta": outra_id, "insumo": iid, "quantidade": "1"},
+            format="json",
+            HTTP_HOST=host,
+        )
+        resp = client.get("/api/consumos-insumo/", {"consulta": cid}, HTTP_HOST=host)
+        assert len(resp.json()) == 1
+        assert resp.json()[0]["consulta"] == cid
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_bloqueio_de_modulo_estoque_por_plano():
+    """Regressão: a checagem de módulo por plano procurava a substring
+    "/api/estoque/", que não corresponde a nenhuma rota real do app — o
+    bloqueio nunca disparava. Confirma que agora dispara nas rotas reais."""
+    host = "apigating.localhost"
+    clinica = _criar_clinica("api_gating", host)
+    client = APIClient()
+    try:
+        clinica.override_recursos = {"estoque": False}
+        clinica.save()
+
+        resp = client.get("/api/insumos/", HTTP_HOST=host)
+        assert resp.status_code == 403
+        assert "desabilitado" in resp.json()["detail"].lower()
+        assert client.get("/api/categorias-insumo/", HTTP_HOST=host).status_code == 403
+        assert client.get("/api/movimentacoes-estoque/", HTTP_HOST=host).status_code == 403
+        assert client.get("/api/consumos-insumo/", HTTP_HOST=host).status_code == 403
+
+        clinica.override_recursos = {"estoque": True}
+        clinica.save()
+        assert client.get("/api/insumos/", HTTP_HOST=host).status_code == 200
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)

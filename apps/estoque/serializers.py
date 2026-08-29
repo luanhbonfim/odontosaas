@@ -20,6 +20,7 @@ class InsumoSerializer(serializers.ModelSerializer):
     )
     # Alerta de estoque mínimo (método `estoque_baixo` do model, resolvido pelo DRF).
     estoque_baixo = serializers.BooleanField(read_only=True)
+    categoria_nome = serializers.CharField(source="categoria.nome", read_only=True, default=None)
 
     class Meta:
         model = Insumo
@@ -28,6 +29,7 @@ class InsumoSerializer(serializers.ModelSerializer):
             "nome",
             "descricao",
             "categoria",
+            "categoria_nome",
             "unidade",
             "estoque_minimo",
             "saldo",
@@ -40,11 +42,14 @@ class InsumoSerializer(serializers.ModelSerializer):
 
 
 class MovimentacaoEstoqueSerializer(serializers.ModelSerializer):
+    insumo_nome = serializers.CharField(source="insumo.nome", read_only=True)
+
     class Meta:
         model = MovimentacaoEstoque
         fields = [
             "id",
             "insumo",
+            "insumo_nome",
             "tipo",
             "quantidade",
             "observacao",
@@ -63,12 +68,15 @@ class MovimentacaoEstoqueSerializer(serializers.ModelSerializer):
 
 
 class ConsumoInsumoSerializer(serializers.ModelSerializer):
+    insumo_nome = serializers.CharField(source="insumo.nome", read_only=True)
+
     class Meta:
         model = ConsumoInsumo
         fields = [
             "id",
             "consulta",
             "insumo",
+            "insumo_nome",
             "quantidade",
             "ativo",
             "criado_em",
