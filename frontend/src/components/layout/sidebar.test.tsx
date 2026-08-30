@@ -32,7 +32,12 @@ describe('Sidebar (menu por papel)', () => {
       'Agenda',
       'Pacientes',
       'Dentistas',
-      'Estoque',
+      // Estoque virou módulo com telas separadas (Operação):
+      'Insumos',
+      'Categorias',
+      'Lançamentos',
+      'Baixas',
+      'Alertas',
       // Financeiro virou módulo com telas separadas:
       'Visão Geral',
       'Contas a Receber',
@@ -94,6 +99,6 @@ describe('Sidebar (menu por papel)', () => {
     expect(screen.queryByRole('link', { name: 'Integrações' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'WhatsApp' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Contas a Receber' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Estoque' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Insumos' })).toBeInTheDocument()
   })
 })

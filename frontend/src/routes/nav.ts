@@ -1,10 +1,14 @@
 import {
+  AlertTriangle,
+  ArrowDownCircle,
+  ArrowUpCircle,
   BadgeCheck,
   Boxes,
   Calendar,
   ClipboardList,
   HeartPulse,
   LayoutDashboard,
+  Layers,
   type LucideIcon,
   MessageSquare,
   Package,
@@ -103,7 +107,18 @@ export const gruposNav: GrupoNav[] = [
   {
     titulo: 'Operação',
     icone: Boxes,
-    itens: [{ rotulo: 'Estoque', para: '/estoque', icone: Package, modulo: 'estoque' }],
+    itens: [
+      { rotulo: 'Insumos', para: '/estoque', icone: Package, modulo: 'estoque', end: true },
+      { rotulo: 'Categorias', para: '/estoque/categorias', icone: Layers, modulo: 'estoque' },
+      {
+        rotulo: 'Lançamentos',
+        para: '/estoque/lancamentos',
+        icone: ArrowDownCircle,
+        modulo: 'estoque',
+      },
+      { rotulo: 'Baixas', para: '/estoque/baixas', icone: ArrowUpCircle, modulo: 'estoque' },
+      { rotulo: 'Alertas', para: '/estoque/alertas', icone: AlertTriangle, modulo: 'estoque' },
+    ],
   },
   {
     titulo: 'Administração',
