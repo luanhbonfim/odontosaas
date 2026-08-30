@@ -37,7 +37,7 @@ class InsumoViewSet(ExclusaoProtegidaMixin, viewsets.ModelViewSet):
 
 
 class MovimentacaoEstoqueViewSet(viewsets.ModelViewSet):
-    """CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`."""
+    """CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`/`?tipo=`."""
 
     queryset = MovimentacaoEstoque.objects.all()
     serializer_class = MovimentacaoEstoqueSerializer
@@ -47,6 +47,9 @@ class MovimentacaoEstoqueViewSet(viewsets.ModelViewSet):
         insumo = self.request.query_params.get("insumo")
         if insumo:
             queryset = queryset.filter(insumo_id=insumo)
+        tipo = self.request.query_params.get("tipo")
+        if tipo:
+            queryset = queryset.filter(tipo=tipo)
         return queryset
 
 

@@ -88,12 +88,20 @@ describe('hooks de estoque', () => {
     expect(invalidar).toHaveBeenCalledWith({ queryKey: ['insumos'] })
   })
 
-  it('useMovimentacoesEstoque busca a lista', async () => {
+  it('useMovimentacoesEstoque busca a lista (sem filtro)', async () => {
     vi.mocked(api.get).mockResolvedValue({ data: [] })
     const { Wrapper } = criarWrapper()
     const { result } = renderHook(() => useMovimentacoesEstoque(), { wrapper: Wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(api.get).toHaveBeenCalledWith('/movimentacoes-estoque/')
+    expect(api.get).toHaveBeenCalledWith('/movimentacoes-estoque/', undefined)
+  })
+
+  it('useMovimentacoesEstoque filtra por tipo (Lançamentos/Baixas)', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: [] })
+    const { Wrapper } = criarWrapper()
+    const { result } = renderHook(() => useMovimentacoesEstoque('SAIDA'), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.get).toHaveBeenCalledWith('/movimentacoes-estoque/', { params: { tipo: 'SAIDA' } })
   })
 
   it('useCriarMovimentacao posta e invalida movimentações e insumos', async () => {

@@ -107,11 +107,17 @@ export type MovimentacaoEntrada = {
 
 const CHAVE_MOVIMENTACOES = ['movimentacoes-estoque'] as const
 
-export function useMovimentacoesEstoque() {
+/** Lista movimentações, opcionalmente filtradas por tipo (Lançamentos = ENTRADA, Baixas = SAIDA). */
+export function useMovimentacoesEstoque(tipo?: 'ENTRADA' | 'SAIDA') {
   return useQuery({
-    queryKey: CHAVE_MOVIMENTACOES,
-    queryFn: async () =>
-      (await api.get<MovimentacaoEstoque[]>('/movimentacoes-estoque/')).data,
+    queryKey: [...CHAVE_MOVIMENTACOES, tipo] as const,
+    queryFn: async () => {
+      const resp = await api.get<MovimentacaoEstoque[]>(
+        '/movimentacoes-estoque/',
+        tipo ? { params: { tipo } } : undefined,
+      )
+      return resp.data
+    },
   })
 }
 

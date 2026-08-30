@@ -118,6 +118,11 @@ def test_saldo_calculado_por_movimentacoes():
         )
         assert len(resp.json()) == 3
         assert all(m["insumo"] == insumo_id for m in resp.json())
+
+        # Filtro ?tipo= isola entradas de saídas
+        resp = client.get("/api/movimentacoes-estoque/", {"tipo": "SAIDA"}, HTTP_HOST=host)
+        assert len(resp.json()) == 1
+        assert resp.json()[0]["tipo"] == "SAIDA"
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)
