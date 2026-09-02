@@ -50,6 +50,13 @@ class LancamentoFinanceiro(ModeloBase):
         PAGO = "PAGO", "Pago/Recebido"
         CANCELADO = "CANCELADO", "Cancelado"
 
+    class FormaPagamento(models.TextChoices):
+        PIX = "PIX", "Pix"
+        BOLETO = "BOLETO", "Boleto"
+        CARTAO = "CARTAO", "Cartão"
+        DINHEIRO = "DINHEIRO", "Dinheiro"
+        TRANSFERENCIA = "TRANSFERENCIA", "Transferência"
+
     tipo = models.CharField(max_length=10, choices=Tipo.choices)
     descricao = models.CharField(max_length=255)
     valor = models.DecimalField(max_digits=12, decimal_places=2)
@@ -78,6 +85,19 @@ class LancamentoFinanceiro(ModeloBase):
         on_delete=models.SET_NULL,
         related_name="lancamentos",
     )
+    # Fornecedor da compra (só relevante para DESPESA gerada por compra de insumo).
+    fornecedor = models.ForeignKey(
+        "estoque.Fornecedor",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="lancamentos",
+    )
+    forma_pagamento = models.CharField(max_length=20, choices=FormaPagamento.choices, blank=True)
+    # Identifica a parcela dentro do parcelamento de uma consulta (1x = 1/1).
+    # Persistidos (não derivados de `consulta`) porque o FK é SET_NULL.
+    numero_parcela = models.PositiveSmallIntegerField(default=1)
+    total_parcelas = models.PositiveSmallIntegerField(default=1)
 
     class Meta:
         verbose_name = "Lançamento financeiro"

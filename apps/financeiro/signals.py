@@ -11,7 +11,7 @@ from .services import (
     estornar_conta_da_guia,
     gerar_conta_da_consulta,
     gerar_conta_da_guia,
-    sincronizar_valor_conta_da_consulta,
+    sincronizar_parcelas_da_consulta,
     sincronizar_valor_conta_da_guia,
 )
 
@@ -33,7 +33,7 @@ def conta_ao_mudar_consulta(sender, instance, **kwargs):
     CANCELADA -> estorna (se não paga)."""
     if instance.status == Consulta.Status.REALIZADA:
         gerar_conta_da_consulta(instance)
-        sincronizar_valor_conta_da_consulta(instance)  # F3
+        sincronizar_parcelas_da_consulta(instance)  # F3 + parcelamento
     elif instance.status == Consulta.Status.CANCELADA:
         estornar_conta_da_consulta(instance)
 

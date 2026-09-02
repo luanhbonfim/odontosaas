@@ -41,6 +41,8 @@ class FluxoCaixaSerializer(serializers.Serializer):
 
 
 class LancamentoFinanceiroSerializer(serializers.ModelSerializer):
+    fornecedor_nome = serializers.CharField(source="fornecedor.nome", read_only=True, default=None)
+
     class Meta:
         model = LancamentoFinanceiro
         fields = [
@@ -54,6 +56,11 @@ class LancamentoFinanceiroSerializer(serializers.ModelSerializer):
             "fatura",
             "consulta",
             "guia",
+            "fornecedor",
+            "fornecedor_nome",
+            "forma_pagamento",
+            "numero_parcela",
+            "total_parcelas",
             "ativo",
             "criado_em",
             "atualizado_em",
