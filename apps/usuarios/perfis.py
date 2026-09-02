@@ -43,7 +43,7 @@ MATRIZ = {
         "pacientes": FULL,
         "dentistas": READ,
         "convenios": READ,
-        "procedimentos": READ,
+        "procedimentos": FULL,
         "estoque": READ,
     },
     "DENTISTA_GERENTE": {
@@ -157,6 +157,7 @@ class PermissaoModulo(DjangoModelPermissions):
                         "/api/categorias-insumo/",
                         "/api/movimentacoes-estoque/",
                         "/api/consumos-insumo/",
+                        "/api/fornecedores/",
                     )
                 )
                 and hasattr(tenant, "recurso_habilitado")

@@ -10,7 +10,8 @@ from rest_framework.test import APIClient
 
 from apps.agenda.models import Consulta
 from apps.dentistas.models import Dentista
-from apps.estoque.models import Insumo
+from apps.estoque.models import Fornecedor, Insumo, MovimentacaoEstoque
+from apps.financeiro.models import LancamentoFinanceiro
 from apps.pacientes.models import Paciente
 from apps.tenants.models import Clinica, Dominio
 
@@ -274,10 +275,156 @@ def test_bloqueio_de_modulo_estoque_por_plano():
         assert client.get("/api/categorias-insumo/", HTTP_HOST=host).status_code == 403
         assert client.get("/api/movimentacoes-estoque/", HTTP_HOST=host).status_code == 403
         assert client.get("/api/consumos-insumo/", HTTP_HOST=host).status_code == 403
+        assert client.get("/api/fornecedores/", HTTP_HOST=host).status_code == 403
 
         clinica.override_recursos = {"estoque": True}
         clinica.save()
         assert client.get("/api/insumos/", HTTP_HOST=host).status_code == 200
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_crud_fornecedor():
+    host = "apifornecedor.localhost"
+    clinica = _criar_clinica("api_fornecedor", host)
+    client = APIClient()
+    try:
+        resp = client.post("/api/fornecedores/", {"nome": "Dental Center"}, format="json", HTTP_HOST=host)
+        assert resp.status_code == 201, resp.content
+        fid = resp.json()["id"]
+
+        assert len(client.get("/api/fornecedores/", HTTP_HOST=host).json()) == 1
+
+        resp = client.patch(
+            f"/api/fornecedores/{fid}/", {"nome": "Dental Center LTDA"}, format="json", HTTP_HOST=host
+        )
+        assert resp.status_code == 200
+        assert resp.json()["nome"] == "Dental Center LTDA"
+
+        assert client.delete(f"/api/fornecedores/{fid}/", HTTP_HOST=host).status_code == 204
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_entrada_por_compra_gera_conta_a_pagar():
+    host = "apicompra.localhost"
+    clinica = _criar_clinica("api_compra", host)
+    client = APIClient()
+    try:
+        insumo_id = client.post(
+            "/api/insumos/", {"nome": "Anestésico"}, format="json", HTTP_HOST=host
+        ).json()["id"]
+        fornecedor_id = client.post(
+            "/api/fornecedores/", {"nome": "Dental Center"}, format="json", HTTP_HOST=host
+        ).json()["id"]
+
+        # Ajuste simples (default) não gera conta nenhuma.
+        resp = client.post(
+            "/api/movimentacoes-estoque/",
+            {"insumo": insumo_id, "tipo": "ENTRADA", "quantidade": "10"},
+            format="json",
+            HTTP_HOST=host,
+        )
+        assert resp.status_code == 201, resp.content
+        assert resp.json()["subtipo"] == "AJUSTE"
+        assert resp.json()["lancamento_financeiro_detalhe"] is None
+
+        # Compra sem fornecedor/valor é rejeitada.
+        resp = client.post(
+            "/api/movimentacoes-estoque/",
+            {"insumo": insumo_id, "tipo": "ENTRADA", "quantidade": "20", "subtipo": "COMPRA"},
+            format="json",
+            HTTP_HOST=host,
+        )
+        assert resp.status_code == 400
+        assert "fornecedor" in resp.json()
+
+        # Saída não aceita subtipo COMPRA (é normalizada para AJUSTE).
+        resp = client.post(
+            "/api/movimentacoes-estoque/",
+            {
+                "insumo": insumo_id,
+                "tipo": "SAIDA",
+                "quantidade": "1",
+                "subtipo": "COMPRA",
+                "fornecedor": fornecedor_id,
+                "valor": "50",
+            },
+            format="json",
+            HTTP_HOST=host,
+        )
+        assert resp.status_code == 201, resp.content
+        assert resp.json()["subtipo"] == "AJUSTE"
+
+        # Compra completa: gera a conta a pagar (DESPESA/PENDENTE) e vincula.
+        resp = client.post(
+            "/api/movimentacoes-estoque/",
+            {
+                "insumo": insumo_id,
+                "tipo": "ENTRADA",
+                "quantidade": "20",
+                "subtipo": "COMPRA",
+                "fornecedor": fornecedor_id,
+                "valor": "150.00",
+                "forma_pagamento": "BOLETO",
+                "data_vencimento": "2026-09-15",
+            },
+            format="json",
+            HTTP_HOST=host,
+        )
+        assert resp.status_code == 201, resp.content
+        movimentacao_id = resp.json()["id"]
+        detalhe = resp.json()["lancamento_financeiro_detalhe"]
+        assert detalhe["valor"] == "150.00"
+        assert detalhe["fornecedor_nome"] == "Dental Center"
+        assert detalhe["status"] == "PENDENTE"
+
+        lancamento = LancamentoFinanceiro.objects.get(id=detalhe["id"])
+        assert lancamento.tipo == LancamentoFinanceiro.Tipo.DESPESA
+        assert lancamento.forma_pagamento == "BOLETO"
+        assert str(lancamento.vencimento) == "2026-09-15"
+
+        # Excluir a movimentação cancela a conta (ainda PENDENTE).
+        assert client.delete(f"/api/movimentacoes-estoque/{movimentacao_id}/", HTTP_HOST=host).status_code == 204
+        lancamento.refresh_from_db()
+        assert lancamento.status == LancamentoFinanceiro.Status.CANCELADO
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_excluir_compra_ja_paga_nao_cancela_conta():
+    host = "apicomprapaga.localhost"
+    clinica = _criar_clinica("api_compra_paga", host)
+    client = APIClient()
+    try:
+        with schema_context("api_compra_paga"):
+            insumo = Insumo.objects.create(nome="Broca")
+            fornecedor = Fornecedor.objects.create(nome="Dental Center")
+            lancamento = LancamentoFinanceiro.objects.create(
+                tipo=LancamentoFinanceiro.Tipo.DESPESA,
+                descricao="Compra de insumo - Broca (Dental Center)",
+                valor="80.00",
+                fornecedor=fornecedor,
+                status=LancamentoFinanceiro.Status.PAGO,
+            )
+            movimentacao = MovimentacaoEstoque.objects.create(
+                insumo=insumo,
+                tipo=MovimentacaoEstoque.Tipo.ENTRADA,
+                subtipo=MovimentacaoEstoque.Subtipo.COMPRA,
+                quantidade="5",
+                lancamento_financeiro=lancamento,
+            )
+            movimentacao_id = movimentacao.id
+
+        assert client.delete(f"/api/movimentacoes-estoque/{movimentacao_id}/", HTTP_HOST=host).status_code == 204
+        lancamento.refresh_from_db()
+        assert lancamento.status == LancamentoFinanceiro.Status.PAGO
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)

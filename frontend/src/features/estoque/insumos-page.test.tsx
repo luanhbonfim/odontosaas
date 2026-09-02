@@ -1,8 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ReactElement } from 'react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { InsumosPage } from './insumos-page'
+
+const renderRota = (ui: ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>)
 
 const { categoriasMock, insumosMock, criarInsumoMock } = vi.hoisted(() => ({
   categoriasMock: vi.fn(),
@@ -47,7 +51,7 @@ describe('InsumosPage', () => {
   it('lista com saldo e badge de estoque baixo', () => {
     categoriasMock.mockReturnValue({ data: [], isLoading: false })
     insumosMock.mockReturnValue({ data: [INSUMO_OK, INSUMO_BAIXO], isLoading: false })
-    render(<InsumosPage />)
+    renderRota(<InsumosPage />)
     expect(screen.getByRole('heading', { name: 'Insumos' })).toBeInTheDocument()
     expect(screen.getByText('Gaze')).toBeInTheDocument()
     expect(screen.getByText('Resina A2')).toBeInTheDocument()
@@ -59,7 +63,7 @@ describe('InsumosPage', () => {
     insumosMock.mockReturnValue({ data: [], isLoading: false })
     criarInsumoMock.mockResolvedValue({})
     const user = userEvent.setup()
-    render(<InsumosPage />)
+    renderRota(<InsumosPage />)
 
     await user.click(screen.getByRole('button', { name: /novo insumo/i }))
     await user.type(screen.getByLabelText(/nome/i), 'Anestésico Lidocaína')

@@ -12,6 +12,7 @@ import {
   useCriarConsumo,
   useCriarInsumo,
   useCriarMovimentacao,
+  useInsumo,
   useInsumos,
   useInsumosAlertas,
   useMovimentacoesEstoque,
@@ -96,12 +97,28 @@ describe('hooks de estoque', () => {
     expect(api.get).toHaveBeenCalledWith('/movimentacoes-estoque/', undefined)
   })
 
-  it('useMovimentacoesEstoque filtra por tipo (Lançamentos/Baixas)', async () => {
+  it('useMovimentacoesEstoque filtra por tipo', async () => {
     vi.mocked(api.get).mockResolvedValue({ data: [] })
     const { Wrapper } = criarWrapper()
-    const { result } = renderHook(() => useMovimentacoesEstoque('SAIDA'), { wrapper: Wrapper })
+    const { result } = renderHook(() => useMovimentacoesEstoque({ tipo: 'SAIDA' }), { wrapper: Wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(api.get).toHaveBeenCalledWith('/movimentacoes-estoque/', { params: { tipo: 'SAIDA' } })
+  })
+
+  it('useMovimentacoesEstoque filtra por insumo (extrato do insumo)', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: [] })
+    const { Wrapper } = criarWrapper()
+    const { result } = renderHook(() => useMovimentacoesEstoque({ insumo: 5 }), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.get).toHaveBeenCalledWith('/movimentacoes-estoque/', { params: { insumo: 5 } })
+  })
+
+  it('useInsumo busca o detalhe por id', async () => {
+    vi.mocked(api.get).mockResolvedValue({ data: { id: 1, nome: 'Luva' } })
+    const { Wrapper } = criarWrapper()
+    const { result } = renderHook(() => useInsumo(1), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.get).toHaveBeenCalledWith('/insumos/1/')
   })
 
   it('useCriarMovimentacao posta e invalida movimentações e insumos', async () => {

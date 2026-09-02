@@ -6,9 +6,10 @@ from django.dispatch import receiver
 
 from apps.agenda.models import Consulta
 
-from .models import ConsumoInsumo
+from .models import ConsumoInsumo, MovimentacaoEstoque
 from .services import (
     dar_baixa_consulta,
+    estornar_conta_da_compra,
     remover_saida_do_consumo,
     reverter_baixa_consulta,
     sincronizar_saida_do_consumo,
@@ -38,3 +39,9 @@ def saida_ao_excluir_consumo(sender, instance, **kwargs):
     SAÍDA já não apontaria para o consumo e não seria encontrada.
     """
     remover_saida_do_consumo(instance)
+
+
+@receiver(pre_delete, sender=MovimentacaoEstoque)
+def estornar_conta_ao_excluir_movimentacao(sender, instance, **kwargs):
+    """Compra excluída cancela a conta a pagar vinculada, se ainda pendente."""
+    estornar_conta_da_compra(instance)

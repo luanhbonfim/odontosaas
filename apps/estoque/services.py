@@ -79,3 +79,32 @@ def remover_saida_do_consumo(consumo):
     return MovimentacaoEstoque.objects.filter(
         consumo=consumo, tipo=MovimentacaoEstoque.Tipo.SAIDA
     ).delete()[0]
+
+
+def gerar_conta_da_compra(movimentacao, fornecedor, valor, forma_pagamento="", data_vencimento=None):
+    """Cria a conta a pagar (DESPESA) de uma entrada por compra e vincula à movimentação."""
+    from apps.financeiro.models import LancamentoFinanceiro
+
+    lancamento = LancamentoFinanceiro.objects.create(
+        tipo=LancamentoFinanceiro.Tipo.DESPESA,
+        descricao=f"Compra de insumo - {movimentacao.insumo.nome} ({fornecedor.nome})",
+        valor=valor,
+        vencimento=data_vencimento,
+        fornecedor=fornecedor,
+        forma_pagamento=forma_pagamento,
+    )
+    movimentacao.lancamento_financeiro = lancamento
+    movimentacao.save(update_fields=["lancamento_financeiro", "atualizado_em"])
+    return lancamento
+
+
+def estornar_conta_da_compra(movimentacao):
+    """Cancela a conta a pagar vinculada a uma compra excluída — só se ainda não paga."""
+    from apps.financeiro.models import LancamentoFinanceiro
+
+    lancamento = movimentacao.lancamento_financeiro
+    if lancamento is None or lancamento.status != LancamentoFinanceiro.Status.PENDENTE:
+        return False
+    lancamento.status = LancamentoFinanceiro.Status.CANCELADO
+    lancamento.save(update_fields=["status", "atualizado_em"])
+    return True

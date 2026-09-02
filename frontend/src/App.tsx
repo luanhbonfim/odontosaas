@@ -12,10 +12,11 @@ import { useAuth } from '@/features/auth/use-auth'
 import { DashboardPage } from '@/features/dashboard/dashboard-page'
 import { ConveniosPage } from '@/features/convenios/convenios-page'
 import { AlertasPage } from '@/features/estoque/alertas-page'
-import { BaixasPage } from '@/features/estoque/baixas-page'
 import { CategoriasInsumoPage } from '@/features/estoque/categorias-insumo-page'
+import { FornecedoresPage } from '@/features/estoque/fornecedores-page'
+import { InsumoDetalhePage } from '@/features/estoque/insumo-detalhe-page'
 import { InsumosPage } from '@/features/estoque/insumos-page'
-import { LancamentosPage } from '@/features/estoque/lancamentos-page'
+import { MovimentacoesPage } from '@/features/estoque/movimentacoes-page'
 import { ProcedimentosPage } from '@/features/procedimentos/procedimentos-page'
 import { DentistasPage } from '@/features/dentistas/dentistas-page'
 import { IntegracoesPage } from '@/features/integracoes/integracoes-page'
@@ -163,9 +164,10 @@ export function App() {
             <Route element={<RequireModulo modulo="estoque" />}>
               <Route path="estoque" element={<InsumosPage />} />
               <Route path="estoque/categorias" element={<CategoriasInsumoPage />} />
-              <Route path="estoque/lancamentos" element={<LancamentosPage />} />
-              <Route path="estoque/baixas" element={<BaixasPage />} />
+              <Route path="estoque/movimentacoes" element={<MovimentacoesPage />} />
+              <Route path="estoque/fornecedores" element={<FornecedoresPage />} />
               <Route path="estoque/alertas" element={<AlertasPage />} />
+              <Route path="estoque/:insumoId" element={<InsumoDetalhePage />} />
             </Route>
 
             <Route element={<RequireModulo modulo="financeiro" />}>

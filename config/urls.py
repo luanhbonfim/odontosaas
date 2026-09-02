@@ -26,6 +26,7 @@ from apps.dentistas.views import DentistaViewSet, EspecialidadeViewSet
 from apps.estoque.views import (
     CategoriaInsumoViewSet,
     ConsumoInsumoViewSet,
+    FornecedorViewSet,
     InsumoViewSet,
     MovimentacaoEstoqueViewSet,
 )
@@ -81,6 +82,7 @@ router.register(
     "movimentacoes-estoque", MovimentacaoEstoqueViewSet, basename="movimentacao-estoque"
 )
 router.register("consumos-insumo", ConsumoInsumoViewSet, basename="consumo-insumo")
+router.register("fornecedores", FornecedorViewSet, basename="fornecedor")
 router.register("lancamentos", LancamentoFinanceiroViewSet, basename="lancamento")
 router.register("faturas", FaturaViewSet, basename="fatura")
 router.register("auditoria", RegistroAuditoriaViewSet, basename="auditoria")

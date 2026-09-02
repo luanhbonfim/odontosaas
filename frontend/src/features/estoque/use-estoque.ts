@@ -65,6 +65,14 @@ export function useInsumos() {
   })
 }
 
+export function useInsumo(id: number) {
+  return useQuery({
+    queryKey: [...CHAVE_INSUMOS, id],
+    queryFn: async () => (await api.get<Insumo>(`/insumos/${id}/`)).data,
+    enabled: Number.isFinite(id) && id > 0,
+  })
+}
+
 /** Insumos no ou abaixo do estoque mínimo (alerta de reposição). */
 export function useInsumosAlertas() {
   return useQuery({
@@ -98,23 +106,35 @@ export function useRemoverInsumo() {
   })
 }
 
+export type Subtipo = 'AJUSTE' | 'COMPRA'
+export type FormaPagamento = 'PIX' | 'BOLETO' | 'CARTAO' | 'DINHEIRO' | 'TRANSFERENCIA'
+
 export type MovimentacaoEntrada = {
   insumo: number
   tipo: 'ENTRADA' | 'SAIDA'
+  subtipo?: Subtipo
   quantidade: string
   observacao?: string
+  // Só quando subtipo=COMPRA — geram a conta a pagar (ver apps.estoque.services.gerar_conta_da_compra).
+  fornecedor?: number
+  valor?: string
+  forma_pagamento?: FormaPagamento
+  data_vencimento?: string
 }
 
 const CHAVE_MOVIMENTACOES = ['movimentacoes-estoque'] as const
 
-/** Lista movimentações, opcionalmente filtradas por tipo (Lançamentos = ENTRADA, Baixas = SAIDA). */
-export function useMovimentacoesEstoque(tipo?: 'ENTRADA' | 'SAIDA') {
+/** Lista movimentações, opcionalmente filtradas por tipo e/ou insumo (extrato do insumo). */
+export function useMovimentacoesEstoque(filtros?: { tipo?: 'ENTRADA' | 'SAIDA'; insumo?: number }) {
   return useQuery({
-    queryKey: [...CHAVE_MOVIMENTACOES, tipo] as const,
+    queryKey: [...CHAVE_MOVIMENTACOES, filtros?.tipo, filtros?.insumo] as const,
     queryFn: async () => {
+      const params: Record<string, string | number> = {}
+      if (filtros?.tipo) params.tipo = filtros.tipo
+      if (filtros?.insumo) params.insumo = filtros.insumo
       const resp = await api.get<MovimentacaoEstoque[]>(
         '/movimentacoes-estoque/',
-        tipo ? { params: { tipo } } : undefined,
+        Object.keys(params).length ? { params } : undefined,
       )
       return resp.data
     },

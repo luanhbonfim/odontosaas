@@ -3,6 +3,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Boxes, Pencil, Plus, Trash2 } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -94,7 +95,15 @@ export function AbaInsumos() {
   )
 
   const colunas: ColumnDef<Insumo, unknown>[] = [
-    { accessorKey: 'nome', header: 'Nome' },
+    {
+      accessorKey: 'nome',
+      header: 'Nome',
+      cell: ({ row }) => (
+        <Link to={`/estoque/${row.original.id}`} className="font-medium text-primary hover:underline">
+          {row.original.nome}
+        </Link>
+      ),
+    },
     {
       id: 'categoria',
       header: 'Categoria',
@@ -153,7 +162,12 @@ export function AbaInsumos() {
           <div className="space-y-2.5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-semibold break-words">{insumo.nome}</p>
+                <Link
+                  to={`/estoque/${insumo.id}`}
+                  className="font-semibold text-primary break-words hover:underline"
+                >
+                  {insumo.nome}
+                </Link>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {insumo.categoria_nome || 'Sem categoria'}
                   {' · '}
@@ -200,7 +214,7 @@ function valoresIniciais(insumo?: Insumo): FormValues {
   }
 }
 
-function InsumoFormDrawer({ trigger, insumo }: { trigger: ReactNode; insumo?: Insumo }) {
+export function InsumoFormDrawer({ trigger, insumo }: { trigger: ReactNode; insumo?: Insumo }) {
   const [aberto, setAberto] = useState(false)
   const criar = useCriarInsumo()
   const atualizar = useAtualizarInsumo()

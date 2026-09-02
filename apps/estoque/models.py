@@ -87,6 +87,20 @@ class Insumo(ModeloBase):
         return self.estoque_minimo > 0 and self.calcular_saldo() <= self.estoque_minimo
 
 
+class Fornecedor(ModeloBase):
+    """Fornecedor/loja de quem a clínica compra insumos (catálogo por tenant)."""
+
+    nome = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        verbose_name = "Fornecedor"
+        verbose_name_plural = "Fornecedores"
+        ordering = ["nome"]
+
+    def __str__(self):
+        return self.nome
+
+
 class MovimentacaoEstoque(ModeloBase):
     """Entrada ou saída de um insumo. O tipo define o sentido; a quantidade é o módulo."""
 
@@ -94,8 +108,14 @@ class MovimentacaoEstoque(ModeloBase):
         ENTRADA = "ENTRADA", "Entrada"
         SAIDA = "SAIDA", "Saída"
 
+    class Subtipo(models.TextChoices):
+        AJUSTE = "AJUSTE", "Ajuste"
+        COMPRA = "COMPRA", "Compra"
+
     insumo = models.ForeignKey(Insumo, on_delete=models.PROTECT, related_name="movimentacoes")
     tipo = models.CharField(max_length=10, choices=Tipo.choices)
+    # Só relevante para ENTRADA: AJUSTE (simples) ou COMPRA (gera conta a pagar).
+    subtipo = models.CharField(max_length=10, choices=Subtipo.choices, default=Subtipo.AJUSTE)
     quantidade = models.DecimalField(max_digits=10, decimal_places=2)
     observacao = models.TextField(blank=True)
     # Consulta que originou a movimentação (ex.: baixa automática ao realizar).
@@ -113,6 +133,14 @@ class MovimentacaoEstoque(ModeloBase):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="movimentacoes",
+    )
+    # Conta a pagar gerada quando subtipo=COMPRA (ver apps.estoque.services.gerar_conta_da_compra).
+    lancamento_financeiro = models.ForeignKey(
+        "financeiro.LancamentoFinanceiro",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="movimentacoes_estoque",
     )
 
     class Meta:

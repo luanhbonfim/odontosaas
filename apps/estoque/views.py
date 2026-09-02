@@ -6,10 +6,11 @@ from rest_framework.response import Response
 
 from apps.core.mixins import ExclusaoProtegidaMixin
 
-from .models import CategoriaInsumo, ConsumoInsumo, Insumo, MovimentacaoEstoque
+from .models import CategoriaInsumo, ConsumoInsumo, Fornecedor, Insumo, MovimentacaoEstoque
 from .serializers import (
     CategoriaInsumoSerializer,
     ConsumoInsumoSerializer,
+    FornecedorSerializer,
     InsumoSerializer,
     MovimentacaoEstoqueSerializer,
 )
@@ -20,6 +21,13 @@ class CategoriaInsumoViewSet(viewsets.ModelViewSet):
 
     queryset = CategoriaInsumo.objects.all()
     serializer_class = CategoriaInsumoSerializer
+
+
+class FornecedorViewSet(viewsets.ModelViewSet):
+    """CRUD do catálogo de fornecedores da clínica."""
+
+    queryset = Fornecedor.objects.all()
+    serializer_class = FornecedorSerializer
 
 
 class InsumoViewSet(ExclusaoProtegidaMixin, viewsets.ModelViewSet):
