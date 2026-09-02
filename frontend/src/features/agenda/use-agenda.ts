@@ -16,6 +16,12 @@ export type ConsultaEntrada = {
   procedimento_catalogo?: number | null
   observacoes?: string
   valor?: string
+  /** Forma de pagamento (Pix/Boleto/Cartão/Dinheiro/Transferência) — opcional. */
+  forma_pagamento?: string
+  /** Em quantas parcelas a conta a receber é dividida (1 = à vista). */
+  parcelas?: number
+  /** Vencimento da 1ª parcela; as demais seguem mensalmente a partir dela. */
+  data_primeira_parcela?: string | null
   /** Convênio da cobrança (id) ou null = particular. */
   convenio?: number | null
 }

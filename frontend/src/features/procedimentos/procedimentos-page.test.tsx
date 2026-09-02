@@ -17,27 +17,46 @@ vi.mock('./use-procedimentos', () => ({
   useRemoverProcedimento: () => ({ mutateAsync: removerMock }),
 }))
 
-const PROC = { id: 1, nome: 'Limpeza', ativo: true }
+const PROC = { id: 1, nome: 'Limpeza', valor: '150.00', ativo: true }
 
 describe('ProcedimentosPage', () => {
   afterEach(() => vi.clearAllMocks())
 
-  it('lista os procedimentos', () => {
+  it('lista os procedimentos com o valor', () => {
     procedimentosMock.mockReturnValue({ data: [PROC], isLoading: false, isError: false })
     render(<ProcedimentosPage />)
     expect(screen.getByText('Limpeza')).toBeInTheDocument()
+    expect(screen.getByText('150.00')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /adicionar procedimento/i })).toBeInTheDocument()
   })
 
-  it('adiciona um procedimento', async () => {
+  it('adiciona um procedimento sem valor (default 0)', async () => {
     procedimentosMock.mockReturnValue({ data: [], isLoading: false, isError: false })
     criarMock.mockResolvedValue({})
     const user = userEvent.setup()
     render(<ProcedimentosPage />)
     await user.click(screen.getByRole('button', { name: /adicionar procedimento/i }))
-    await user.type(screen.getByLabelText(/nome/i), 'Canal')
+    await user.type(screen.getByLabelText(/^nome/i), 'Canal')
     await user.click(screen.getByRole('button', { name: /salvar/i }))
-    await waitFor(() => expect(criarMock).toHaveBeenCalledWith({ nome: 'Canal', ativo: true }))
+    await waitFor(() =>
+      expect(criarMock).toHaveBeenCalledWith({ nome: 'Canal', valor: '0', ativo: true }),
+    )
+  })
+
+  it('adiciona um procedimento com valor', async () => {
+    procedimentosMock.mockReturnValue({ data: [], isLoading: false, isError: false })
+    criarMock.mockResolvedValue({})
+    const user = userEvent.setup()
+    render(<ProcedimentosPage />)
+    await user.click(screen.getByRole('button', { name: /adicionar procedimento/i }))
+    await user.type(screen.getByLabelText(/^nome/i), 'Canal')
+    const campoValor = screen.getByLabelText(/valor padrão/i)
+    await user.clear(campoValor)
+    await user.type(campoValor, '600')
+    await user.click(screen.getByRole('button', { name: /salvar/i }))
+    await waitFor(() =>
+      expect(criarMock).toHaveBeenCalledWith({ nome: 'Canal', valor: '600', ativo: true }),
+    )
   })
 
   it('valida nome obrigatório', async () => {

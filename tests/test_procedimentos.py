@@ -26,18 +26,52 @@ def test_procedimento_str():
 
 
 @pytest.mark.django_db(transaction=True)
+def test_semear_procedimentos_padrao_idempotente_e_nao_sobrescreve():
+    from apps.procedimentos.defaults import PROCEDIMENTOS_PADRAO, semear_procedimentos_padrao
+
+    host = "procseed.localhost"
+    clinica = _criar_clinica("proc_seed_tenant", host)
+    try:
+        with schema_context(clinica.schema_name):
+            semear_procedimentos_padrao()
+            assert Procedimento.objects.count() == len(PROCEDIMENTOS_PADRAO)
+
+            # A clínica edita o valor de um dos procedimentos padrão.
+            editado = Procedimento.objects.get(nome=PROCEDIMENTOS_PADRAO[0][0])
+            editado.valor = "999.00"
+            editado.save(update_fields=["valor", "atualizado_em"])
+
+            # Rodar de novo não duplica nem sobrescreve a edição.
+            semear_procedimentos_padrao()
+            assert Procedimento.objects.count() == len(PROCEDIMENTOS_PADRAO)
+            editado.refresh_from_db()
+            assert str(editado.valor) == "999.00"
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
 def test_crud_procedimento():
     host = "proc.localhost"
     clinica = _criar_clinica("proc_tenant", host)
     client = APIClient()  # auto-autenticado (conftest, superuser)
     try:
         criar = client.post(
-            "/api/procedimentos/", {"nome": "Limpeza"}, format="json", HTTP_HOST=host
+            "/api/procedimentos/", {"nome": "Limpeza", "valor": "150.00"}, format="json", HTTP_HOST=host
         )
         assert criar.status_code == 201, criar.content
+        assert criar.json()["valor"] == "150.00"
         pid = criar.json()["id"]
 
         assert client.get("/api/procedimentos/", HTTP_HOST=host).status_code == 200
+
+        # Sem valor informado -> default 0 (não obrigatório)
+        sem_valor = client.post(
+            "/api/procedimentos/", {"nome": "Avaliação"}, format="json", HTTP_HOST=host
+        )
+        assert sem_valor.status_code == 201, sem_valor.content
+        assert sem_valor.json()["valor"] == "0.00"
 
         # Nome duplicado -> 400
         dup = client.post(
@@ -45,11 +79,16 @@ def test_crud_procedimento():
         )
         assert dup.status_code == 400
 
-        # Editar (renomear)
+        # Editar (renomear + alterar valor)
         edit = client.patch(
-            f"/api/procedimentos/{pid}/", {"nome": "Limpeza dental"}, format="json", HTTP_HOST=host
+            f"/api/procedimentos/{pid}/",
+            {"nome": "Limpeza dental", "valor": "180.00"},
+            format="json",
+            HTTP_HOST=host,
         )
-        assert edit.status_code == 200 and edit.json()["nome"] == "Limpeza dental"
+        assert edit.status_code == 200
+        assert edit.json()["nome"] == "Limpeza dental"
+        assert edit.json()["valor"] == "180.00"
 
         # Excluir (sem vínculos) -> 204
         assert client.delete(f"/api/procedimentos/{pid}/", HTTP_HOST=host).status_code == 204
@@ -141,13 +180,13 @@ def test_procedimentos_permissao_por_papel():
             ).status_code
             == 201
         )
-        # Dentista: só lê (para selecionar), não cria (403)
+        # Dentista: também gerencia o catálogo (pode cadastrar procedimentos com valor)
         assert dent.get("/api/procedimentos/", HTTP_HOST=host).status_code == 200
         assert (
             dent.post(
                 "/api/procedimentos/", {"nome": "Canal"}, format="json", HTTP_HOST=host
             ).status_code
-            == 403
+            == 201
         )
     finally:
         connection.set_schema_to_public()

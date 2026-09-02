@@ -10,6 +10,7 @@ from django.db import models
 
 from apps.core.models import ModeloBase
 from apps.dentistas.models import Dentista
+from apps.financeiro.models import LancamentoFinanceiro
 from apps.pacientes.models import Paciente
 
 
@@ -53,8 +54,17 @@ class Consulta(ModeloBase):
         related_name="consultas",
     )
     # Valor do atendimento. Ao ficar REALIZADA (e valor > 0), gera uma conta a
-    # receber no financeiro (Sprint 8). Convênio é faturado via Guia.
+    # receber no financeiro (Sprint 8). Convênio é faturado via Guia. Editável a
+    # qualquer momento (mesmo depois de REALIZADA, ex.: cobrar a mais por
+    # trabalho extra) — ver apps.financeiro.services.sincronizar_parcelas_da_consulta.
     valor = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    forma_pagamento = models.CharField(
+        max_length=20, choices=LancamentoFinanceiro.FormaPagamento.choices, blank=True
+    )
+    # Em quantas parcelas a conta a receber é dividida (1 = à vista).
+    parcelas = models.PositiveSmallIntegerField(default=1)
+    # Vencimento da 1ª parcela; as demais seguem mensalmente a partir dela.
+    data_primeira_parcela = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.AGENDADA)
     status_confirmacao = models.CharField(
         max_length=20,

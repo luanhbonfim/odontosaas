@@ -1,3 +1,4 @@
+import { Package, Pencil } from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -52,6 +53,14 @@ const classeSelect = cn(
   'h-9 w-full cursor-pointer rounded-md border bg-transparent px-3 text-sm',
   'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
 )
+
+const FORMAS_PAGAMENTO: { valor: string; rotulo: string }[] = [
+  { valor: 'PIX', rotulo: 'Pix' },
+  { valor: 'BOLETO', rotulo: 'Boleto' },
+  { valor: 'CARTAO', rotulo: 'Cartão' },
+  { valor: 'DINHEIRO', rotulo: 'Dinheiro' },
+  { valor: 'TRANSFERENCIA', rotulo: 'Transferência' },
+]
 
 /** Badge do estado de sincronização com o Google Calendar. */
 const SYNC_GOOGLE: Record<string, { variante: VarianteStatus; rotulo: string }> = {
@@ -166,6 +175,145 @@ export function ConsultaModal({
   return <Formulario estado={estado} aoFechar={aoFechar} />
 }
 
+/** Linha "Valor" do resumo: valor + forma/parcelas (quando informadas) + botão
+ * de editar. Fica só na grade de resumo — a edição em si vira um painel à
+ * parte (`PainelEdicaoPagamento`), não cabe espremida numa célula da grade. */
+function LinhaValor({ consulta, onEditar }: { consulta: Consulta; onEditar: () => void }) {
+  const podeEditar = ['EM_ATENDIMENTO', 'REALIZADA'].includes(consulta.status ?? '')
+  const rotuloForma = FORMAS_PAGAMENTO.find((f) => f.valor === consulta.forma_pagamento)?.rotulo
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-sm font-medium">
+        {consulta.valor && Number(consulta.valor) > 0 ? <Money valor={consulta.valor} /> : '—'}
+        {(rotuloForma || (consulta.parcelas ?? 1) > 1) && (
+          <span className="ml-1 text-xs font-normal text-muted-foreground">
+            ({rotuloForma ?? 'forma não informada'}
+            {(consulta.parcelas ?? 1) > 1 ? ` · ${consulta.parcelas}x` : ''})
+          </span>
+        )}
+      </span>
+      {podeEditar && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-6"
+          onClick={onEditar}
+          aria-label="Editar pagamento"
+        >
+          <Pencil className="size-3.5" />
+        </Button>
+      )}
+    </div>
+  )
+}
+
+/** Painel de largura total para editar valor/forma de pagamento/parcelas — a
+ * cobrança pode ser corrigida a qualquer momento (ex.: trabalho extra durante
+ * o atendimento), mesmo depois de EM_ATENDIMENTO/REALIZADA. Mesmo estilo de
+ * campo (Label + Input/select) do formulário principal de agendamento. */
+function PainelEdicaoPagamento({ consulta, aoFechar }: { consulta: Consulta; aoFechar: () => void }) {
+  const atualizar = useAtualizarConsulta()
+  const [valor, setValor] = useState(String(consulta.valor ?? ''))
+  const [formaPagamento, setFormaPagamento] = useState(consulta.forma_pagamento ?? '')
+  const [parcelas, setParcelas] = useState(String(consulta.parcelas ?? 1))
+  const [dataPrimeiraParcela, setDataPrimeiraParcela] = useState(
+    consulta.data_primeira_parcela ?? '',
+  )
+
+  async function salvar() {
+    if (!valor || Number(valor) <= 0) {
+      toast.error('Informe o valor da consulta.')
+      return
+    }
+    try {
+      await atualizar.mutateAsync({
+        id: consulta.id,
+        dados: {
+          valor,
+          forma_pagamento: formaPagamento,
+          parcelas: Number(parcelas) || 1,
+          data_primeira_parcela: dataPrimeiraParcela || null,
+        },
+      })
+      toast.success('Pagamento atualizado.')
+      aoFechar()
+    } catch (excecao) {
+      toast.error((excecao as ErroApi).mensagem ?? 'Não foi possível atualizar o pagamento.')
+    }
+  }
+
+  return (
+    <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
+      <h4 className="text-sm font-semibold">Editar pagamento</h4>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="valor-edicao">
+          Valor{' '}
+          <span aria-hidden="true" className="text-destructive">
+            *
+          </span>
+        </Label>
+        <Input
+          id="valor-edicao"
+          inputMode="decimal"
+          aria-required="true"
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="forma-pagamento-edicao">Forma de pagamento</Label>
+        <select
+          id="forma-pagamento-edicao"
+          className={classeSelect}
+          value={formaPagamento}
+          onChange={(e) => setFormaPagamento(e.target.value)}
+        >
+          <option value="">Não informado</option>
+          {FORMAS_PAGAMENTO.map((f) => (
+            <option key={f.valor} value={f.valor}>
+              {f.rotulo}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="parcelas-edicao">Parcelas</Label>
+          <Input
+            id="parcelas-edicao"
+            type="number"
+            min={1}
+            value={parcelas}
+            onChange={(e) => setParcelas(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="data-parcela-edicao">Data da 1ª parcela</Label>
+          <Input
+            id="data-parcela-edicao"
+            type="date"
+            value={dataPrimeiraParcela}
+            onChange={(e) => setDataPrimeiraParcela(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 border-t pt-3">
+        <Button type="button" variant="outline" onClick={aoFechar}>
+          Cancelar
+        </Button>
+        <Button type="button" onClick={salvar} disabled={atualizar.isPending}>
+          {atualizar.isPending ? 'Salvando…' : 'Salvar'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 /** Modal somente-leitura das consultas não-agendadas (realizadas, canceladas, etc.). */
 function VisualizacaoConsulta({
   consulta,
@@ -176,6 +324,7 @@ function VisualizacaoConsulta({
 }) {
   const transicao = useTransicaoConsulta()
   const remover = useRemoverConsulta()
+  const [editandoPagamento, setEditandoPagamento] = useState(false)
 
   async function finalizar() {
     try {
@@ -205,7 +354,7 @@ function VisualizacaoConsulta({
     ['Procedimento', consulta.procedimento_catalogo_nome || consulta.procedimento || '—'],
     [
       'Valor',
-      consulta.valor && Number(consulta.valor) > 0 ? <Money valor={consulta.valor} /> : '—',
+      <LinhaValor consulta={consulta} onEditar={() => setEditandoPagamento(true)} />,
     ],
     ['Status', ROTULO_STATUS[consulta.status ?? ''] ?? consulta.status],
     ['Google Agenda', <BadgeSyncGoogle sync={consulta.sync_google} />],
@@ -227,6 +376,28 @@ function VisualizacaoConsulta({
             </div>
           ))}
         </div>
+        {['EM_ATENDIMENTO', 'REALIZADA'].includes(consulta.status ?? '') && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center gap-2 text-sm">
+              <Package className="size-4 shrink-0 text-muted-foreground" />
+              Insumos usados no atendimento
+            </div>
+            <ConsumoConsultaDialog
+              consultaId={consulta.id}
+              trigger={
+                <Button type="button" variant="secondary" size="sm">
+                  Registrar insumos
+                </Button>
+              }
+            />
+          </div>
+        )}
+        {editandoPagamento && (
+          <PainelEdicaoPagamento
+            consulta={consulta}
+            aoFechar={() => setEditandoPagamento(false)}
+          />
+        )}
         <DialogFooter className="flex-wrap">
           {/* Excluir: só cancelada pode (agendada excluiria pelo formulário de edição). */}
           {consulta.status === 'CANCELADA' && (
@@ -244,16 +415,6 @@ function VisualizacaoConsulta({
                   className="mr-auto text-destructive hover:text-destructive"
                 >
                   Excluir
-                </Button>
-              }
-            />
-          )}
-          {['EM_ATENDIMENTO', 'REALIZADA'].includes(consulta.status ?? '') && (
-            <ConsumoConsultaDialog
-              consultaId={consulta.id}
-              trigger={
-                <Button type="button" variant="outline">
-                  Registrar insumos
                 </Button>
               }
             />
@@ -296,6 +457,11 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
   )
   const [observacoes, setObservacoes] = useState(consulta?.observacoes ?? '')
   const [valor, setValor] = useState(consulta ? String(consulta.valor ?? '') : '')
+  const [formaPagamento, setFormaPagamento] = useState(consulta?.forma_pagamento ?? '')
+  const [parcelas, setParcelas] = useState(consulta ? String(consulta.parcelas ?? 1) : '1')
+  const [dataPrimeiraParcela, setDataPrimeiraParcela] = useState(
+    consulta?.data_primeira_parcela ?? '',
+  )
   const [convenio, setConvenio] = useState<number>(consulta?.convenio ?? 0) // 0 = particular
   const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
@@ -390,6 +556,9 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
       procedimento_catalogo: procedimentoCatalogo || null,
       observacoes,
       valor,
+      forma_pagamento: formaPagamento,
+      parcelas: Number(parcelas) || 1,
+      data_primeira_parcela: dataPrimeiraParcela || null,
       convenio: convenio || null,
     }
     setSalvando(true)
@@ -528,7 +697,16 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
                 id="procedimento"
                 className={classeSelect}
                 value={String(procedimentoCatalogo)}
-                onChange={(e) => setProcedimentoCatalogo(Number(e.target.value))}
+                onChange={(e) => {
+                  const id = Number(e.target.value)
+                  setProcedimentoCatalogo(id)
+                  // Pré-preenche o valor com o padrão do procedimento (só ao criar
+                  // e se a pessoa ainda não tiver digitado nada — nunca sobrescreve).
+                  if (!editando && !valor) {
+                    const escolhido = (procedimentos ?? []).find((p) => p.id === id)
+                    if (escolhido && Number(escolhido.valor) > 0) setValor(escolhido.valor)
+                  }
+                }}
               >
                 <option value="0">Selecione…</option>
                 {procedimentosAtivos.map((p) => (
@@ -551,6 +729,45 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
                 aria-required="true"
                 value={valor}
                 onChange={(e) => setValor(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="forma_pagamento">Forma de pagamento</Label>
+            <select
+              id="forma_pagamento"
+              className={classeSelect}
+              value={formaPagamento}
+              onChange={(e) => setFormaPagamento(e.target.value)}
+            >
+              <option value="">Não informado</option>
+              {FORMAS_PAGAMENTO.map((f) => (
+                <option key={f.valor} value={f.valor}>
+                  {f.rotulo}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="parcelas">Parcelas</Label>
+              <Input
+                id="parcelas"
+                type="number"
+                min={1}
+                value={parcelas}
+                onChange={(e) => setParcelas(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="data_primeira_parcela">Data da 1ª parcela</Label>
+              <Input
+                id="data_primeira_parcela"
+                type="date"
+                value={dataPrimeiraParcela}
+                onChange={(e) => setDataPrimeiraParcela(e.target.value)}
               />
             </div>
           </div>

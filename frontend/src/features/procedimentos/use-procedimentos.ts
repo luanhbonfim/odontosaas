@@ -4,7 +4,7 @@ import { api } from '@/lib/api/client'
 import type { components } from '@/lib/api/schema'
 
 export type Procedimento = components['schemas']['Procedimento']
-export type ProcedimentoEntrada = { nome: string; ativo?: boolean }
+export type ProcedimentoEntrada = { nome: string; valor?: string; ativo?: boolean }
 
 const CHAVE = ['procedimentos'] as const
 

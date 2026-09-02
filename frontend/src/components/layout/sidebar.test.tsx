@@ -35,8 +35,8 @@ describe('Sidebar (menu por papel)', () => {
       // Estoque virou módulo com telas separadas (Operação):
       'Insumos',
       'Categorias',
-      'Lançamentos',
-      'Baixas',
+      'Movimentações',
+      'Fornecedores',
       'Alertas',
       // Financeiro virou módulo com telas separadas:
       'Visão Geral',
@@ -65,6 +65,8 @@ describe('Sidebar (menu por papel)', () => {
     // Integrações é aberto ao dentista (vê a sua); e os módulos gerais.
     expect(screen.getByRole('link', { name: 'Integrações' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Agenda' })).toBeInTheDocument()
+    // Dentista agora também cadastra procedimentos (com valor).
+    expect(screen.getByRole('link', { name: 'Procedimentos' })).toBeInTheDocument()
   })
 
   it('sem sessão carregada, oculta os módulos restritos', () => {

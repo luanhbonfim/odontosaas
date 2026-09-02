@@ -783,6 +783,44 @@ export interface paths {
         patch: operations["fichas_partial_update"];
         trace?: never;
     };
+    "/api/fornecedores/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD do catálogo de fornecedores da clínica. */
+        get: operations["fornecedores_list"];
+        put?: never;
+        /** @description CRUD do catálogo de fornecedores da clínica. */
+        post: operations["fornecedores_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fornecedores/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD do catálogo de fornecedores da clínica. */
+        get: operations["fornecedores_retrieve"];
+        /** @description CRUD do catálogo de fornecedores da clínica. */
+        put: operations["fornecedores_update"];
+        post?: never;
+        /** @description CRUD do catálogo de fornecedores da clínica. */
+        delete: operations["fornecedores_destroy"];
+        options?: never;
+        head?: never;
+        /** @description CRUD do catálogo de fornecedores da clínica. */
+        patch: operations["fornecedores_partial_update"];
+        trace?: never;
+    };
     "/api/guias/": {
         parameters: {
             query?: never;
@@ -1110,10 +1148,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`/`?tipo=`. */
         get: operations["movimentacoes_estoque_list"];
         put?: never;
-        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`/`?tipo=`. */
         post: operations["movimentacoes_estoque_create"];
         delete?: never;
         options?: never;
@@ -1128,16 +1166,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`/`?tipo=`. */
         get: operations["movimentacoes_estoque_retrieve"];
-        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`/`?tipo=`. */
         put: operations["movimentacoes_estoque_update"];
         post?: never;
-        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`/`?tipo=`. */
         delete: operations["movimentacoes_estoque_destroy"];
         options?: never;
         head?: never;
-        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`. */
+        /** @description CRUD das movimentações de estoque (entradas/saídas). Filtra por `?insumo=`/`?tipo=`. */
         patch: operations["movimentacoes_estoque_partial_update"];
         trace?: never;
     };
@@ -2422,6 +2460,10 @@ export interface components {
             readonly convenio_nome: string | null;
             /** Format: decimal */
             valor?: string;
+            forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
+            parcelas?: number;
+            /** Format: date */
+            data_primeira_parcela?: string | null;
             status?: components["schemas"]["ConsultaStatusEnum"];
             status_confirmacao?: components["schemas"]["StatusConfirmacaoEnum"];
             /** Format: date-time */
@@ -2544,6 +2586,24 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em: string;
         };
+        /**
+         * @description * `PIX` - Pix
+         *     * `BOLETO` - Boleto
+         *     * `CARTAO` - Cartão
+         *     * `DINHEIRO` - Dinheiro
+         *     * `TRANSFERENCIA` - Transferência
+         * @enum {string}
+         */
+        FormaPagamentoEnum: "PIX" | "BOLETO" | "CARTAO" | "DINHEIRO" | "TRANSFERENCIA";
+        Fornecedor: {
+            readonly id: number;
+            nome: string;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em: string;
+            /** Format: date-time */
+            readonly atualizado_em: string;
+        };
         Guia: {
             readonly id: number;
             plano: number;
@@ -2588,13 +2648,25 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em: string;
         };
+        /** @description Resumo somente leitura da conta a pagar gerada por uma compra. */
+        LancamentoDaMovimentacao: {
+            readonly id: number;
+            /** Format: decimal */
+            valor: string;
+            /** Format: date */
+            vencimento?: string | null;
+            forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
+            fornecedor?: number | null;
+            readonly fornecedor_nome: string;
+            status?: components["schemas"]["Status59aEnum"];
+        };
         LancamentoFinanceiro: {
             readonly id: number;
             tipo: components["schemas"]["LancamentoFinanceiroTipoEnum"];
             descricao: string;
             /** Format: decimal */
             valor: string;
-            status?: components["schemas"]["LancamentoFinanceiroStatusEnum"];
+            status?: components["schemas"]["Status59aEnum"];
             /** Format: date */
             vencimento?: string | null;
             /** Format: date-time */
@@ -2602,19 +2674,17 @@ export interface components {
             fatura?: number | null;
             consulta?: number | null;
             guia?: number | null;
+            fornecedor?: number | null;
+            readonly fornecedor_nome: string;
+            forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
+            numero_parcela?: number;
+            total_parcelas?: number;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em: string;
             /** Format: date-time */
             readonly atualizado_em: string;
         };
-        /**
-         * @description * `PENDENTE` - Pendente
-         *     * `PAGO` - Pago/Recebido
-         *     * `CANCELADO` - Cancelado
-         * @enum {string}
-         */
-        LancamentoFinanceiroStatusEnum: "PENDENTE" | "PAGO" | "CANCELADO";
         /**
          * @description * `RECEITA` - Receita (a receber)
          *     * `DESPESA` - Despesa (a pagar)
@@ -2668,10 +2738,18 @@ export interface components {
             insumo: number;
             readonly insumo_nome: string;
             tipo: components["schemas"]["MovimentacaoEstoqueTipoEnum"];
+            subtipo?: components["schemas"]["SubtipoEnum"];
             /** Format: decimal */
             quantidade: string;
             observacao?: string;
             consulta?: number | null;
+            readonly lancamento_financeiro_detalhe: components["schemas"]["LancamentoDaMovimentacao"] | null;
+            fornecedor?: number | null;
+            /** Format: decimal */
+            valor?: string | null;
+            forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
+            /** Format: date */
+            data_vencimento?: string | null;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em: string;
@@ -2874,6 +2952,10 @@ export interface components {
             readonly convenio_nome?: string | null;
             /** Format: decimal */
             valor?: string;
+            forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
+            parcelas?: number;
+            /** Format: date */
+            data_primeira_parcela?: string | null;
             status?: components["schemas"]["ConsultaStatusEnum"];
             status_confirmacao?: components["schemas"]["StatusConfirmacaoEnum"];
             /** Format: date-time */
@@ -2967,6 +3049,15 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em?: string;
         };
+        PatchedFornecedor: {
+            readonly id?: number;
+            nome?: string;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em?: string;
+            /** Format: date-time */
+            readonly atualizado_em?: string;
+        };
         PatchedGuia: {
             readonly id?: number;
             plano?: number;
@@ -3008,7 +3099,7 @@ export interface components {
             descricao?: string;
             /** Format: decimal */
             valor?: string;
-            status?: components["schemas"]["LancamentoFinanceiroStatusEnum"];
+            status?: components["schemas"]["Status59aEnum"];
             /** Format: date */
             vencimento?: string | null;
             /** Format: date-time */
@@ -3016,6 +3107,11 @@ export interface components {
             fatura?: number | null;
             consulta?: number | null;
             guia?: number | null;
+            fornecedor?: number | null;
+            readonly fornecedor_nome?: string;
+            forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
+            numero_parcela?: number;
+            total_parcelas?: number;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em?: string;
@@ -3027,10 +3123,18 @@ export interface components {
             insumo?: number;
             readonly insumo_nome?: string;
             tipo?: components["schemas"]["MovimentacaoEstoqueTipoEnum"];
+            subtipo?: components["schemas"]["SubtipoEnum"];
             /** Format: decimal */
             quantidade?: string;
             observacao?: string;
             consulta?: number | null;
+            readonly lancamento_financeiro_detalhe?: components["schemas"]["LancamentoDaMovimentacao"] | null;
+            fornecedor?: number | null;
+            /** Format: decimal */
+            valor?: string | null;
+            forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
+            /** Format: date */
+            data_vencimento?: string | null;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em?: string;
@@ -3126,6 +3230,8 @@ export interface components {
         PatchedProcedimento: {
             readonly id?: number;
             nome?: string;
+            /** Format: decimal */
+            valor?: string;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em?: string;
@@ -3282,6 +3388,8 @@ export interface components {
         Procedimento: {
             readonly id: number;
             nome: string;
+            /** Format: decimal */
+            valor?: string;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em: string;
@@ -3299,6 +3407,13 @@ export interface components {
             readonly criado_em: string;
         };
         /**
+         * @description * `PENDENTE` - Pendente
+         *     * `PAGO` - Pago/Recebido
+         *     * `CANCELADO` - Cancelado
+         * @enum {string}
+         */
+        Status59aEnum: "PENDENTE" | "PAGO" | "CANCELADO";
+        /**
          * @description * `TRIAL` - Em período de testes
          *     * `ATIVA` - Assinatura ativa
          *     * `INADIMPLENTE` - Inadimplente / Pagamento pendente
@@ -3314,6 +3429,12 @@ export interface components {
          * @enum {string}
          */
         StatusConfirmacaoEnum: "PENDENTE" | "CONFIRMADA" | "RECUSADA" | "SEM_RESPOSTA";
+        /**
+         * @description * `AJUSTE` - Ajuste
+         *     * `COMPRA` - Compra
+         * @enum {string}
+         */
+        SubtipoEnum: "AJUSTE" | "COMPRA";
         TemplateMensagem: {
             readonly id: number;
             tipo: components["schemas"]["TemplateMensagemTipoEnum"];
@@ -5256,6 +5377,149 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Ficha"];
+                };
+            };
+        };
+    };
+    fornecedores_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fornecedor"][];
+                };
+            };
+        };
+    };
+    fornecedores_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Fornecedor"];
+                "application/x-www-form-urlencoded": components["schemas"]["Fornecedor"];
+                "multipart/form-data": components["schemas"]["Fornecedor"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fornecedor"];
+                };
+            };
+        };
+    };
+    fornecedores_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Fornecedor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fornecedor"];
+                };
+            };
+        };
+    };
+    fornecedores_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Fornecedor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Fornecedor"];
+                "application/x-www-form-urlencoded": components["schemas"]["Fornecedor"];
+                "multipart/form-data": components["schemas"]["Fornecedor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fornecedor"];
+                };
+            };
+        };
+    };
+    fornecedores_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Fornecedor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fornecedores_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Fornecedor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedFornecedor"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedFornecedor"];
+                "multipart/form-data": components["schemas"]["PatchedFornecedor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fornecedor"];
                 };
             };
         };

@@ -47,8 +47,8 @@ vi.mock('@/features/notificacoes/use-notificacoes', () => ({
 vi.mock('@/features/procedimentos/use-procedimentos', () => ({
   useProcedimentos: () => ({
     data: [
-      { id: 1, nome: 'Limpeza', ativo: true },
-      { id: 2, nome: 'Canal', ativo: true },
+      { id: 1, nome: 'Limpeza', valor: '150.00', ativo: true },
+      { id: 2, nome: 'Canal', valor: '600.00', ativo: true },
     ],
   }),
 }))
@@ -110,6 +110,57 @@ describe('ConsultaModal', () => {
       expect.objectContaining({ paciente: 10, dentista: 5, valor: '150', convenio: null }),
     )
     expect(aoFechar).toHaveBeenCalled()
+  })
+
+  it('pré-preenche o valor ao escolher o procedimento, sem sobrescrever edição manual', async () => {
+    pacientesMock.mockReturnValue({ data: { results: [{ id: 10, nome_completo: 'João Silva' }] } })
+    planosMock.mockReturnValue({ data: [] })
+    const user = userEvent.setup()
+    render(
+      <ConsultaModal
+        estado={{ modo: 'criar', inicio: '2026-08-10T09:00', fim: '2026-08-10T09:30' }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    await user.selectOptions(screen.getByLabelText('Procedimento'), '1')
+    expect(screen.getByLabelText(/valor/i)).toHaveValue('150.00')
+
+    // Trocar de procedimento não sobrescreve um valor já digitado manualmente.
+    await user.clear(screen.getByLabelText(/valor/i))
+    await user.type(screen.getByLabelText(/valor/i), '999')
+    await user.selectOptions(screen.getByLabelText('Procedimento'), '2')
+    expect(screen.getByLabelText(/valor/i)).toHaveValue('999')
+  })
+
+  it('agenda com forma de pagamento e parcelas', async () => {
+    pacientesMock.mockReturnValue({ data: { results: [{ id: 10, nome_completo: 'João Silva' }] } })
+    planosMock.mockReturnValue({ data: [] })
+    criarMock.mockResolvedValue({})
+    const user = userEvent.setup()
+    render(
+      <ConsultaModal
+        estado={{ modo: 'criar', inicio: '2026-08-10T09:00', fim: '2026-08-10T09:30' }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    await user.type(screen.getByPlaceholderText(/buscar paciente/i), 'João')
+    await user.click(screen.getByRole('button', { name: 'João Silva' }))
+    await user.selectOptions(screen.getByLabelText('Dentista'), '5')
+    await user.type(screen.getByLabelText(/valor/i), '300')
+    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'CARTAO')
+    await user.clear(screen.getByLabelText('Parcelas'))
+    await user.type(screen.getByLabelText('Parcelas'), '3')
+    await user.type(screen.getByLabelText(/data da 1ª parcela/i), '2026-08-15')
+    await user.click(screen.getByRole('button', { name: 'Agendar' }))
+
+    await waitFor(() => expect(criarMock).toHaveBeenCalled())
+    expect(criarMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        forma_pagamento: 'CARTAO',
+        parcelas: 3,
+        data_primeira_parcela: '2026-08-15',
+      }),
+    )
   })
 
   it('exige o valor (mesmo particular)', async () => {
@@ -446,6 +497,66 @@ describe('ConsultaModal', () => {
       />,
     )
     expect(screen.queryByRole('button', { name: 'Excluir consulta' })).toBeNull()
+  })
+
+  it('permite editar o valor/forma de pagamento de uma consulta REALIZADA', async () => {
+    atualizarMock.mockResolvedValue({})
+    const user = userEvent.setup()
+    render(
+      <ConsultaModal
+        estado={{
+          modo: 'visualizar',
+          consulta: {
+            id: 9,
+            paciente: 10,
+            paciente_nome: 'Maria Souza',
+            dentista: 5,
+            dentista_nome: 'Dra. Ana',
+            inicio: '2026-08-10T15:00:00Z',
+            fim: '2026-08-10T15:30:00Z',
+            valor: '200.00',
+            status: 'REALIZADA',
+          } as never,
+        }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Editar pagamento' }))
+    expect(screen.getByText('Editar pagamento', { selector: 'h4' })).toBeInTheDocument()
+    const campoValor = screen.getByLabelText(/^valor/i)
+    await user.clear(campoValor)
+    await user.type(campoValor, '250')
+    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'PIX')
+    await user.click(screen.getByRole('button', { name: /^salvar$/i }))
+
+    await waitFor(() => expect(atualizarMock).toHaveBeenCalled())
+    expect(atualizarMock).toHaveBeenCalledWith({
+      id: 9,
+      dados: { valor: '250', forma_pagamento: 'PIX', parcelas: 1, data_primeira_parcela: null },
+    })
+  })
+
+  it('não permite editar o valor de uma consulta CANCELADA', () => {
+    render(
+      <ConsultaModal
+        estado={{
+          modo: 'visualizar',
+          consulta: {
+            id: 11,
+            paciente: 10,
+            paciente_nome: 'Maria Souza',
+            dentista: 5,
+            dentista_nome: 'Dra. Ana',
+            inicio: '2026-08-10T15:00:00Z',
+            fim: '2026-08-10T15:30:00Z',
+            valor: '200.00',
+            status: 'CANCELADA',
+          } as never,
+        }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: 'Editar pagamento' })).toBeNull()
   })
 
   it('modo visualização: dados somente-leitura, sem botão de salvar', () => {

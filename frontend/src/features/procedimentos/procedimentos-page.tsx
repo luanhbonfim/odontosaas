@@ -79,6 +79,11 @@ export function ProcedimentosPage() {
   const colunas: ColumnDef<Procedimento, unknown>[] = [
     { accessorKey: 'nome', header: 'Nome' },
     {
+      id: 'valor',
+      header: 'Valor',
+      cell: ({ row }) => <span className="tabular-nums">{row.original.valor}</span>,
+    },
+    {
       id: 'status',
       header: 'Status',
       cell: ({ row }) =>
@@ -132,6 +137,7 @@ export function ProcedimentosPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-sm tabular-nums">Valor: {procedimento.valor}</span>
                 {procedimento.ativo ? (
                   <StatusBadge variante="sucesso">Ativo</StatusBadge>
                 ) : (
@@ -148,6 +154,7 @@ export function ProcedimentosPage() {
 
 const schema = z.object({
   nome: z.string().min(1, 'Informe o nome do procedimento'),
+  valor: z.string(),
   ativo: z.boolean(),
 })
 
@@ -156,6 +163,7 @@ type FormValues = z.infer<typeof schema>
 function valoresIniciais(procedimento?: Procedimento): FormValues {
   return {
     nome: procedimento?.nome ?? '',
+    valor: procedimento?.valor ?? '0',
     ativo: procedimento?.ativo ?? true,
   }
 }
@@ -189,7 +197,11 @@ function ProcedimentoFormDrawer({
   }, [aberto, procedimento, reset])
 
   async function onSubmit(valores: FormValues) {
-    const dados: ProcedimentoEntrada = { nome: valores.nome, ativo: valores.ativo }
+    const dados: ProcedimentoEntrada = {
+      nome: valores.nome,
+      valor: valores.valor || '0',
+      ativo: valores.ativo,
+    }
     try {
       if (edicao && procedimento) await atualizar.mutateAsync({ id: procedimento.id, dados })
       else await criar.mutateAsync(dados)
@@ -222,6 +234,10 @@ function ProcedimentoFormDrawer({
                 aria-invalid={errors.nome ? true : undefined}
                 {...register('nome')}
               />
+            </Campo>
+
+            <Campo id="valor" label="Valor padrão" ajuda="Sugerido ao agendar; pode ser alterado na consulta.">
+              <Input id="valor" inputMode="decimal" {...register('valor')} />
             </Campo>
 
             <LinhaToggle

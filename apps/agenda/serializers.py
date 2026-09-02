@@ -33,6 +33,9 @@ class ConsultaSerializer(serializers.ModelSerializer):
             "convenio",
             "convenio_nome",
             "valor",
+            "forma_pagamento",
+            "parcelas",
+            "data_primeira_parcela",
             "status",
             "status_confirmacao",
             "confirmado_em",
@@ -53,6 +56,11 @@ class ConsultaSerializer(serializers.ModelSerializer):
         # Pode haver 1 evento por agenda (clínica/dentista); reporta o mais recente.
         evento = obj.eventos_google.order_by("-ultima_sincronizacao", "-id").first()
         return evento.status_sync if evento else None
+
+    def validate_parcelas(self, valor):
+        if valor < 1:
+            raise serializers.ValidationError("Deve ser pelo menos 1 parcela.")
+        return valor
 
     def validate_status(self, novo_status):
         """Na atualização, só permite transições válidas do ciclo de vida."""

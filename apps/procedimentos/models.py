@@ -14,6 +14,8 @@ class Procedimento(ModeloBase):
     """
 
     nome = models.CharField(max_length=100, unique=True)
+    # Valor padrão sugerido ao agendar (a consulta pode cobrar diferente).
+    valor = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     class Meta:
         verbose_name = "Procedimento"

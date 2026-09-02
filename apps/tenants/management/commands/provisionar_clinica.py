@@ -70,6 +70,7 @@ class Command(BaseCommand):
         senha = options.get("admin_senha")
         from apps.dentistas.defaults import semear_especialidades_padrao
         from apps.notificacoes.defaults import semear_templates_padrao
+        from apps.procedimentos.defaults import semear_procedimentos_padrao
 
         with schema_context(schema):
             # Semeia os grupos de perfis padrão no schema recém-criado.
@@ -78,6 +79,8 @@ class Command(BaseCommand):
             semear_templates_padrao()
             # Semeia as especialidades odontológicas padrão (CFO + Clínico Geral).
             semear_especialidades_padrao()
+            # Semeia o catálogo padrão de procedimentos (com valores de exemplo).
+            semear_procedimentos_padrao()
             if email and senha:
                 # O signal post_save vincula o usuário ao grupo do seu papel.
                 Usuario.objects.create_user(
