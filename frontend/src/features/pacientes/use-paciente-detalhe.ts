@@ -10,6 +10,7 @@ export type Guia = components['schemas']['Guia']
 export type Consulta = components['schemas']['Consulta']
 export type Anamnese = components['schemas']['Anamnese']
 export type Ficha = components['schemas']['Ficha']
+export type Lancamento = components['schemas']['LancamentoFinanceiro']
 
 /** Campos graváveis de um plano (o paciente vem do contexto da ficha).
  * `convenio` (id do catálogo) alimenta a `operadora` no backend. */
@@ -206,6 +207,19 @@ export function useCriarFicha(pacienteId: number) {
   return useMutation({
     mutationFn: async (dados: FichaEntrada) => (await api.post<Ficha>('/fichas/', dados)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: chaveFichas(pacienteId) }),
+  })
+}
+
+/** Parcelas/lançamentos a receber gerados pelas consultas do paciente (aba
+ * "Financeiro" — marcar pago/desfazer usa `useQuitarLancamento`/
+ * `useEstornarLancamento` de `@/features/financeiro/use-lancamentos`, que
+ * invalida pelo prefixo `['lancamentos']` e já recarrega esta lista). */
+export function useLancamentosDoPaciente(id: number) {
+  return useQuery({
+    queryKey: ['lancamentos', 'paciente', id],
+    queryFn: async () =>
+      (await api.get<Lancamento[]>('/lancamentos/', { params: { paciente: id } })).data,
+    enabled: Number.isFinite(id),
   })
 }
 

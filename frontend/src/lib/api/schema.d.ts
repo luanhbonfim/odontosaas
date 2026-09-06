@@ -963,14 +963,18 @@ export interface paths {
         /**
          * @description CRUD de lançamentos financeiros (contas a pagar/receber) + ajustes manuais.
          *
-         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA` e `?status=...`.
+         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA`, `?status=...`
+         *     e `?paciente=<id>` (via `consulta__paciente_id`, para a aba Financeiro do
+         *     paciente).
          */
         get: operations["lancamentos_list"];
         put?: never;
         /**
          * @description CRUD de lançamentos financeiros (contas a pagar/receber) + ajustes manuais.
          *
-         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA` e `?status=...`.
+         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA`, `?status=...`
+         *     e `?paciente=<id>` (via `consulta__paciente_id`, para a aba Financeiro do
+         *     paciente).
          */
         post: operations["lancamentos_create"];
         delete?: never;
@@ -989,20 +993,26 @@ export interface paths {
         /**
          * @description CRUD de lançamentos financeiros (contas a pagar/receber) + ajustes manuais.
          *
-         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA` e `?status=...`.
+         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA`, `?status=...`
+         *     e `?paciente=<id>` (via `consulta__paciente_id`, para a aba Financeiro do
+         *     paciente).
          */
         get: operations["lancamentos_retrieve"];
         /**
          * @description CRUD de lançamentos financeiros (contas a pagar/receber) + ajustes manuais.
          *
-         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA` e `?status=...`.
+         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA`, `?status=...`
+         *     e `?paciente=<id>` (via `consulta__paciente_id`, para a aba Financeiro do
+         *     paciente).
          */
         put: operations["lancamentos_update"];
         post?: never;
         /**
          * @description CRUD de lançamentos financeiros (contas a pagar/receber) + ajustes manuais.
          *
-         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA` e `?status=...`.
+         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA`, `?status=...`
+         *     e `?paciente=<id>` (via `consulta__paciente_id`, para a aba Financeiro do
+         *     paciente).
          */
         delete: operations["lancamentos_destroy"];
         options?: never;
@@ -1010,7 +1020,9 @@ export interface paths {
         /**
          * @description CRUD de lançamentos financeiros (contas a pagar/receber) + ajustes manuais.
          *
-         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA` e `?status=...`.
+         *     Filtros opcionais por query string: `?tipo=RECEITA|DESPESA`, `?status=...`
+         *     e `?paciente=<id>` (via `consulta__paciente_id`, para a aba Financeiro do
+         *     paciente).
          */
         patch: operations["lancamentos_partial_update"];
         trace?: never;
@@ -2820,6 +2832,8 @@ export interface components {
             pago_em?: string | null;
             fatura?: number | null;
             consulta?: number | null;
+            readonly consulta_procedimento: string;
+            readonly consulta_data: string | null;
             guia?: number | null;
             fornecedor?: number | null;
             readonly fornecedor_nome: string;
@@ -3286,6 +3300,8 @@ export interface components {
             pago_em?: string | null;
             fatura?: number | null;
             consulta?: number | null;
+            readonly consulta_procedimento?: string;
+            readonly consulta_data?: string | null;
             guia?: number | null;
             fornecedor?: number | null;
             readonly fornecedor_nome?: string;

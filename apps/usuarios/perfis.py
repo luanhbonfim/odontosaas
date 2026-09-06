@@ -36,6 +36,7 @@ MATRIZ = {
         "convenios": FULL,
         "procedimentos": FULL,
         "estoque": FULL,
+        "financeiro": FULL,
         "notificacoes": FULL,
     },
     "DENTISTA": {

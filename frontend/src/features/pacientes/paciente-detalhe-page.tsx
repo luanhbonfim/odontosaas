@@ -8,6 +8,7 @@ import {
   Stethoscope,
   User,
   Users,
+  Wallet,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -27,6 +28,7 @@ import { cn } from '@/lib/utils'
 import { AbaAnamneses } from './aba-anamneses'
 import { AbaDados } from './aba-dados'
 import { AbaFichas } from './aba-fichas'
+import { AbaFinanceiro } from './aba-financeiro'
 import { AbaGuias } from './aba-guias'
 import { AbaPlanos } from './aba-planos'
 import { BadgeCobranca, BadgeStatus } from './status'
@@ -210,6 +212,7 @@ const ABAS_PACIENTE: ItemSegmento[] = [
   { id: 'planos', rotulo: 'Planos', icone: ClipboardList },
   { id: 'guias', rotulo: 'Guias', icone: FileText },
   { id: 'consultas', rotulo: 'Consultas', icone: CalendarDays },
+  { id: 'financeiro', rotulo: 'Financeiro', icone: Wallet },
   { id: 'fichas', rotulo: 'Fichas', icone: Stethoscope },
   { id: 'anamneses', rotulo: 'Anamnese', icone: HeartPulse },
 ]
@@ -253,6 +256,7 @@ export function PacienteDetalhePage() {
             <TabsTrigger value="planos">Planos</TabsTrigger>
             <TabsTrigger value="guias">Guias</TabsTrigger>
             <TabsTrigger value="consultas">Consultas</TabsTrigger>
+            <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
             <TabsTrigger value="fichas">Fichas</TabsTrigger>
             <TabsTrigger value="anamneses">Anamneses</TabsTrigger>
           </TabsList>
@@ -272,6 +276,9 @@ export function PacienteDetalhePage() {
           </TabsContent>
           <TabsContent value="consultas">
             {novo ? <AvisoSalvarPrimeiro /> : <AbaConsultas pacienteId={pacienteId} />}
+          </TabsContent>
+          <TabsContent value="financeiro">
+            {novo ? <AvisoSalvarPrimeiro /> : <AbaFinanceiro pacienteId={pacienteId} />}
           </TabsContent>
           <TabsContent value="fichas">
             {novo ? <AvisoSalvarPrimeiro /> : <AbaFichas pacienteId={pacienteId} />}

@@ -19,7 +19,9 @@ class LancamentoFinanceiroViewSet(viewsets.ModelViewSet):
     """
     CRUD de lançamentos financeiros (contas a pagar/receber) + ajustes manuais.
 
-    Filtros opcionais por query string: `?tipo=RECEITA|DESPESA` e `?status=...`.
+    Filtros opcionais por query string: `?tipo=RECEITA|DESPESA`, `?status=...`
+    e `?paciente=<id>` (via `consulta__paciente_id`, para a aba Financeiro do
+    paciente).
     """
 
     queryset = LancamentoFinanceiro.objects.all()
@@ -29,10 +31,13 @@ class LancamentoFinanceiroViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         tipo = self.request.query_params.get("tipo")
         status_param = self.request.query_params.get("status")
+        paciente_id = self.request.query_params.get("paciente")
         if tipo:
             qs = qs.filter(tipo=tipo)
         if status_param:
             qs = qs.filter(status=status_param)
+        if paciente_id:
+            qs = qs.filter(consulta__paciente_id=paciente_id)
         return qs
 
     @action(detail=True, methods=["post"])

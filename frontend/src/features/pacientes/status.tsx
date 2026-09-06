@@ -21,6 +21,8 @@ const VARIANTE_STATUS: Record<string, VarianteStatus> = {
   CONFIRMADA: 'sucesso',
   RECUSADA: 'erro',
   SEM_RESPOSTA: 'neutro',
+  // Financeiro (LancamentoFinanceiro.Status) — PENDENTE já mapeado acima.
+  PAGO: 'sucesso',
 }
 
 function rotuloStatus(status: string): string {

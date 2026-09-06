@@ -42,6 +42,8 @@ class FluxoCaixaSerializer(serializers.Serializer):
 
 class LancamentoFinanceiroSerializer(serializers.ModelSerializer):
     fornecedor_nome = serializers.CharField(source="fornecedor.nome", read_only=True, default=None)
+    consulta_procedimento = serializers.SerializerMethodField()
+    consulta_data = serializers.SerializerMethodField()
 
     class Meta:
         model = LancamentoFinanceiro
@@ -55,6 +57,8 @@ class LancamentoFinanceiroSerializer(serializers.ModelSerializer):
             "pago_em",
             "fatura",
             "consulta",
+            "consulta_procedimento",
+            "consulta_data",
             "guia",
             "fornecedor",
             "fornecedor_nome",
@@ -71,3 +75,14 @@ class LancamentoFinanceiroSerializer(serializers.ModelSerializer):
         if valor <= 0:
             raise serializers.ValidationError("O valor deve ser maior que zero.")
         return valor
+
+    def get_consulta_procedimento(self, obj) -> str:
+        if not obj.consulta_id:
+            return ""
+        consulta = obj.consulta
+        if consulta.procedimento_catalogo_id:
+            return consulta.procedimento_catalogo.nome
+        return consulta.procedimento or ""
+
+    def get_consulta_data(self, obj) -> str | None:
+        return obj.consulta.inicio.isoformat() if obj.consulta_id else None

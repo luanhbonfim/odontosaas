@@ -45,6 +45,20 @@ const CONSULTA_CANCELADA = {
   status: 'CANCELADA',
   status_confirmacao: 'RECUSADA',
 }
+const LANCAMENTO = {
+  id: 10,
+  tipo: 'RECEITA',
+  descricao: 'Consulta particular',
+  valor: '150.00',
+  status: 'PENDENTE',
+  vencimento: '2026-08-01',
+  consulta: 1,
+  consulta_procedimento: 'Limpeza',
+  consulta_data: '2026-07-24T12:00:00Z',
+  numero_parcela: 1,
+  total_parcelas: 1,
+  forma_pagamento: 'PIX',
+}
 
 vi.mock('./use-paciente-detalhe', () => ({
   usePaciente: pacienteMock,
@@ -53,6 +67,7 @@ vi.mock('./use-paciente-detalhe', () => ({
   useConsultasDoPaciente: () => ({ data: [CONSULTA, CONSULTA_CANCELADA], isLoading: false }),
   useFichasDoPaciente: () => ({ data: [], isLoading: false }),
   useAnamnesesDoPaciente: () => ({ data: [], isLoading: false }),
+  useLancamentosDoPaciente: () => ({ data: [LANCAMENTO], isLoading: false }),
   useCriarAnamnese: () => ({ mutateAsync: vi.fn() }),
   useCriarPlano: () => ({ mutateAsync: vi.fn() }),
   useAtualizarPlano: () => ({ mutateAsync: vi.fn() }),
@@ -60,6 +75,10 @@ vi.mock('./use-paciente-detalhe', () => ({
   useCriarGuia: () => ({ mutateAsync: vi.fn() }),
   useAtualizarGuia: () => ({ mutateAsync: vi.fn() }),
   useRemoverGuia: () => ({ mutateAsync: vi.fn() }),
+}))
+vi.mock('@/features/financeiro/use-lancamentos', () => ({
+  useQuitarLancamento: () => ({ mutateAsync: vi.fn() }),
+  useEstornarLancamento: () => ({ mutateAsync: vi.fn() }),
 }))
 // AbaDados usa estes hooks para salvar.
 vi.mock('./use-pacientes', () => ({
@@ -146,5 +165,15 @@ describe('PacienteDetalhePage', () => {
     renderRota('/pacientes/5', '/pacientes/:id')
     await userEvent.setup().click(screen.getByRole('tab', { name: 'Fichas' }))
     expect(await screen.findByText('Nenhuma ficha registrada.')).toBeInTheDocument()
+  })
+
+  it('aba Financeiro: mostra a parcela e o botão de marcar como pago', async () => {
+    pacienteMock.mockReturnValue({ data: PACIENTE, isLoading: false, isError: false })
+    renderRota('/pacientes/5', '/pacientes/:id')
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'Financeiro' }))
+
+    expect(await screen.findByText('Limpeza')).toBeInTheDocument()
+    expect(screen.getByText('R$ 150,00')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Marcar como pago' })).toBeInTheDocument()
   })
 })
