@@ -32,6 +32,16 @@ describe('useAuth', () => {
     expect(navegar).toHaveBeenCalledWith('/')
   })
 
+  it('entrar limpa a dispensa do carrossel de avisos (reabre em nova sessão de login)', async () => {
+    sessionStorage.setItem('avisos_dispensados', '1')
+    vi.mocked(api.post).mockResolvedValue({ data: { access: 'a1', refresh: 'r1' } })
+
+    const { result } = renderHook(() => useAuth())
+    await result.current.entrar({ email: 'x@y.com', senha: 'segredo' })
+
+    expect(sessionStorage.getItem('avisos_dispensados')).toBeNull()
+  })
+
   it('sair limpa tokens, zera o cache do Query e volta ao login', () => {
     tokenStore.definir({ access: 'a', refresh: 'r' })
     const limparCache = vi.spyOn(queryClient, 'clear')

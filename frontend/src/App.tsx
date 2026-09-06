@@ -37,6 +37,7 @@ import { VendorLoginPage } from '@/features/vendor-admin/vendor-login-page'
 import { VendorRequireAuth, VendorSomenteVisitante } from '@/features/vendor-admin/vendor-require-auth'
 import { VendorShell } from '@/features/vendor-admin/vendor-shell'
 import { PlanosPage } from '@/features/vendor-admin/planos/planos-page'
+import { AvisosPage } from '@/features/vendor-admin/avisos/avisos-page'
 import { TenantsPage } from '@/features/vendor-admin/tenants/tenants-page'
 import { TenantDetalhesPage } from '@/features/vendor-admin/tenants/tenant-detalhes-page'
 import { MasterAdminPage } from '@/features/vendor-admin/master-admin/master-admin-page'
@@ -136,6 +137,7 @@ export function App() {
             <Route path="tenants" element={<TenantsPage />} />
             <Route path="tenants/:id" element={<TenantDetalhesPage />} />
             <Route path="planos" element={<PlanosPage />} />
+            <Route path="avisos" element={<AvisosPage />} />
             <Route path="admin-master" element={<MasterAdminPage />} />
             <Route path="studio" element={<DatabaseStudioPage />} />
             <Route path="celery" element={<CeleryMonitorPage />} />

@@ -22,6 +22,9 @@ class RegistroAuditoriaVendor(models.Model):
         STUDIO_QUERY = "STUDIO_QUERY", "Execução de query no Database Studio"
         CELERY_TRIGGER = "CELERY_TRIGGER", "Disparo manual de tarefa Celery"
         CELERY_CONFIG = "CELERY_CONFIG", "Alteração de agendamento Celery Beat"
+        CRIAR_AVISO = "CRIAR_AVISO", "Criação de aviso"
+        EDITAR_AVISO = "EDITAR_AVISO", "Edição de aviso"
+        EXCLUIR_AVISO = "EXCLUIR_AVISO", "Exclusão de aviso"
         OUTRO = "OUTRO", "Outra ação administrativa"
 
     operador_email = models.EmailField(

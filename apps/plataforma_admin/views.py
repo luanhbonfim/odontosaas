@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 from apps.core.handlers import sanitizar_texto_sensivel
 from apps.core.throttling import ImpersonateThrottle, VendorLoginThrottle
 from apps.plataforma_admin.config import get_config
-from apps.plataforma.models import PlanoAssinatura
+from apps.plataforma.models import Aviso, PlanoAssinatura
 from apps.plataforma_admin.models import OperadorMFA, RegistroAuditoriaVendor
 from apps.plataforma_admin.permissions import IsVendorHost, IsVendorStaff, IsVendorSuperAdmin
 from apps.plataforma_admin.serializers import (
     AlternarStatusTenantInputSerializer,
+    AvisoVendorSerializer,
     ClinicaDetailVendorSerializer,
     ClinicaListVendorSerializer,
     ExpurgarTenantInputSerializer,
@@ -76,6 +77,47 @@ class PlanoAssinaturaVendorViewSet(viewsets.ModelViewSet):
         registrar_auditoria_vendor(
             request=self.request,
             acao=RegistroAuditoriaVendor.Acao.DESATIVAR_PLANO,
+            detalhes=detalhes,
+        )
+
+
+class AvisoVendorViewSet(viewsets.ModelViewSet):
+    """
+    CRUD de avisos/novidades exibidos em carrossel aos tenants logo após o login.
+    Acesso restrito aos operadores do SaaS (schema public).
+    """
+
+    queryset = Aviso.objects.all()
+    serializer_class = AvisoVendorSerializer
+    permission_classes = [IsVendorStaff]
+
+    def get_permissions(self):
+        if self.action in {"create", "update", "partial_update", "destroy"}:
+            return [IsVendorSuperAdmin()]
+        return [IsVendorStaff()]
+
+    def perform_create(self, serializer):
+        aviso = serializer.save()
+        registrar_auditoria_vendor(
+            request=self.request,
+            acao=RegistroAuditoriaVendor.Acao.CRIAR_AVISO,
+            detalhes={"aviso_id": aviso.id, "titulo": aviso.titulo},
+        )
+
+    def perform_update(self, serializer):
+        aviso = serializer.save()
+        registrar_auditoria_vendor(
+            request=self.request,
+            acao=RegistroAuditoriaVendor.Acao.EDITAR_AVISO,
+            detalhes={"aviso_id": aviso.id, "titulo": aviso.titulo},
+        )
+
+    def perform_destroy(self, instance):
+        detalhes = {"aviso_id": instance.id, "titulo": instance.titulo}
+        instance.delete()
+        registrar_auditoria_vendor(
+            request=self.request,
+            acao=RegistroAuditoriaVendor.Acao.EXCLUIR_AVISO,
             detalhes=detalhes,
         )
 

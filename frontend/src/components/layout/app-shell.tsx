@@ -8,6 +8,7 @@ import { tokenStore } from '@/lib/api/token-store'
 import { api } from '@/lib/api/client'
 import { queryClient } from '@/lib/api/query-client'
 import { Button } from '@/components/ui/button'
+import { CarrosselAvisos } from '@/features/avisos/carrossel-avisos'
 import { useMeuPlano } from '@/features/plano/use-meu-plano'
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
@@ -41,6 +42,8 @@ export function AppShell() {
 
   return (
     <div className="min-h-svh bg-background text-foreground">
+      <CarrosselAvisos />
+
       {/* Banner Superior Fixo de Suporte Read-Only */}
       {isImpersonate && (
         <div className="sticky top-0 z-[70] flex items-center justify-between border-b border-amber-500/40 bg-amber-950/90 px-4 py-2 text-xs text-amber-200 backdrop-blur-md shadow-md">

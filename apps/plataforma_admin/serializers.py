@@ -5,7 +5,7 @@ Serializers do Painel de Admin da Plataforma (Vendor Admin).
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.plataforma.models import PlanoAssinatura
+from apps.plataforma.models import Aviso, PlanoAssinatura
 from apps.plataforma_admin.models import ConfiguracaoLoginVendor, RegistroAuditoriaVendor
 from apps.tenants.models import Clinica, Dominio
 
@@ -39,6 +39,37 @@ class PlanoAssinaturaVendorSerializer(serializers.ModelSerializer):
 
     def get_total_clinicas(self, obj) -> int:
         return obj.clinicas.count()
+
+
+class AvisoVendorSerializer(serializers.ModelSerializer):
+    """Serializer para CRUD de avisos/novidades no painel do vendor."""
+
+    vigente_ate = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Aviso
+        fields = [
+            "id",
+            "titulo",
+            "descricao",
+            "imagem_url",
+            "icone",
+            "link_url",
+            "link_rotulo",
+            "publicado_em",
+            "dias_visibilidade",
+            "ordem",
+            "ativo",
+            "criado_em",
+            "vigente_ate",
+        ]
+        read_only_fields = ["id", "criado_em", "vigente_ate"]
+
+    @extend_schema_field(serializers.DateField())
+    def get_vigente_ate(self, obj):
+        from datetime import timedelta
+
+        return obj.publicado_em + timedelta(days=obj.dias_visibilidade)
 
 
 class DominioVendorSerializer(serializers.ModelSerializer):

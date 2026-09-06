@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 
 from apps.dentistas.models import Dentista
 from apps.pacientes.models import Paciente
-from apps.plataforma.models import PlanoAssinatura
+from apps.plataforma.models import Aviso, PlanoAssinatura
 from apps.usuarios.models import Usuario
 
 
@@ -170,3 +170,39 @@ class PlanosPublicosView(generics.ListAPIView):
 
     def get_queryset(self):
         return PlanoAssinatura.objects.filter(ativo=True).order_by("preco_mensal")
+
+
+class AvisoPublicoSerializer(serializers.ModelSerializer):
+    """Avisos expostos ao tenant autenticado (carrossel pós-login)."""
+
+    class Meta:
+        model = Aviso
+        fields = [
+            "id",
+            "titulo",
+            "descricao",
+            "imagem_url",
+            "icone",
+            "link_url",
+            "link_rotulo",
+        ]
+
+
+@extend_schema(
+    summary="Avisos/novidades vigentes para o carrossel pós-login",
+    responses={200: AvisoPublicoSerializer(many=True)},
+)
+class AvisosAtivosView(generics.ListAPIView):
+    """
+    Lista os avisos vigentes (dentro da janela `publicado_em` + `dias_visibilidade`)
+    para exibição em carrossel logo após o login do tenant. `Aviso` é SHARED_APP —
+    visível direto pelo ORM, sem troca de schema (mesmo mecanismo de `MeuPlanoView`).
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = AvisoPublicoSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        candidatos = Aviso.objects.filter(ativo=True).order_by("ordem", "-publicado_em")
+        return [aviso for aviso in candidatos if aviso.esta_vigente()]

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 
 import { api } from '@/lib/api/client'
+import { CHAVE_AVISOS_DISPENSADOS } from '@/features/avisos/carrossel-avisos'
 import { queryClient } from '@/lib/api/query-client'
 import { tokenStore } from '@/lib/api/token-store'
 
@@ -17,6 +18,13 @@ export function useAuth() {
       password: credenciais.senha,
     })
     tokenStore.definir({ access: data.access, refresh: data.refresh })
+    // Novo login = nova sessão: reabre o carrossel de avisos mesmo que a
+    // pessoa já tenha dispensado antes de deslogar (mesma aba/navegador).
+    try {
+      sessionStorage.removeItem(CHAVE_AVISOS_DISPENSADOS)
+    } catch {
+      // sessionStorage indisponível (ex.: modo privado) — sem efeito prático.
+    }
     navegar('/')
   }
 

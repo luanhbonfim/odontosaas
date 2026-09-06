@@ -184,6 +184,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/avisos-ativos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Avisos/novidades vigentes para o carrossel pós-login
+         * @description Lista os avisos vigentes (dentro da janela `publicado_em` + `dias_visibilidade`)
+         *     para exibição em carrossel logo após o login do tenant. `Aviso` é SHARED_APP —
+         *     visível direto pelo ORM, sem troca de schema (mesmo mecanismo de `MeuPlanoView`).
+         */
+        get: operations["avisos_ativos_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/categorias-insumo/": {
         parameters: {
             query?: never;
@@ -1342,6 +1364,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/plataforma-admin/avisos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description CRUD de avisos/novidades exibidos em carrossel aos tenants logo após o login.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        get: operations["plataforma_admin_avisos_list"];
+        put?: never;
+        /**
+         * @description CRUD de avisos/novidades exibidos em carrossel aos tenants logo após o login.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        post: operations["plataforma_admin_avisos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/avisos/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description CRUD de avisos/novidades exibidos em carrossel aos tenants logo após o login.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        get: operations["plataforma_admin_avisos_retrieve"];
+        /**
+         * @description CRUD de avisos/novidades exibidos em carrossel aos tenants logo após o login.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        put: operations["plataforma_admin_avisos_update"];
+        post?: never;
+        /**
+         * @description CRUD de avisos/novidades exibidos em carrossel aos tenants logo após o login.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        delete: operations["plataforma_admin_avisos_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description CRUD de avisos/novidades exibidos em carrossel aos tenants logo após o login.
+         *     Acesso restrito aos operadores do SaaS (schema public).
+         */
+        patch: operations["plataforma_admin_avisos_partial_update"];
+        trace?: never;
+    };
     "/api/plataforma-admin/celery/tarefas/": {
         parameters: {
             query?: never;
@@ -2277,6 +2355,63 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em: string;
         };
+        /** @description Avisos expostos ao tenant autenticado (carrossel pós-login). */
+        AvisoPublico: {
+            readonly id: number;
+            titulo: string;
+            descricao?: string;
+            /** Format: uri */
+            imagem_url?: string;
+            /**
+             * @description Exibido no lugar da imagem quando não houver imagem_url
+             *
+             *     * `megafone` - Megafone
+             *     * `sparkles` - Novidade (estrelas)
+             *     * `presente` - Presente
+             *     * `sino` - Sino
+             *     * `foguete` - Foguete
+             *     * `festa` - Comemoração
+             *     * `ferramenta` - Manutenção
+             *     * `info` - Informação
+             */
+            icone?: components["schemas"]["IconeEnum"];
+            /** Format: uri */
+            link_url?: string;
+            link_rotulo?: string;
+        };
+        /** @description Serializer para CRUD de avisos/novidades no painel do vendor. */
+        AvisoVendor: {
+            readonly id: number;
+            titulo: string;
+            descricao?: string;
+            /** Format: uri */
+            imagem_url?: string;
+            /**
+             * @description Exibido no lugar da imagem quando não houver imagem_url
+             *
+             *     * `megafone` - Megafone
+             *     * `sparkles` - Novidade (estrelas)
+             *     * `presente` - Presente
+             *     * `sino` - Sino
+             *     * `foguete` - Foguete
+             *     * `festa` - Comemoração
+             *     * `ferramenta` - Manutenção
+             *     * `info` - Informação
+             */
+            icone?: components["schemas"]["IconeEnum"];
+            /** Format: uri */
+            link_url?: string;
+            link_rotulo?: string;
+            /** Format: date */
+            publicado_em?: string;
+            dias_visibilidade?: number;
+            ordem?: number;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em: string;
+            /** Format: date */
+            readonly vigente_ate: string;
+        };
         /** @enum {unknown} */
         BlankEnum: "";
         /**
@@ -2630,6 +2765,18 @@ export interface components {
          * @enum {string}
          */
         GuiaStatusEnum: "EMITIDA" | "AUTORIZADA" | "EXECUTADA" | "GLOSADA" | "PAGA";
+        /**
+         * @description * `megafone` - Megafone
+         *     * `sparkles` - Novidade (estrelas)
+         *     * `presente` - Presente
+         *     * `sino` - Sino
+         *     * `foguete` - Foguete
+         *     * `festa` - Comemoração
+         *     * `ferramenta` - Manutenção
+         *     * `info` - Informação
+         * @enum {string}
+         */
+        IconeEnum: "megafone" | "sparkles" | "presente" | "sino" | "foguete" | "festa" | "ferramenta" | "info";
         Insumo: {
             readonly id: number;
             nome: string;
@@ -2842,6 +2989,39 @@ export interface components {
             readonly criado_em?: string;
             /** Format: date-time */
             readonly atualizado_em?: string;
+        };
+        /** @description Serializer para CRUD de avisos/novidades no painel do vendor. */
+        PatchedAvisoVendor: {
+            readonly id?: number;
+            titulo?: string;
+            descricao?: string;
+            /** Format: uri */
+            imagem_url?: string;
+            /**
+             * @description Exibido no lugar da imagem quando não houver imagem_url
+             *
+             *     * `megafone` - Megafone
+             *     * `sparkles` - Novidade (estrelas)
+             *     * `presente` - Presente
+             *     * `sino` - Sino
+             *     * `foguete` - Foguete
+             *     * `festa` - Comemoração
+             *     * `ferramenta` - Manutenção
+             *     * `info` - Informação
+             */
+            icone?: components["schemas"]["IconeEnum"];
+            /** Format: uri */
+            link_url?: string;
+            link_rotulo?: string;
+            /** Format: date */
+            publicado_em?: string;
+            dias_visibilidade?: number;
+            ordem?: number;
+            ativo?: boolean;
+            /** Format: date-time */
+            readonly criado_em?: string;
+            /** Format: date */
+            readonly vigente_ate?: string;
         };
         PatchedCategoriaInsumo: {
             readonly id?: number;
@@ -3821,6 +4001,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenVerify"];
+                };
+            };
+        };
+    };
+    avisos_ativos_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvisoPublico"][];
                 };
             };
         };
@@ -6624,6 +6823,149 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    plataforma_admin_avisos_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvisoVendor"][];
+                };
+            };
+        };
+    };
+    plataforma_admin_avisos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvisoVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["AvisoVendor"];
+                "multipart/form-data": components["schemas"]["AvisoVendor"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvisoVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_avisos_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Aviso. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvisoVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_avisos_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Aviso. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvisoVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["AvisoVendor"];
+                "multipart/form-data": components["schemas"]["AvisoVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvisoVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_avisos_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Aviso. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_avisos_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Aviso. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedAvisoVendor"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedAvisoVendor"];
+                "multipart/form-data": components["schemas"]["PatchedAvisoVendor"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvisoVendor"];
+                };
             };
         };
     };

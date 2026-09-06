@@ -6,7 +6,10 @@ clínica assina para usar o sistema). Não confundir com `PlanoOdontologico`,
 que é o convênio odontológico do paciente (app `pacientes`, sprints adiante).
 """
 
+from datetime import timedelta
+
 from django.db import models
+from django.utils import timezone
 
 
 class PlanoAssinatura(models.Model):
@@ -71,3 +74,49 @@ class PlanoAssinatura(models.Model):
 
     def __str__(self):
         return self.nome
+
+
+class Aviso(models.Model):
+    """Aviso/novidade da plataforma — exibido em carrossel ao tenant logo após
+    o login, pelo período configurado (publicado_em + dias_visibilidade).
+    Gerenciado pelo Vendor Admin; visível a todos os tenants."""
+
+    class Icone(models.TextChoices):
+        MEGAFONE = "megafone", "Megafone"
+        SPARKLES = "sparkles", "Novidade (estrelas)"
+        PRESENTE = "presente", "Presente"
+        SINO = "sino", "Sino"
+        FOGUETE = "foguete", "Foguete"
+        FESTA = "festa", "Comemoração"
+        FERRAMENTA = "ferramenta", "Manutenção"
+        INFO = "info", "Informação"
+
+    titulo = models.CharField(max_length=150)
+    descricao = models.TextField(blank=True)
+    imagem_url = models.URLField(blank=True)
+    icone = models.CharField(
+        max_length=20,
+        choices=Icone.choices,
+        default=Icone.MEGAFONE,
+        help_text="Exibido no lugar da imagem quando não houver imagem_url",
+    )
+    link_url = models.URLField(blank=True)
+    link_rotulo = models.CharField(max_length=50, blank=True)
+    publicado_em = models.DateField(default=timezone.localdate)
+    dias_visibilidade = models.PositiveSmallIntegerField(default=7)
+    ordem = models.PositiveSmallIntegerField(default=0)
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Aviso"
+        verbose_name_plural = "Avisos"
+        ordering = ["ordem", "-publicado_em"]
+
+    def __str__(self):
+        return self.titulo
+
+    def esta_vigente(self) -> bool:
+        """Dentro da janela de dias configurada a partir da publicação."""
+        fim = self.publicado_em + timedelta(days=self.dias_visibilidade)
+        return self.ativo and self.publicado_em <= timezone.localdate() <= fim

@@ -18,7 +18,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
-from apps.plataforma.models import PlanoAssinatura
+from apps.plataforma.models import Aviso, PlanoAssinatura
 from apps.plataforma_admin.models import RegistroAuditoriaVendor
 from apps.tenants.models import Clinica, Dominio
 
@@ -177,6 +177,118 @@ def test_crud_planos_vendor(vendor_client):
         acao=RegistroAuditoriaVendor.Acao.DESATIVAR_PLANO,
         detalhes__plano_id=plano_id,
     ).exists()
+
+
+# --------------------------------------------------------------------------
+# 1b. CRUD de Avisos/Novidades (carrossel pós-login)
+# --------------------------------------------------------------------------
+@pytest.mark.django_db(transaction=True)
+def test_crud_avisos_vendor(vendor_client):
+    payload = {
+        "titulo": "Nova tela de Fornecedores",
+        "descricao": "Agora dá pra cadastrar fornecedores e registrar compras.",
+        "dias_visibilidade": 10,
+        "ativo": True,
+    }
+    resp_create = vendor_client.post("/api/plataforma-admin/avisos/", payload, format="json")
+    assert resp_create.status_code == status.HTTP_201_CREATED, resp_create.content
+    aviso_id = resp_create.data["id"]
+    assert resp_create.data["vigente_ate"] is not None
+
+    assert RegistroAuditoriaVendor.objects.filter(
+        acao=RegistroAuditoriaVendor.Acao.CRIAR_AVISO,
+        detalhes__aviso_id=aviso_id,
+    ).exists()
+
+    resp_list = vendor_client.get("/api/plataforma-admin/avisos/")
+    assert resp_list.status_code == status.HTTP_200_OK
+    itens = resp_list.data["results"] if isinstance(resp_list.data, dict) and "results" in resp_list.data else resp_list.data
+    assert any(a["id"] == aviso_id for a in itens)
+
+    resp_update = vendor_client.patch(
+        f"/api/plataforma-admin/avisos/{aviso_id}/", {"titulo": "Fornecedores e Compras"}, format="json"
+    )
+    assert resp_update.status_code == status.HTTP_200_OK
+    assert resp_update.data["titulo"] == "Fornecedores e Compras"
+    assert RegistroAuditoriaVendor.objects.filter(
+        acao=RegistroAuditoriaVendor.Acao.EDITAR_AVISO,
+        detalhes__aviso_id=aviso_id,
+    ).exists()
+
+    resp_del = vendor_client.delete(f"/api/plataforma-admin/avisos/{aviso_id}/")
+    assert resp_del.status_code == status.HTTP_204_NO_CONTENT
+    assert not Aviso.objects.filter(id=aviso_id).exists()
+    assert RegistroAuditoriaVendor.objects.filter(
+        acao=RegistroAuditoriaVendor.Acao.EXCLUIR_AVISO,
+        detalhes__aviso_id=aviso_id,
+    ).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_avisos_staff_le_mas_nao_escreve(vendor_staff_client):
+    """Staff (não superuser) lê o catálogo de avisos, mas não pode criar/editar/excluir."""
+    assert vendor_staff_client.get("/api/plataforma-admin/avisos/").status_code == status.HTTP_200_OK
+    resp = vendor_staff_client.post(
+        "/api/plataforma-admin/avisos/", {"titulo": "Teste"}, format="json"
+    )
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db(transaction=True)
+def test_aviso_esta_vigente():
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    hoje = timezone.localdate()
+    vigente = Aviso.objects.create(titulo="Vigente", publicado_em=hoje, dias_visibilidade=7, ativo=True)
+    vencido = Aviso.objects.create(
+        titulo="Vencido", publicado_em=hoje - timedelta(days=30), dias_visibilidade=7, ativo=True
+    )
+    inativo = Aviso.objects.create(titulo="Inativo", publicado_em=hoje, dias_visibilidade=7, ativo=False)
+    futuro_ok = Aviso.objects.create(
+        titulo="No limite", publicado_em=hoje - timedelta(days=7), dias_visibilidade=7, ativo=True
+    )
+
+    assert vigente.esta_vigente() is True
+    assert vencido.esta_vigente() is False
+    assert inativo.esta_vigente() is False
+    assert futuro_ok.esta_vigente() is True  # exatamente no último dia da janela
+
+
+@pytest.mark.no_auto_auth
+@pytest.mark.django_db(transaction=True)
+def test_avisos_ativos_view_no_tenant(tenant_fixture):
+    """O endpoint que o tenant consulta só retorna os avisos vigentes."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    hoje = timezone.localdate()
+    Aviso.objects.create(titulo="Vigente", publicado_em=hoje, dias_visibilidade=7, ativo=True)
+    Aviso.objects.create(
+        titulo="Vencido", publicado_em=hoje - timedelta(days=30), dias_visibilidade=7, ativo=True
+    )
+    Aviso.objects.create(titulo="Inativo", publicado_em=hoje, dias_visibilidade=7, ativo=False)
+
+    dominio = tenant_fixture.domains.get(is_primary=True).domain
+    client = APIClient()
+    tok = client.post(
+        "/api/auth/token/",
+        {"email": "admin@v2test.com", "password": "SenhaAdminV2Test"},
+        format="json",
+        HTTP_HOST=dominio,
+    ).json()["access"]
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {tok}")
+
+    resp = client.get("/api/avisos-ativos/", HTTP_HOST=dominio)
+    assert resp.status_code == status.HTTP_200_OK
+    titulos = [a["titulo"] for a in resp.data]
+    assert titulos == ["Vigente"]
+
+    # Sem autenticação -> 401 (endpoint exige IsAuthenticated)
+    anonimo = APIClient()
+    assert anonimo.get("/api/avisos-ativos/", HTTP_HOST=dominio).status_code == status.HTTP_401_UNAUTHORIZED
 
 
 # --------------------------------------------------------------------------

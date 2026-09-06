@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Server,
   ChevronDown,
+  Megaphone,
   Menu,
   type LucideIcon,
 } from 'lucide-react'
@@ -63,6 +64,11 @@ const GRUPOS_NAV: GrupoVendor[] = [
         rotulo: 'Planos de Assinatura',
         icone: Package,
         para: `${VENDOR_BASE_PATH}/planos`,
+      },
+      {
+        rotulo: 'Avisos & Novidades',
+        icone: Megaphone,
+        para: `${VENDOR_BASE_PATH}/avisos`,
       },
     ],
   },
