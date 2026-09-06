@@ -215,7 +215,7 @@ function LinhaValor({ consulta, onEditar }: { consulta: Consulta; onEditar: () =
 function PainelEdicaoPagamento({ consulta, aoFechar }: { consulta: Consulta; aoFechar: () => void }) {
   const atualizar = useAtualizarConsulta()
   const [valor, setValor] = useState(String(consulta.valor ?? ''))
-  const [formaPagamento, setFormaPagamento] = useState(consulta.forma_pagamento ?? '')
+  const [formaPagamento, setFormaPagamento] = useState<string>(consulta.forma_pagamento ?? '')
   const [parcelas, setParcelas] = useState(String(consulta.parcelas ?? 1))
   const [dataPrimeiraParcela, setDataPrimeiraParcela] = useState(
     consulta.data_primeira_parcela ?? '',
@@ -457,7 +457,7 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
   )
   const [observacoes, setObservacoes] = useState(consulta?.observacoes ?? '')
   const [valor, setValor] = useState(consulta ? String(consulta.valor ?? '') : '')
-  const [formaPagamento, setFormaPagamento] = useState(consulta?.forma_pagamento ?? '')
+  const [formaPagamento, setFormaPagamento] = useState<string>(consulta?.forma_pagamento ?? '')
   const [parcelas, setParcelas] = useState(consulta ? String(consulta.parcelas ?? 1) : '1')
   const [dataPrimeiraParcela, setDataPrimeiraParcela] = useState(
     consulta?.data_primeira_parcela ?? '',
@@ -704,7 +704,9 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
                   // e se a pessoa ainda não tiver digitado nada — nunca sobrescreve).
                   if (!editando && !valor) {
                     const escolhido = (procedimentos ?? []).find((p) => p.id === id)
-                    if (escolhido && Number(escolhido.valor) > 0) setValor(escolhido.valor)
+                    if (escolhido && escolhido.valor && Number(escolhido.valor) > 0) {
+                      setValor(escolhido.valor)
+                    }
                   }
                 }}
               >
