@@ -27,6 +27,15 @@ function mensagemErro(excecao: unknown, padrao: string): string {
   return campos.length ? campos.join(' ') : (e.mensagem ?? padrao)
 }
 
+/** Compara só o dia (ignora hora) — um horário mais cedo hoje ainda é "hoje". */
+function ehDataPassada(data: Date): boolean {
+  const inicioHoje = new Date()
+  inicioHoje.setHours(0, 0, 0, 0)
+  const inicioData = new Date(data)
+  inicioData.setHours(0, 0, 0, 0)
+  return inicioData < inicioHoje
+}
+
 export function AgendaPage() {
   const { data, isError } = useConsultas()
   const atualizar = useAtualizarConsulta()
@@ -108,6 +117,10 @@ export function AgendaPage() {
                   calRef.current?.getApi().changeView('timeGridDay', info.dateStr)
                   return
                 }
+                if (ehDataPassada(info.date)) {
+                  toast.error('Não é possível agendar em uma data passada.')
+                  return
+                }
                 const fim = new Date(info.date.getTime() + 60 * 60 * 1000)
                 setModal({
                   modo: 'criar',
@@ -117,6 +130,11 @@ export function AgendaPage() {
               }}
               select={(info) => {
                 if (info.view.type === 'dayGridMonth') return
+                if (ehDataPassada(info.start)) {
+                  toast.error('Não é possível agendar em uma data passada.')
+                  calRef.current?.getApi().unselect()
+                  return
+                }
                 setModal({
                   modo: 'criar',
                   inicio: paraInputLocal(info.start),

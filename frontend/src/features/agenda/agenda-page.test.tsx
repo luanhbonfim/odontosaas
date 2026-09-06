@@ -1,16 +1,19 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AgendaPage } from './agenda-page'
 
-const { consultasMock, atualizarMock, revertMock, changeViewMock } = vi.hoisted(() => ({
-  consultasMock: vi.fn(),
-  atualizarMock: vi.fn(),
-  revertMock: vi.fn(),
-  changeViewMock: vi.fn(),
-}))
+const { consultasMock, atualizarMock, revertMock, changeViewMock, unselectMock } = vi.hoisted(
+  () => ({
+    consultasMock: vi.fn(),
+    atualizarMock: vi.fn(),
+    revertMock: vi.fn(),
+    changeViewMock: vi.fn(),
+    unselectMock: vi.fn(),
+  }),
+)
 
 type Vista = { type: string }
 type FCProps = {
@@ -31,7 +34,9 @@ vi.mock('@fullcalendar/react', async () => {
   const React = await vi.importActual<typeof import('react')>('react')
   return {
     default: React.forwardRef((props: FCProps, ref: React.Ref<unknown>) => {
-      React.useImperativeHandle(ref, () => ({ getApi: () => ({ changeView: changeViewMock }) }))
+      React.useImperativeHandle(ref, () => ({
+        getApi: () => ({ changeView: changeViewMock, unselect: unselectMock }),
+      }))
       const slot = { start: new Date('2026-08-10T09:00'), end: new Date('2026-08-10T09:30') }
       return (
         <div data-testid="calendario" data-event-display={props.eventDisplay}>
@@ -46,6 +51,17 @@ vi.mock('@fullcalendar/react', async () => {
           ))}
           <button onClick={() => props.select({ ...slot, view: { type: 'timeGridWeek' } })}>
             slot-semana
+          </button>
+          <button
+            onClick={() =>
+              props.select({
+                start: new Date('2026-07-01T09:00'),
+                end: new Date('2026-07-01T09:30'),
+                view: { type: 'timeGridWeek' },
+              })
+            }
+          >
+            slot-passado
           </button>
           <button onClick={() => props.select({ ...slot, view: { type: 'dayGridMonth' } })}>
             slot-mes
@@ -128,7 +144,17 @@ function renderPage() {
 }
 
 describe('AgendaPage', () => {
-  afterEach(() => vi.clearAllMocks())
+  // Datas fixas dos fixtures (2026-08-10) só passam no guard de "data passada"
+  // se o relógio do teste estiver travado antes delas.
+  beforeEach(() => {
+    // Só "Date" é congelado (setTimeout real segue livre p/ o userEvent não travar).
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-08-01T00:00:00'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.clearAllMocks()
+  })
 
   it('renderiza o calendário com eventos coloridos + legenda', () => {
     consultasMock.mockReturnValue({ data: [CONSULTA_AG, CONSULTA_RE], isError: false })
@@ -155,6 +181,14 @@ describe('AgendaPage', () => {
     renderPage()
     await userEvent.setup().click(screen.getByRole('button', { name: 'slot-semana' }))
     expect(screen.getByTestId('modal')).toHaveTextContent('criar:2026-08-10T09:00')
+  })
+
+  it('clicar num horário de uma data passada NÃO abre o modal de agendar', async () => {
+    consultasMock.mockReturnValue({ data: [], isError: false })
+    renderPage()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'slot-passado' }))
+    expect(screen.queryByTestId('modal')).toBeNull()
+    expect(unselectMock).toHaveBeenCalled()
   })
 
   it('no mês, clicar num dia NÃO cria consulta e abre a visão daquele dia', async () => {
