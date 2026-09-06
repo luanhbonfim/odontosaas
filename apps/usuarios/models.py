@@ -9,6 +9,8 @@ por-tenant, este app fica em TENANT_APPS.
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 
+from apps.core.fields import EncryptedTextField
+
 
 class UsuarioManager(BaseUserManager):
     """Manager que usa o e-mail como identificador (sem username)."""
@@ -79,7 +81,9 @@ class UsuarioMFA(models.Model):
     usuario = models.OneToOneField(
         Usuario, on_delete=models.CASCADE, related_name="mfa", verbose_name="usuário"
     )
-    secret = models.CharField(max_length=64, help_text="Segredo TOTP (base32)")
+    # Criptografado em repouso (Fernet) — evita que acesso direto ao banco (ex.:
+    # Database Studio, dump/backup vazado) exponha um segredo TOTP utilizável.
+    secret = EncryptedTextField(help_text="Segredo TOTP (base32)")
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 
@@ -89,3 +93,30 @@ class UsuarioMFA(models.Model):
 
     def __str__(self):
         return f"2FA: {self.usuario.email}"
+
+
+class PermissaoModuloPersonalizada(models.Model):
+    """Override, por papel e módulo, da matriz padrão de `apps.usuarios.perfis`.
+
+    Só papéis RECEPCAO/DENTISTA são personalizáveis (ver `perfis.PAPEIS_CUSTOMIZAVEIS`)
+    — Gerente/Admin permanecem com acesso total fixo, protegidos contra
+    autobloqueio. Editado pela tela "Permissões" (Gerente/Admin); aplicado de
+    fato via `perfis.sincronizar_grupos()`.
+    """
+
+    papel = models.CharField(max_length=20, choices=Usuario.Papel.choices)
+    modulo = models.CharField(max_length=30)
+    ver = models.BooleanField(default=False)
+    criar = models.BooleanField(default=False)
+    editar = models.BooleanField(default=False)
+    excluir = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Permissão de módulo personalizada"
+        verbose_name_plural = "Permissões de módulo personalizadas"
+        constraints = [
+            models.UniqueConstraint(fields=["papel", "modulo"], name="permissao_papel_modulo_unico")
+        ]
+
+    def __str__(self):
+        return f"{self.papel} - {self.modulo}"

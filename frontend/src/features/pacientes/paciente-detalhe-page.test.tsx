@@ -142,16 +142,16 @@ describe('PacienteDetalhePage', () => {
     expect(await screen.findByText('Amil')).toBeInTheDocument()
   })
 
-  it('aba Consultas: é só histórico (dentista, cobrança, sem link nem coluna de dentes)', async () => {
+  it('aba Consultas: é só histórico (dentista, sem cobrança, sem link nem coluna de dentes)', async () => {
     pacienteMock.mockReturnValue({ data: PACIENTE, isLoading: false, isError: false })
     renderRota('/pacientes/5', '/pacientes/:id')
     await userEvent.setup().click(screen.getByRole('tab', { name: 'Consultas' }))
 
     expect(await screen.findAllByText('Dra. Ana')).not.toHaveLength(0)
-    // Sem convênio -> Particular ("Particular" também existe como opção de
-    // filtro, por isso escopamos à tabela).
+    // Cobrança saiu daqui — agora mora na aba Financeiro do paciente.
     const tabela = screen.getByRole('table')
-    expect(within(tabela).getAllByText('Particular').length).toBeGreaterThan(0)
+    expect(within(tabela).queryByText('Cobrança')).toBeNull()
+    expect(within(tabela).queryByText('Particular')).toBeNull()
     // Procedimento é sempre texto simples agora (a notação clínica vive na
     // aba Fichas) — nem AGENDADA nem CANCELADA viram link.
     expect(within(tabela).getByText('Limpeza')).toBeInTheDocument()

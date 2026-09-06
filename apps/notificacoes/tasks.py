@@ -337,7 +337,7 @@ def _reagendamento(config, template):
     agora = timezone.now()
     consultas = Consulta.objects.filter(
         status=Consulta.Status.AGENDADA,
-        status_confirmacao=Consulta.StatusConfirmacao.CONFIRMADA,
+        status_confirmacao__in=Consulta.STATUS_CONFIRMACAO_CONFIRMADOS,
         reagendada_em__isnull=False,
         inicio__gte=agora,
         paciente__ativo=True,
@@ -402,7 +402,7 @@ def _aviso_pre_consulta(config, template):
     fim = timezone.now() + timedelta(hours=template.horas_antes)
     consultas = Consulta.objects.filter(
         status=Consulta.Status.AGENDADA,
-        status_confirmacao=Consulta.StatusConfirmacao.CONFIRMADA,
+        status_confirmacao__in=Consulta.STATUS_CONFIRMACAO_CONFIRMADOS,
         inicio__gte=timezone.now(),
         inicio__lte=fim,
         paciente__ativo=True,
@@ -591,7 +591,7 @@ def fila_pendente():
             continue
         confirmadas = Consulta.objects.filter(
             status=Consulta.Status.AGENDADA,
-            status_confirmacao=Consulta.StatusConfirmacao.CONFIRMADA,
+            status_confirmacao__in=Consulta.STATUS_CONFIRMACAO_CONFIRMADOS,
             inicio__gte=agora,
             paciente__ativo=True,
         ).select_related("paciente", "dentista")
@@ -621,7 +621,7 @@ def fila_pendente():
         if template:
             remarcadas = Consulta.objects.filter(
                 status=Consulta.Status.AGENDADA,
-                status_confirmacao=Consulta.StatusConfirmacao.CONFIRMADA,
+                status_confirmacao__in=Consulta.STATUS_CONFIRMACAO_CONFIRMADOS,
                 reagendada_em__isnull=False,
                 inicio__gte=agora,
                 paciente__ativo=True,

@@ -10,6 +10,7 @@ const {
   atualizarMock,
   removerMock,
   transicaoMock,
+  confirmarManualmenteMock,
   pacientesMock,
   planosMock,
   pacienteMock,
@@ -18,6 +19,7 @@ const {
   atualizarMock: vi.fn(),
   removerMock: vi.fn(),
   transicaoMock: vi.fn(),
+  confirmarManualmenteMock: vi.fn(),
   pacientesMock: vi.fn(),
   planosMock: vi.fn(),
   pacienteMock: vi.fn(),
@@ -29,6 +31,7 @@ vi.mock('./use-agenda', async (importOriginal) => ({
   useAtualizarConsulta: () => ({ mutateAsync: atualizarMock }),
   useRemoverConsulta: () => ({ mutateAsync: removerMock }),
   useTransicaoConsulta: () => ({ mutateAsync: transicaoMock, isPending: false }),
+  useConfirmarManualmente: () => ({ mutateAsync: confirmarManualmenteMock, isPending: false }),
 }))
 vi.mock('@/features/dentistas/use-dentistas', () => ({
   useDentistas: () => ({
@@ -323,7 +326,7 @@ describe('ConsultaModal', () => {
       valor: '120.00',
       status: 'AGENDADA',
     }
-    // PENDENTE: aparece "Enviar confirmação", NÃO aparece "Iniciar".
+    // PENDENTE: aparece "Enviar confirmação" e "Confirmar manualmente", NÃO aparece "Iniciar".
     const pend = render(
       <ConsultaModal
         estado={{ modo: 'editar', consulta: { ...base, status_confirmacao: 'PENDENTE' } as never }}
@@ -331,11 +334,12 @@ describe('ConsultaModal', () => {
       />,
     )
     expect(screen.getByRole('button', { name: /enviar confirmação/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /confirmar manualmente/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /iniciar atendimento/i })).toBeNull()
     pend.unmount()
 
-    // CONFIRMADA: some "Enviar confirmação", aparece "Iniciar".
-    render(
+    // CONFIRMADA: some "Enviar confirmação"/"Confirmar manualmente", aparece "Iniciar".
+    const conf = render(
       <ConsultaModal
         estado={{
           modo: 'editar',
@@ -345,9 +349,48 @@ describe('ConsultaModal', () => {
       />,
     )
     expect(screen.queryByRole('button', { name: /enviar confirmação/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /confirmar manualmente/i })).toBeNull()
     await user.click(screen.getByRole('button', { name: /iniciar atendimento/i }))
     await waitFor(() => expect(transicaoMock).toHaveBeenCalledWith({ id: 7, acao: 'iniciar' }))
     expect(aoFechar).toHaveBeenCalled()
+    conf.unmount()
+
+    // MANUAL conta como confirmada também -> "Iniciar" aparece igual.
+    render(
+      <ConsultaModal
+        estado={{ modo: 'editar', consulta: { ...base, status_confirmacao: 'MANUAL' } as never }}
+        aoFechar={aoFechar}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /iniciar atendimento/i })).toBeInTheDocument()
+  })
+
+  it('confirma manualmente uma consulta pendente', async () => {
+    pacientesMock.mockReturnValue({ data: { results: [] } })
+    planosMock.mockReturnValue({ data: [] })
+    confirmarManualmenteMock.mockResolvedValue({})
+    const user = userEvent.setup()
+    render(
+      <ConsultaModal
+        estado={{
+          modo: 'editar',
+          consulta: {
+            id: 7,
+            paciente: 10,
+            paciente_nome: 'João Silva',
+            dentista: 5,
+            inicio: '2026-08-10T13:00:00Z',
+            fim: '2026-08-10T13:30:00Z',
+            valor: '120.00',
+            status: 'AGENDADA',
+            status_confirmacao: 'PENDENTE',
+          } as never,
+        }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: /confirmar manualmente/i }))
+    await waitFor(() => expect(confirmarManualmenteMock).toHaveBeenCalledWith(7))
   })
 
   it('finaliza o atendimento em andamento (visualização)', async () => {

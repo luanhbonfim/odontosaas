@@ -4,6 +4,8 @@ Models de governança e auditoria da plataforma (schema `public`).
 
 from django.db import models
 
+from apps.core.fields import EncryptedTextField
+
 
 class RegistroAuditoriaVendor(models.Model):
     """Trilha de auditoria das ações realizadas pelos operadores/mantenedores do SaaS."""
@@ -132,7 +134,11 @@ class OperadorMFA(models.Model):
     """
 
     email = models.EmailField("e-mail do operador", unique=True)
-    secret = models.CharField(max_length=64, help_text="Segredo TOTP (base32)")
+    # Criptografado em repouso (Fernet) — plaintext daria a quem lesse o schema
+    # `public` (ex.: Database Studio) o suficiente para forjar códigos 2FA de
+    # qualquer operador. Valores legados sem criptografia continuam legíveis
+    # (EncryptedTextField cai para o valor bruto se a descriptografia falhar).
+    secret = EncryptedTextField(help_text="Segredo TOTP (base32)")
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 

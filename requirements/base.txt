@@ -4,9 +4,14 @@
 # ==========================================================================
 
 # --- Core / Framework ---
-Django==5.1.4
+# Django 5.1.4 tinha CVEs corrigidos em patches posteriores da série 5.1 (a mais
+# grave: CVE-2025-64459, injeção de SQL via Q()/filter() com dict-expansion,
+# CVSS 9.1) — 5.1.15 é o último patch de segurança da 5.1.x (EOL em 31/12/2025).
+Django==5.1.15
 djangorestframework==3.15.2
-djangorestframework-simplejwt==5.3.1  # autenticação JWT (login por e-mail)
+# 5.3.1 tinha CVE-2024-22513 (token continuava válido pra usuário desativado) —
+# corrigido a partir da 5.5.x.
+djangorestframework-simplejwt==5.5.1  # autenticação JWT (login por e-mail)
 drf-spectacular==0.28.0            # schema OpenAPI + Swagger UI / ReDoc
 
 # --- Multi-tenant (schema-per-tenant) ---
@@ -28,8 +33,10 @@ google-api-python-client==2.156.0
 # --- Cliente HTTP (WAHA / WhatsApp) ---
 requests==2.32.3
 
-# --- Segurança de dados sensíveis (tokens Google criptografados) ---
-cryptography==44.0.0
+# --- Segurança de dados sensíveis (tokens Google/2FA criptografados) ---
+# 44.0.0 embutia uma versão do OpenSSL com vulnerabilidades conhecidas (corrigido
+# a partir da 46.0.6) e tinha um oráculo de padding no RSA (fixado na 50.0.0).
+cryptography==50.0.0
 
 # --- 2FA/TOTP do operador do Vendor Admin ---
 pyotp==2.9.0

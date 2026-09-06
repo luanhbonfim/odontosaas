@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { ehDesktop, useUI } from '@/stores/ui'
 import { VENDOR_BASE_PATH } from './constants'
+import { vendorTokenStore } from './vendor-token-store'
 import { VendorUserMenu } from './vendor-user-menu'
 
 // Marca do produto
@@ -33,7 +34,15 @@ const CAMINHO_DENTE =
   '1.6-1.2.7-1.3 1.1-4.2 1.7-6.6.9-3.6 1.6-5.6 1.6-8.2C24.5 6.8 21 4 16 4Z'
 const BRILHO_DENTE = 'M11.4 9.8c.9-1 2.3-1.7 4.1-1.8'
 
-type ItemVendor = { rotulo: string; icone: LucideIcon; para: string; fim?: boolean }
+type ItemVendor = {
+  rotulo: string
+  icone: LucideIcon
+  para: string
+  fim?: boolean
+  /** Some do menu pra quem não é SuperAdmin — a tela em si já é 100%
+   * superadmin-only no backend (sem nenhuma ação staff). */
+  soSuperAdmin?: boolean
+}
 type GrupoVendor = { titulo: string; icone?: LucideIcon; fixo?: boolean; itens: ItemVendor[] }
 
 // `fixo: true` = grupo sem recolher (links diretos no topo, ex.: Dashboard).
@@ -80,16 +89,19 @@ const GRUPOS_NAV: GrupoVendor[] = [
         rotulo: 'Acesso Master Global',
         icone: KeyRound,
         para: `${VENDOR_BASE_PATH}/admin-master`,
+        soSuperAdmin: true,
       },
       {
         rotulo: 'Config. de Login',
         icone: SlidersHorizontal,
         para: `${VENDOR_BASE_PATH}/configuracoes`,
+        soSuperAdmin: true,
       },
       {
         rotulo: 'Autenticação 2FA',
         icone: ShieldCheck,
         para: `${VENDOR_BASE_PATH}/seguranca-2fa`,
+        soSuperAdmin: true,
       },
     ],
   },
@@ -126,6 +138,18 @@ export function VendorShell() {
   const alternarSidebar = useUI((estado) => estado.alternarSidebar)
   const fecharSidebar = useUI((estado) => estado.fecharSidebar)
   const location = useLocation()
+  const ehSuperAdmin = Boolean(vendorTokenStore.operador?.is_superuser)
+
+  // Esconde itens 100% superadmin-only pra staff (a rota em si já bloqueia via
+  // VendorRequireSuperAdmin — isso só evita mostrar um link que vai dar 403).
+  const gruposVisiveis = useMemo(
+    () =>
+      GRUPOS_NAV.map((grupo) => ({
+        ...grupo,
+        itens: grupo.itens.filter((item) => !item.soSuperAdmin || ehSuperAdmin),
+      })).filter((grupo) => grupo.itens.length > 0),
+    [ehSuperAdmin],
+  )
 
   // Define o nome da aba do navegador para "Admin - PróClínica"
   useEffect(() => {
@@ -135,10 +159,10 @@ export function VendorShell() {
   // Módulo (grupo recolhível) que contém a rota ativa — abre automaticamente.
   const tituloAtivo = useMemo(
     () =>
-      GRUPOS_NAV.find(
+      gruposVisiveis.find(
         (g) => !g.fixo && g.itens.some((it) => itemVendorAtivo(location.pathname, it.para, it.fim)),
       )?.titulo,
-    [location.pathname],
+    [gruposVisiveis, location.pathname],
   )
 
   const [abertos, setAbertos] = useState<Set<string>>(() => new Set(tituloAtivo ? [tituloAtivo] : []))
@@ -239,7 +263,7 @@ export function VendorShell() {
 
         {/* Navegação em módulos recolhíveis (accordion) — tema Dark Navy */}
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {GRUPOS_NAV.map((grupo) => {
+          {gruposVisiveis.map((grupo) => {
             // Grupo fixo (Visão Geral): links diretos no topo, sem recolher.
             if (grupo.fixo) {
               return grupo.itens.map((item) => <LinkItem key={item.para} item={item} />)

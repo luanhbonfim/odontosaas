@@ -59,7 +59,7 @@ COR_REALIZADA = "10"
 def _cor_do_evento(consulta):
     if consulta.status == Consulta.Status.REALIZADA:
         return COR_REALIZADA
-    if consulta.status_confirmacao == Consulta.StatusConfirmacao.CONFIRMADA:
+    if consulta.status_confirmacao in Consulta.STATUS_CONFIRMACAO_CONFIRMADOS:
         return COR_CONFIRMADA
     return COR_PENDENTE
 

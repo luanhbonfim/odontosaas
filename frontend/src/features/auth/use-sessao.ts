@@ -16,6 +16,11 @@ export type ModulosAtivos = {
   [chave: string]: boolean | undefined
 }
 
+/** Permissão efetiva de um módulo personalizável (Recepção/Dentista) — vazio
+ * pra Gerente/Admin, que sempre têm acesso total. */
+export type PermissaoModulo = { ver: boolean; criar: boolean; editar: boolean; excluir: boolean }
+export type PermissoesModulo = Record<string, PermissaoModulo>
+
 /** Sessão do usuário logado (dados de `/api/auth/me/`, em camelCase). */
 export type Sessao = {
   id: number
@@ -28,6 +33,7 @@ export type Sessao = {
     nomeFantasia: string
     modulos?: ModulosAtivos
   }
+  permissoesModulo: PermissoesModulo
 }
 
 // Formato bruto retornado pelo backend (snake_case).
@@ -42,6 +48,7 @@ type MeResposta = {
     nome_fantasia: string
     modulos?: ModulosAtivos
   }
+  permissoes_modulo?: PermissoesModulo
 }
 
 async function buscarSessao(): Promise<Sessao> {
@@ -62,6 +69,7 @@ async function buscarSessao(): Promise<Sessao> {
         estoque: true,
       },
     },
+    permissoesModulo: data.permissoes_modulo ?? {},
   }
 }
 

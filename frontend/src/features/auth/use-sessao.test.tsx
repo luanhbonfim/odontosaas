@@ -42,6 +42,9 @@ describe('useSessao', () => {
             estoque: true,
           },
         },
+        permissoes_modulo: {
+          agenda: { ver: true, criar: true, editar: true, excluir: true },
+        },
       },
     })
 
@@ -64,6 +67,9 @@ describe('useSessao', () => {
           financeiro: true,
           estoque: true,
         },
+      },
+      permissoesModulo: {
+        agenda: { ver: true, criar: true, editar: true, excluir: true },
       },
     })
   })

@@ -20,10 +20,17 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.core.mixins import ExclusaoProtegidaMixin
-from apps.usuarios.perfis import pode_gerenciar
+from apps.usuarios.perfis import (
+    MODULOS_CUSTOMIZAVEIS,
+    PAPEIS_CUSTOMIZAVEIS,
+    permissao_efetiva,
+    pode_gerenciar,
+    sincronizar_grupos,
+)
 from apps.usuarios.serializers import (
     MFARequired,
     MultiTenantTokenObtainPairSerializer,
+    PermissaoModuloSerializer,
     UsuarioMeSerializer,
     UsuarioSerializer,
 )
@@ -136,6 +143,51 @@ class MeView(APIView):
     def get(self, request):
         serializer = UsuarioMeSerializer(request.user, context={"request": request})
         return Response(serializer.data)
+
+
+class PermissoesModuloView(APIView):
+    """Grade papel×módulo (Recepção/Dentista) da tela "Permissões" — só
+    Gerente/Admin. `GET` retorna a grade completa (semeando defaults da
+    matriz na 1ª leitura); `PUT` salva a grade inteira e resincroniza os
+    grupos Django na hora (efeito imediato, sem passo de "aplicar")."""
+
+    def _checar_acesso(self, request):
+        if getattr(request.user, "papel", None) not in ("DENTISTA_GERENTE", "ADMIN"):
+            raise PermissionDenied("Só Gerente/Admin acessam as permissões.")
+
+    def _grade_atual(self):
+        linhas = []
+        for papel in PAPEIS_CUSTOMIZAVEIS:
+            for modulo in MODULOS_CUSTOMIZAVEIS:
+                cfg = permissao_efetiva(papel, modulo)
+                linhas.append({"papel": papel, "modulo": modulo, **cfg})
+        return linhas
+
+    @extend_schema(responses=PermissaoModuloSerializer(many=True))
+    def get(self, request):
+        self._checar_acesso(request)
+        return Response(self._grade_atual())
+
+    @extend_schema(request=PermissaoModuloSerializer(many=True), responses=PermissaoModuloSerializer(many=True))
+    def put(self, request):
+        from apps.usuarios.models import PermissaoModuloPersonalizada
+
+        self._checar_acesso(request)
+        serializer = PermissaoModuloSerializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        for linha in serializer.validated_data:
+            PermissaoModuloPersonalizada.objects.update_or_create(
+                papel=linha["papel"],
+                modulo=linha["modulo"],
+                defaults={
+                    "ver": linha["ver"],
+                    "criar": linha["criar"],
+                    "editar": linha["editar"],
+                    "excluir": linha["excluir"],
+                },
+            )
+        sincronizar_grupos()
+        return Response(self._grade_atual())
 
 
 class UsuarioViewSet(ExclusaoProtegidaMixin, viewsets.ModelViewSet):

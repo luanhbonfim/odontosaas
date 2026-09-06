@@ -25,6 +25,7 @@ import { FichaPage } from '@/features/pacientes/ficha-page'
 import { GuiaPage } from '@/features/pacientes/guia-page'
 import { PacienteDetalhePage } from '@/features/pacientes/paciente-detalhe-page'
 import { PacientesPage } from '@/features/pacientes/pacientes-page'
+import { PermissoesPage } from '@/features/usuarios/permissoes-page'
 import { UsuariosPage } from '@/features/usuarios/usuarios-page'
 import { queryClient } from '@/lib/api/query-client'
 import { aplicarTema, useTema } from '@/stores/tema'
@@ -34,7 +35,11 @@ import { MinhaContaPage } from '@/features/conta/minha-conta-page'
 import { VENDOR_BASE_PATH } from '@/features/vendor-admin/constants'
 import { VendorDashboardPage } from '@/features/vendor-admin/vendor-dashboard-page'
 import { VendorLoginPage } from '@/features/vendor-admin/vendor-login-page'
-import { VendorRequireAuth, VendorSomenteVisitante } from '@/features/vendor-admin/vendor-require-auth'
+import {
+  VendorRequireAuth,
+  VendorRequireSuperAdmin,
+  VendorSomenteVisitante,
+} from '@/features/vendor-admin/vendor-require-auth'
 import { VendorShell } from '@/features/vendor-admin/vendor-shell'
 import { PlanosPage } from '@/features/vendor-admin/planos/planos-page'
 import { AvisosPage } from '@/features/vendor-admin/avisos/avisos-page'
@@ -138,12 +143,15 @@ export function App() {
             <Route path="tenants/:id" element={<TenantDetalhesPage />} />
             <Route path="planos" element={<PlanosPage />} />
             <Route path="avisos" element={<AvisosPage />} />
-            <Route path="admin-master" element={<MasterAdminPage />} />
             <Route path="studio" element={<DatabaseStudioPage />} />
             <Route path="celery" element={<CeleryMonitorPage />} />
             <Route path="auditoria" element={<EmConstrucao titulo="Trilha de Auditoria do Vendor" />} />
-            <Route path="configuracoes" element={<ConfiguracoesLoginPage />} />
-            <Route path="seguranca-2fa" element={<Configuracao2FAPage />} />
+            {/* 100% superadmin-only no backend (sem nenhuma ação staff) — guarda de rota aqui também. */}
+            <Route element={<VendorRequireSuperAdmin />}>
+              <Route path="admin-master" element={<MasterAdminPage />} />
+              <Route path="configuracoes" element={<ConfiguracoesLoginPage />} />
+              <Route path="seguranca-2fa" element={<Configuracao2FAPage />} />
+            </Route>
           </Route>
         </Route>
 
@@ -187,6 +195,7 @@ export function App() {
             </Route>
 
             <Route path="equipe" element={<UsuariosPage />} />
+            <Route path="permissoes" element={<PermissoesPage />} />
             <Route path="meu-plano" element={<MeuPlanoPage />} />
             <Route path="minha-conta" element={<MinhaContaPage />} />
           </Route>

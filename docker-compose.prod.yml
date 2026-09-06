@@ -137,7 +137,10 @@ services:
 
   # ---------------------- WAHA (WhatsApp, interno) --------------------------
   waha:
-    image: ${WAHA_IMAGE:-devlikeapro/waha:latest}
+    # `latest` em produção puxaria uma imagem nova/não testada a cada rebuild
+    # (guarda as sessões do WhatsApp da clínica) — tag fixa por padrão; ainda
+    # sobrescrevível via WAHA_IMAGE no .env quando for atualizar deliberadamente.
+    image: ${WAHA_IMAGE:-devlikeapro/waha:latest-2026.8.1}
     container_name: odonto_waha
     restart: unless-stopped
     environment:

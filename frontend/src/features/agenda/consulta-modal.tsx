@@ -37,10 +37,15 @@ import {
   deInputLocal,
   paraInputLocal,
   useAtualizarConsulta,
+  useConfirmarManualmente,
   useCriarConsulta,
   useRemoverConsulta,
   useTransicaoConsulta,
 } from './use-agenda'
+
+// CONFIRMADA (via WhatsApp/link) e MANUAL (recepção confirmou por fora) contam
+// como "confirmado" pro fluxo de atendimento (iniciar) — só o rótulo difere.
+const CONFIRMACOES_CONFIRMADAS = ['CONFIRMADA', 'MANUAL']
 
 /** Criar (início/fim pré-preenchidos do slot) ou editar uma consulta AGENDADA. */
 type EstadoEdicao =
@@ -443,6 +448,7 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
   const remover = useRemoverConsulta()
   const transicao = useTransicaoConsulta()
   const enviarConfirmacao = useEnviarConfirmacao()
+  const confirmarManualmente = useConfirmarManualmente()
   const { data: dentistas } = useDentistas()
   const editando = estado.modo === 'editar'
   const consulta = editando ? estado.consulta : null
@@ -526,6 +532,16 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
     }
   }
 
+  async function confirmarManual() {
+    if (!consulta) return
+    try {
+      await confirmarManualmente.mutateAsync(consulta.id)
+      toast.success('Consulta confirmada manualmente.')
+    } catch (excecao) {
+      toast.error((excecao as ErroApi).mensagem ?? 'Não foi possível confirmar manualmente.')
+    }
+  }
+
   async function salvar() {
     setErro('')
     if (!pacienteId) {
@@ -590,21 +606,33 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <Label>Paciente</Label>
-              {/* Enviar confirmação: só p/ consultas AGENDADA ainda PENDENTES e se WhatsApp habilitado no plano. */}
-              {editando &&
-                whatsappHabilitado &&
-                consulta?.status === 'AGENDADA' &&
-                consulta?.status_confirmacao === 'PENDENTE' && (
+              {/* Confirmação: consultas AGENDADA ainda PENDENTES podem ser
+                  confirmadas via WhatsApp (se o plano tiver o módulo) ou
+                  manualmente (ex.: recepção confirmou por telefone). */}
+              {editando && consulta?.status === 'AGENDADA' && consulta?.status_confirmacao === 'PENDENTE' && (
+                <div className="flex items-center gap-1.5">
+                  {whatsappHabilitado && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={enviarConf}
+                      disabled={enviarConfirmacao.isPending}
+                    >
+                      {enviarConfirmacao.isPending ? 'Enviando…' : 'Enviar confirmação'}
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={enviarConf}
-                    disabled={enviarConfirmacao.isPending}
+                    onClick={confirmarManual}
+                    disabled={confirmarManualmente.isPending}
                   >
-                    {enviarConfirmacao.isPending ? 'Enviando…' : 'Enviar confirmação'}
+                    {confirmarManualmente.isPending ? 'Confirmando…' : 'Confirmar manualmente'}
                   </Button>
-                )}
+                </div>
+              )}
             </div>
             <SeletorPaciente
               nome={pacienteNome}
@@ -784,10 +812,10 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
             />
           </div>
 
-          {/* Iniciar atendimento: só quando o paciente CONFIRMOU. */}
+          {/* Iniciar atendimento: só quando o paciente confirmou (via WhatsApp ou manualmente). */}
           {editando &&
             consulta?.status === 'AGENDADA' &&
-            consulta?.status_confirmacao === 'CONFIRMADA' && (
+            CONFIRMACOES_CONFIRMADAS.includes(consulta?.status_confirmacao ?? '') && (
               <Button
                 type="button"
                 variant="secondary"

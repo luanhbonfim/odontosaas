@@ -107,7 +107,7 @@ describe('UsuarioFormDrawer', () => {
 
   it('mostra o acesso do perfil selecionado (informativo)', async () => {
     const user = await abrir()
-    expect(screen.getByText(/Estoque\/Insumos e Notificações/)).toBeInTheDocument()
+    expect(screen.getByText(/Convênios, Procedimentos, Estoque/)).toBeInTheDocument()
     await user.selectOptions(screen.getByLabelText(/perfil/i), 'DENTISTA')
     expect(screen.getByText(/apenas os seus/i)).toBeInTheDocument()
   })

@@ -25,8 +25,17 @@ mesmo IP. (Quando forem muitas, troque por um curinga `*` — ver §9.)
 # Como root (ou com sudo) no VPS:
 apt update && apt upgrade -y
 
-# Docker + Compose (script oficial)
-curl -fsSL https://get.docker.com | sh
+# Docker + Compose: pelo repositório oficial (com chave GPG verificada), não
+# por "curl | sh" — evita rodar como root um script baixado sem checar assinatura.
+apt install -y ca-certificates curl gnupg
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt update
+apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Firewall: só SSH e HTTPS/HTTP
 apt install -y ufw fail2ban
@@ -36,7 +45,9 @@ ufw allow 443/tcp
 ufw --force enable
 ```
 > Se escolheu o template "Docker" na Hostinger, o Docker já vem instalado —
-> pule a linha do `get.docker.com`.
+> pule o bloco de instalação acima.
+> (Se a VPS não for Debian/Ubuntu, troque `linux/debian` pela distro certa —
+> veja https://docs.docker.com/engine/install/.)
 
 ## 3. Baixar o projeto e configurar segredos
 ```bash

@@ -58,6 +58,7 @@ from apps.usuarios.views import (
     EncerrarSuporteTenantView,
     LoginView,
     MeView,
+    PermissoesModuloView,
     TenantAtualView,
     UsuarioViewSet,
 )
@@ -105,6 +106,8 @@ urlpatterns = [
     path("api/auth/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     # Usuário logado (nome, papel, clínica) — base do contexto de sessão do frontend
     path("api/auth/me/", MeView.as_view(), name="auth_me"),
+    # Grade papel×módulo (Recepção/Dentista) da tela "Permissões" — Gerente/Admin
+    path("api/permissoes-modulo/", PermissoesModuloView.as_view(), name="permissoes_modulo"),
     path("api/auth/encerrar-suporte/", EncerrarSuporteTenantView.as_view(), name="encerrar_suporte_tenant"),
     # Nome da clínica do subdomínio (público) — exibido na tela de login
     path("api/tenant-atual/", TenantAtualView.as_view(), name="tenant_atual"),

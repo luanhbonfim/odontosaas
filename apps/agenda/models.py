@@ -27,8 +27,14 @@ class Consulta(ModeloBase):
     class StatusConfirmacao(models.TextChoices):
         PENDENTE = "PENDENTE", "Pendente"
         CONFIRMADA = "CONFIRMADA", "Confirmada"
+        MANUAL = "MANUAL", "Confirmada manualmente"
         RECUSADA = "RECUSADA", "Recusada"
         SEM_RESPOSTA = "SEM_RESPOSTA", "Sem resposta"
+
+    # CONFIRMADA (via WhatsApp/link) e MANUAL (recepção confirmou por fora) contam
+    # como "confirmado" pra todas as regras que dependem disso (reagendamento,
+    # lembretes, cor no Google) — só a origem/rótulo muda.
+    STATUS_CONFIRMACAO_CONFIRMADOS = (StatusConfirmacao.CONFIRMADA, StatusConfirmacao.MANUAL)
 
     paciente = models.ForeignKey(Paciente, on_delete=models.PROTECT, related_name="consultas")
     dentista = models.ForeignKey(Dentista, on_delete=models.PROTECT, related_name="consultas")

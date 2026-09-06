@@ -30,7 +30,7 @@ def test_consulta_config():
     status = {c[0] for c in Consulta._meta.get_field("status").choices}
     assert status == {"AGENDADA", "EM_ATENDIMENTO", "REALIZADA", "CANCELADA", "FALTOU"}
     conf = {c[0] for c in Consulta._meta.get_field("status_confirmacao").choices}
-    assert conf == {"PENDENTE", "CONFIRMADA", "RECUSADA", "SEM_RESPOSTA"}
+    assert conf == {"PENDENTE", "CONFIRMADA", "MANUAL", "RECUSADA", "SEM_RESPOSTA"}
 
 
 # --- Criação real dentro do schema de um tenant ---

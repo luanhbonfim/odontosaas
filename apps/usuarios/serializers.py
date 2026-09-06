@@ -8,6 +8,11 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from apps.dentistas.models import Dentista
 from apps.usuarios.models import Usuario
+from apps.usuarios.perfis import (
+    MODULOS_CUSTOMIZAVEIS,
+    PAPEIS_CUSTOMIZAVEIS,
+    permissoes_efetivas_do_papel,
+)
 
 
 class MFARequired(AuthenticationFailed):
@@ -46,10 +51,28 @@ class UsuarioMeSerializer(serializers.ModelSerializer):
 
     papel_display = serializers.CharField(source="get_papel_display", read_only=True)
     clinica = serializers.SerializerMethodField()
+    permissoes_modulo = serializers.SerializerMethodField()
 
     class Meta:
         model = Usuario
-        fields = ["id", "email", "nome_completo", "papel", "papel_display", "clinica"]
+        fields = [
+            "id",
+            "email",
+            "nome_completo",
+            "papel",
+            "papel_display",
+            "clinica",
+            "permissoes_modulo",
+        ]
+
+    @extend_schema_field(serializers.DictField())
+    def get_permissoes_modulo(self, obj):
+        """Grade efetiva {módulo: {ver,criar,editar,excluir}} — só populada pra
+        papéis personalizáveis (Recepção/Dentista); Gerente/Admin não precisam
+        (sempre têm acesso total, o frontend não checa nada pra eles)."""
+        if obj.papel not in PAPEIS_CUSTOMIZAVEIS:
+            return {}
+        return permissoes_efetivas_do_papel(obj.papel)
 
     @extend_schema_field(ClinicaResumoSerializer)
     def get_clinica(self, obj):
@@ -71,6 +94,22 @@ class UsuarioMeSerializer(serializers.ModelSerializer):
             "nome_fantasia": tenant.nome_fantasia,
             "modulos": modulos,
         }
+
+
+class PermissaoModuloSerializer(serializers.Serializer):
+    """Uma célula da grade papel×módulo da tela "Permissões" (Gerente/Admin)."""
+
+    papel = serializers.ChoiceField(choices=PAPEIS_CUSTOMIZAVEIS)
+    modulo = serializers.ChoiceField(choices=MODULOS_CUSTOMIZAVEIS)
+    ver = serializers.BooleanField()
+    criar = serializers.BooleanField()
+    editar = serializers.BooleanField()
+    excluir = serializers.BooleanField()
+
+    def validate(self, attrs):
+        if not attrs["ver"] and any(attrs[campo] for campo in ("criar", "editar", "excluir")):
+            raise serializers.ValidationError("Sem 'ver' não é possível criar/editar/excluir.")
+        return attrs
 
 
 class UsuarioSerializer(serializers.ModelSerializer):

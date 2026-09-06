@@ -1317,6 +1317,34 @@ export interface paths {
         patch: operations["pacientes_partial_update"];
         trace?: never;
     };
+    "/api/permissoes-modulo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Grade papel×módulo (Recepção/Dentista) da tela "Permissões" — só
+         *     Gerente/Admin. `GET` retorna a grade completa (semeando defaults da
+         *     matriz na 1ª leitura); `PUT` salva a grade inteira e resincroniza os
+         *     grupos Django na hora (efeito imediato, sem passo de "aplicar").
+         */
+        get: operations["permissoes_modulo_list"];
+        /**
+         * @description Grade papel×módulo (Recepção/Dentista) da tela "Permissões" — só
+         *     Gerente/Admin. `GET` retorna a grade completa (semeando defaults da
+         *     matriz na 1ª leitura); `PUT` salva a grade inteira e resincroniza os
+         *     grupos Django na hora (efeito imediato, sem passo de "aplicar").
+         */
+        put: operations["permissoes_modulo_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/planos/": {
         parameters: {
             query?: never;
@@ -2894,6 +2922,19 @@ export interface components {
             email: string;
             ativo: boolean;
         };
+        /**
+         * @description * `agenda` - agenda
+         *     * `pacientes` - pacientes
+         *     * `convenios` - convenios
+         *     * `dentistas` - dentistas
+         *     * `procedimentos` - procedimentos
+         *     * `estoque` - estoque
+         *     * `financeiro` - financeiro
+         *     * `notificacoes` - notificacoes
+         *     * `usuarios` - usuarios
+         * @enum {string}
+         */
+        ModuloEnum: "agenda" | "pacientes" | "convenios" | "dentistas" | "procedimentos" | "estoque" | "financeiro" | "notificacoes" | "usuarios";
         MovimentacaoEstoque: {
             readonly id: number;
             insumo: number;
@@ -2986,7 +3027,7 @@ export interface components {
          *     * `RECEPCAO` - Recepção
          * @enum {string}
          */
-        PapelEnum: "ADMIN" | "DENTISTA_GERENTE" | "DENTISTA" | "RECEPCAO";
+        Papel77fEnum: "ADMIN" | "DENTISTA_GERENTE" | "DENTISTA" | "RECEPCAO";
         PatchedAnamnese: {
             readonly id?: number;
             paciente?: number;
@@ -3466,7 +3507,7 @@ export interface components {
              */
             email?: string;
             nome_completo?: string;
-            papel?: components["schemas"]["PapelEnum"];
+            papel?: components["schemas"]["Papel77fEnum"];
             readonly papel_display?: string;
             ativo?: boolean;
             senha?: string;
@@ -3481,6 +3522,21 @@ export interface components {
          * @enum {string}
          */
         PeriodicidadeEnum: "MENSAL" | "ANUAL" | "PERMANENTE";
+        /** @description Uma célula da grade papel×módulo da tela "Permissões" (Gerente/Admin). */
+        PermissaoModulo: {
+            papel: components["schemas"]["PermissaoModuloPapelEnum"];
+            modulo: components["schemas"]["ModuloEnum"];
+            ver: boolean;
+            criar: boolean;
+            editar: boolean;
+            excluir: boolean;
+        };
+        /**
+         * @description * `RECEPCAO` - RECEPCAO
+         *     * `DENTISTA` - DENTISTA
+         * @enum {string}
+         */
+        PermissaoModuloPapelEnum: "RECEPCAO" | "DENTISTA";
         /** @description Serializer para CRUD de planos comerciais no painel do vendor. */
         PlanoAssinaturaVendor: {
             readonly id: number;
@@ -3689,7 +3745,7 @@ export interface components {
              */
             email: string;
             nome_completo?: string;
-            papel?: components["schemas"]["PapelEnum"];
+            papel?: components["schemas"]["Papel77fEnum"];
             readonly papel_display: string;
             ativo?: boolean;
             senha?: string;
@@ -3711,9 +3767,12 @@ export interface components {
              */
             email: string;
             nome_completo?: string;
-            papel?: components["schemas"]["PapelEnum"];
+            papel?: components["schemas"]["Papel77fEnum"];
             readonly papel_display: string;
             readonly clinica: components["schemas"]["ClinicaResumo"];
+            readonly permissoes_modulo: {
+                [key: string]: unknown;
+            };
         };
     };
     responses: never;
@@ -6677,6 +6736,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Paciente"];
+                };
+            };
+        };
+    };
+    permissoes_modulo_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissaoModulo"][];
+                };
+            };
+        };
+    };
+    permissoes_modulo_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PermissaoModulo"][];
+                "application/x-www-form-urlencoded": components["schemas"]["PermissaoModulo"][];
+                "multipart/form-data": components["schemas"]["PermissaoModulo"][];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissaoModulo"][];
                 };
             };
         };

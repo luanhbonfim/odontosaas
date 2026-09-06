@@ -154,6 +154,17 @@ export function useTransicaoConsulta() {
   })
 }
 
+/** Confirmação manual (recepção confirmou por telefone/presencial) — fica com
+ * `status_confirmacao=MANUAL`, distinto de CONFIRMADA (via WhatsApp/link). */
+export function useConfirmarManualmente() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) =>
+      (await api.post<Consulta>(`/consultas/${id}/confirmar_manualmente/`, {})).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: CHAVE_AGENDA }),
+  })
+}
+
 const pad = (n: number) => String(n).padStart(2, '0')
 
 /** Date/ISO -> valor de `<input type="datetime-local">` (hora local, sem timezone). */

@@ -27,6 +27,24 @@ if not FIELD_ENCRYPTION_KEY or FIELD_ENCRYPTION_KEY == _FERNET_KEY_DEV:  # noqa:
     raise ImproperlyConfigured(
         "FIELD_ENCRYPTION_KEY é obrigatória em produção (o default de desenvolvimento é inseguro/público)."
     )
+# SECRET_KEY com poucos caracteres passaria no check acima (só compara com o
+# default). Reforça um mínimo de entropia — o gerador recomendado no
+# deploy/.env.prod.example produz bem mais que isso.
+if len(SECRET_KEY) < 50:  # noqa: F405
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY é curta demais (mínimo 50 caracteres). Gere uma nova: "
+        "python -c \"import secrets;print(secrets.token_urlsafe(64))\""
+    )
+
+# Sem isso, o webhook do WAHA (`/api/notificacoes/whatsapp/webhook`, público via
+# proxy) aceita qualquer POST sem autenticação — um terceiro poderia forjar
+# confirmação/cancelamento de consultas de qualquer clínica (ver
+# apps/notificacoes/views.py:waha_webhook). Só é ignorado em dev/CI.
+if not WAHA_WEBHOOK_TOKEN:  # noqa: F405
+    raise ImproperlyConfigured(
+        "WAHA_WEBHOOK_TOKEN é obrigatório em produção (protege o webhook inbound do "
+        "WhatsApp contra forjadura). Gere: openssl rand -hex 32"
+    )
 
 # Em produção, ALLOWED_HOSTS deve vir OBRIGATORIAMENTE do ambiente.
 # Dica multi-tenant: use ".seudominio.com.br" (ponto na frente) para casar

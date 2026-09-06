@@ -33,7 +33,11 @@ export function Sidebar() {
 
   // Menu agrupado por seção conforme o papel e módulos ativos do plano;
   // enquanto carrega, oculta os módulos restritos ou desabilitados.
-  const grupos = gruposNavPorPapel(usuario?.papel ?? null, usuario?.clinica?.modulos)
+  const grupos = gruposNavPorPapel(
+    usuario?.papel ?? null,
+    usuario?.clinica?.modulos,
+    usuario?.permissoesModulo,
+  )
 
   // Módulo (grupo) que contém a rota ativa — abre automaticamente.
   const tituloAtivo = useMemo(

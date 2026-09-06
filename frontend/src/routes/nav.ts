@@ -8,6 +8,7 @@ import {
   HeartPulse,
   LayoutDashboard,
   Layers,
+  Lock,
   type LucideIcon,
   MessageSquare,
   Package,
@@ -25,7 +26,7 @@ import {
   Wallet,
 } from 'lucide-react'
 
-import type { ModulosAtivos, Papel } from '@/features/auth/use-sessao'
+import type { ModulosAtivos, Papel, PermissoesModulo } from '@/features/auth/use-sessao'
 
 export type ModuloRecurso = 'google_calendar' | 'whatsapp' | 'financeiro' | 'estoque'
 
@@ -37,6 +38,9 @@ export type ItemNav = {
   papeis?: Papel[]
   /** Módulo do SaaS atrelado ao item. Se desabilitado no plano, oculta o menu. */
   modulo?: ModuloRecurso
+  /** Chave do módulo personalizável (tela "Permissões", Recepção/Dentista) —
+   * distinta de `modulo` (gate de plano). Ausente = sempre visível. */
+  chaveModulo?: string
   /** Match exato da rota (para pais que têm sub-rotas, ex.: /financeiro). */
   end?: boolean
 }
@@ -50,7 +54,6 @@ export type GrupoNav = {
 }
 
 const RH = ['DENTISTA_GERENTE', 'ADMIN'] satisfies Papel[]
-const RECEPCAO_MAIS = ['RECEPCAO', 'DENTISTA_GERENTE', 'ADMIN'] satisfies Papel[]
 // Integrações: cada dentista vê a SUA; gerente/admin veem todas (backend escopa).
 const DENTISTA_MAIS = ['DENTISTA', 'DENTISTA_GERENTE', 'ADMIN'] satisfies Papel[]
 
@@ -64,14 +67,20 @@ export const gruposNav: GrupoNav[] = [
     titulo: 'Atendimento',
     icone: HeartPulse,
     itens: [
-      { rotulo: 'Agenda', para: '/agenda', icone: Calendar },
-      { rotulo: 'Pacientes', para: '/pacientes', icone: Users },
-      { rotulo: 'Convênios', para: '/convenios', icone: BadgeCheck, papeis: RECEPCAO_MAIS },
-      { rotulo: 'Dentistas', para: '/dentistas', icone: Stethoscope },
+      { rotulo: 'Agenda', para: '/agenda', icone: Calendar, chaveModulo: 'agenda' },
+      { rotulo: 'Pacientes', para: '/pacientes', icone: Users, chaveModulo: 'pacientes' },
+      {
+        rotulo: 'Convênios',
+        para: '/convenios',
+        icone: BadgeCheck,
+        chaveModulo: 'convenios',
+      },
+      { rotulo: 'Dentistas', para: '/dentistas', icone: Stethoscope, chaveModulo: 'dentistas' },
       {
         rotulo: 'Procedimentos',
         para: '/procedimentos',
         icone: ClipboardList,
+        chaveModulo: 'procedimentos',
       },
     ],
   },
@@ -83,23 +92,23 @@ export const gruposNav: GrupoNav[] = [
         rotulo: 'Visão Geral',
         para: '/financeiro',
         icone: PieChart,
-        papeis: RH,
         modulo: 'financeiro',
+        chaveModulo: 'financeiro',
         end: true,
       },
       {
         rotulo: 'Contas a Receber',
         para: '/financeiro/receber',
         icone: TrendingUp,
-        papeis: RH,
         modulo: 'financeiro',
+        chaveModulo: 'financeiro',
       },
       {
         rotulo: 'Contas a Pagar',
         para: '/financeiro/pagar',
         icone: TrendingDown,
-        papeis: RH,
         modulo: 'financeiro',
+        chaveModulo: 'financeiro',
       },
     ],
   },
@@ -107,22 +116,51 @@ export const gruposNav: GrupoNav[] = [
     titulo: 'Operação',
     icone: Boxes,
     itens: [
-      { rotulo: 'Insumos', para: '/estoque', icone: Package, modulo: 'estoque', end: true },
-      { rotulo: 'Categorias', para: '/estoque/categorias', icone: Layers, modulo: 'estoque' },
+      {
+        rotulo: 'Insumos',
+        para: '/estoque',
+        icone: Package,
+        modulo: 'estoque',
+        chaveModulo: 'estoque',
+        end: true,
+      },
+      {
+        rotulo: 'Categorias',
+        para: '/estoque/categorias',
+        icone: Layers,
+        modulo: 'estoque',
+        chaveModulo: 'estoque',
+      },
       {
         rotulo: 'Movimentações',
         para: '/estoque/movimentacoes',
         icone: ArrowLeftRight,
         modulo: 'estoque',
+        chaveModulo: 'estoque',
       },
-      { rotulo: 'Fornecedores', para: '/estoque/fornecedores', icone: Truck, modulo: 'estoque' },
-      { rotulo: 'Alertas', para: '/estoque/alertas', icone: AlertTriangle, modulo: 'estoque' },
+      {
+        rotulo: 'Fornecedores',
+        para: '/estoque/fornecedores',
+        icone: Truck,
+        modulo: 'estoque',
+        chaveModulo: 'estoque',
+      },
+      {
+        rotulo: 'Alertas',
+        para: '/estoque/alertas',
+        icone: AlertTriangle,
+        modulo: 'estoque',
+        chaveModulo: 'estoque',
+      },
     ],
   },
   {
     titulo: 'Administração',
     icone: Shield,
-    itens: [{ rotulo: 'Equipe', para: '/equipe', icone: UsersRound, papeis: RH }],
+    itens: [
+      { rotulo: 'Equipe', para: '/equipe', icone: UsersRound, chaveModulo: 'usuarios' },
+      { rotulo: 'Permissões', para: '/permissoes', icone: Lock, papeis: RH },
+    ],
   },
   {
     titulo: 'Configurações',
@@ -139,8 +177,8 @@ export const gruposNav: GrupoNav[] = [
         rotulo: 'WhatsApp',
         para: '/notificacoes',
         icone: MessageSquare,
-        papeis: RECEPCAO_MAIS,
         modulo: 'whatsapp',
+        chaveModulo: 'notificacoes',
       },
       {
         rotulo: 'Meu Plano',
@@ -159,6 +197,7 @@ function itemVisivel(
   item: ItemNav,
   papel: Papel | null,
   modulos?: ModulosAtivos,
+  permissoesModulo?: PermissoesModulo,
 ): boolean {
   if (item.papeis && (papel === null || !item.papeis.includes(papel))) {
     return false
@@ -175,6 +214,12 @@ function itemVisivel(
     }
   }
 
+  // Personalização por papel (tela "Permissões", Recepção/Dentista) — Gerente/
+  // Admin não têm entradas no mapa, então nunca são afetados por esta checagem.
+  if (item.chaveModulo && permissoesModulo?.[item.chaveModulo]?.ver === false) {
+    return false
+  }
+
   return true
 }
 
@@ -182,8 +227,9 @@ function itemVisivel(
 export function itensNavPorPapel(
   papel: Papel | null,
   modulos?: ModulosAtivos,
+  permissoesModulo?: PermissoesModulo,
 ): ItemNav[] {
-  return itensNav.filter((item) => itemVisivel(item, papel, modulos))
+  return itensNav.filter((item) => itemVisivel(item, papel, modulos, permissoesModulo))
 }
 
 /**
@@ -192,11 +238,12 @@ export function itensNavPorPapel(
 export function gruposNavPorPapel(
   papel: Papel | null,
   modulos?: ModulosAtivos,
+  permissoesModulo?: PermissoesModulo,
 ): GrupoNav[] {
   return gruposNav
     .map((grupo) => ({
       ...grupo,
-      itens: grupo.itens.filter((item) => itemVisivel(item, papel, modulos)),
+      itens: grupo.itens.filter((item) => itemVisivel(item, papel, modulos, permissoesModulo)),
     }))
     .filter((grupo) => grupo.itens.length > 0)
 }

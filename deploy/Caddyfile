@@ -41,10 +41,20 @@ proclinica.cloud, www.proclinica.cloud {
 	}
 
 	# SPA (React/Vite): estáticos + fallback para index.html (React Router).
+	# Headers de segurança aqui: as respostas do Django (@backend) já vêm com os
+	# mesmos headers via SecurityMiddleware (config/settings/prod.py) — sem
+	# duplicar. O primeiro documento que o navegador carrega (index.html/bundle)
+	# NÃO passa pelo Django, então sem isso ele nunca recebia HSTS/X-Frame-Options.
 	handle {
 		root * /srv
 		try_files {path} /index.html
 		file_server
+		header {
+			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+			X-Content-Type-Options "nosniff"
+			X-Frame-Options "DENY"
+			Referrer-Policy "strict-origin-when-cross-origin"
+		}
 	}
 
 	header -Server
@@ -66,10 +76,20 @@ https:// {
 	}
 
 	# SPA (React/Vite): estáticos + fallback para index.html (React Router).
+	# Headers de segurança aqui: as respostas do Django (@backend) já vêm com os
+	# mesmos headers via SecurityMiddleware (config/settings/prod.py) — sem
+	# duplicar. O primeiro documento que o navegador carrega (index.html/bundle)
+	# NÃO passa pelo Django, então sem isso ele nunca recebia HSTS/X-Frame-Options.
 	handle {
 		root * /srv
 		try_files {path} /index.html
 		file_server
+		header {
+			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+			X-Content-Type-Options "nosniff"
+			X-Frame-Options "DENY"
+			Referrer-Policy "strict-origin-when-cross-origin"
+		}
 	}
 
 	header -Server

@@ -27,8 +27,8 @@ def marcar_reagendamento(sender, instance, **kwargs):
         return  # criação, não é reagendamento
     if instance.status != Consulta.Status.AGENDADA:
         return  # só consultas ativas
-    if instance.status_confirmacao != Consulta.StatusConfirmacao.CONFIRMADA:
-        return  # reagendamento só para quem já confirmou
+    if instance.status_confirmacao not in Consulta.STATUS_CONFIRMACAO_CONFIRMADOS:
+        return  # reagendamento só para quem já confirmou (via WhatsApp ou manual)
     anterior = Consulta.objects.filter(pk=instance.pk).values_list("inicio", flat=True).first()
     if anterior is not None and anterior != instance.inicio:
         instance.reagendada_em = timezone.now()

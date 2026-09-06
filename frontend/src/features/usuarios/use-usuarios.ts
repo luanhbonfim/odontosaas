@@ -39,12 +39,13 @@ export function papeisGerenciaveis(ator: Papel | null | undefined) {
   return PAPEIS.filter((papel) => podeGerenciar(ator, papel.valor))
 }
 
-/** Resumo (informativo) do que cada perfil pode acessar — espelha a matriz de permissões. */
+/** Resumo (informativo) do que cada perfil pode acessar por padrão — Recepção e
+ * Dentista são customizáveis por tela na tela "Permissões" (Gerente/Admin). */
 export const ACESSO_PAPEL: Record<Papel, string> = {
   RECEPCAO:
-    'Agenda, Pacientes, Estoque/Insumos e Notificações. Sem acesso a Financeiro, Auditoria ou Equipe.',
+    'Por padrão: Agenda, Pacientes, Convênios, Procedimentos, Estoque, Financeiro e Notificações. Sem Auditoria ou Equipe. Ajustável tela a tela em "Permissões".',
   DENTISTA:
-    'Agenda e Pacientes (apenas os seus), além de consultar Dentistas e Estoque. Sem Financeiro, Notificações, Auditoria ou Equipe.',
+    'Por padrão: Agenda e Pacientes (apenas os seus), Procedimentos, além de consultar Convênios e Estoque. Sem Financeiro, Notificações, Auditoria ou Equipe. Ajustável tela a tela em "Permissões".',
   DENTISTA_GERENTE:
     'Visão geral da clínica: Agenda, Pacientes, Dentistas, Estoque, Financeiro, Notificações, Auditoria e Equipe. Não mexe em configurações da plataforma.',
   ADMIN: 'Acesso total à clínica, incluindo configurações e gestão da Equipe.',

@@ -73,6 +73,19 @@ class StudioViewSet(viewsets.ViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        # O schema `public` guarda dados internos da própria plataforma (segredos
+        # de operadores, faturamento de todas as clínicas) — não é o alvo normal
+        # de suporte a uma clínica. Só SuperAdmin executa queries ali (staff
+        # continua liberado para explorar/consultar os schemas de tenants).
+        if schema_name.strip().lower() == "public" and not request.user.is_superuser:
+            return Response(
+                {
+                    "erro": "Permissão negada.",
+                    "mensagem": "Consultas no schema 'public' são restritas a superadministradores da plataforma.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         operador_email = getattr(request.user, "email", str(request.user))
 
         try:

@@ -31,7 +31,7 @@ import { AbaFichas } from './aba-fichas'
 import { AbaFinanceiro } from './aba-financeiro'
 import { AbaGuias } from './aba-guias'
 import { AbaPlanos } from './aba-planos'
-import { BadgeCobranca, BadgeStatus } from './status'
+import { BadgeStatus } from './status'
 import { type Consulta, useConsultasDoPaciente, usePaciente } from './use-paciente-detalhe'
 
 const vazio = <span className="text-muted-foreground">—</span>
@@ -70,7 +70,6 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
   const consultas = useMemo(() => data ?? [], [data])
   const [filtroStatus, setFiltroStatus] = useState('')
   const [filtroConfirmacao, setFiltroConfirmacao] = useState('')
-  const [filtroCobranca, setFiltroCobranca] = useState('')
 
   // Opções dos filtros derivadas dos dados presentes.
   const statusDisponiveis = useMemo(
@@ -87,11 +86,9 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
       consultas.filter(
         (c) =>
           (!filtroStatus || c.status === filtroStatus) &&
-          (!filtroConfirmacao || c.status_confirmacao === filtroConfirmacao) &&
-          (!filtroCobranca ||
-            (filtroCobranca === 'convenio' ? Boolean(c.convenio_nome) : !c.convenio_nome)),
+          (!filtroConfirmacao || c.status_confirmacao === filtroConfirmacao),
       ),
-    [consultas, filtroStatus, filtroConfirmacao, filtroCobranca],
+    [consultas, filtroStatus, filtroConfirmacao],
   )
 
   // Colunas ordenáveis (accessorFn) — como nas guias. Histórico: sem link/edição.
@@ -127,12 +124,6 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
       accessorFn: (c) => c.status ?? '',
       cell: ({ row }) => <BadgeStatus status={row.original.status} />,
     },
-    {
-      id: 'cobranca',
-      header: 'Cobrança',
-      accessorFn: (c) => c.convenio_nome ?? 'Particular',
-      cell: ({ row }) => <BadgeCobranca convenioNome={row.original.convenio_nome} />,
-    },
   ]
 
   return (
@@ -165,16 +156,6 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
             </option>
           ))}
         </select>
-        <select
-          aria-label="Filtrar por cobrança"
-          className={cn(classeFiltro, 'w-full sm:w-48')}
-          value={filtroCobranca}
-          onChange={(e) => setFiltroCobranca(e.target.value)}
-        >
-          <option value="">Toda cobrança</option>
-          <option value="convenio">Convênio</option>
-          <option value="particular">Particular</option>
-        </select>
       </div>
 
       <DataTable
@@ -197,7 +178,6 @@ function AbaConsultas({ pacienteId }: { pacienteId: number }) {
               <div className="flex flex-wrap items-center gap-1.5">
                 <BadgeStatus status={c.status} />
                 <BadgeStatus status={c.status_confirmacao} />
-                <BadgeCobranca convenioNome={c.convenio_nome} />
               </div>
             </div>
           )

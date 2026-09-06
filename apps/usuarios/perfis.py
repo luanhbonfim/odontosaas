@@ -62,6 +62,25 @@ MATRIZ = {
     "ADMIN": {modulo: FULL for modulo in MODULOS},
 }
 
+# Papéis que o Gerente/Admin pode personalizar na tela "Permissões" (por
+# módulo, com CRUD granular) — Gerente/Admin ficam de fora, sempre com acesso
+# total fixo (evita autobloqueio; RANK_PAPEL abaixo já garante que só cargos
+# abaixo do ator são geridos/afetados).
+PAPEIS_CUSTOMIZAVEIS = ("RECEPCAO", "DENTISTA")
+# Módulos com tela real no tenant hoje — de fora: "auditoria" (sem tela no
+# tenant) e módulos gateados fora da MATRIZ (Integrações, Meu Plano).
+MODULOS_CUSTOMIZAVEIS = [
+    "agenda",
+    "pacientes",
+    "convenios",
+    "dentistas",
+    "procedimentos",
+    "estoque",
+    "financeiro",
+    "notificacoes",
+    "usuarios",
+]
+
 # Hierarquia dos papéis: um usuário só gerencia (cria/edita/bloqueia/reseta senha)
 # cargos **estritamente abaixo** do seu. Admin (e superuser) gerenciam todos.
 RANK_PAPEL = {"RECEPCAO": 0, "DENTISTA": 1, "DENTISTA_GERENTE": 2, "ADMIN": 3}
@@ -81,15 +100,50 @@ def pode_gerenciar(ator, alvo_papel) -> bool:
     return rank_alvo < rank_ator
 
 
-_ACOES_FULL = ("view", "add", "change", "delete")
+def _nivel_para_booleans(nivel):
+    """Traduz um nível FULL/READ/ausente da MATRIZ pras 4 flags de CRUD."""
+    if nivel == FULL:
+        return {"ver": True, "criar": True, "editar": True, "excluir": True}
+    if nivel == READ:
+        return {"ver": True, "criar": False, "editar": False, "excluir": False}
+    return {"ver": False, "criar": False, "editar": False, "excluir": False}
 
 
-def _permissoes(app_label, nivel):
-    """Retorna as permissões de model do app conforme o nível (full/read)."""
+def permissao_efetiva(papel, modulo):
+    """{ver,criar,editar,excluir} pro papel+módulo.
+
+    Gerente/Admin (e módulos fora de `MODULOS_CUSTOMIZAVEIS`) vêm sempre da
+    MATRIZ fixa. Recepção/Dentista vêm de `PermissaoModuloPersonalizada`
+    (semeada com o default da MATRIZ na primeira leitura) — é essa tabela que
+    a tela "Permissões" edita.
+    """
+    if papel not in PAPEIS_CUSTOMIZAVEIS or modulo not in MODULOS_CUSTOMIZAVEIS:
+        return _nivel_para_booleans(MATRIZ.get(papel, {}).get(modulo))
+
+    from apps.usuarios.models import PermissaoModuloPersonalizada
+
+    cfg, _ = PermissaoModuloPersonalizada.objects.get_or_create(
+        papel=papel,
+        modulo=modulo,
+        defaults=_nivel_para_booleans(MATRIZ.get(papel, {}).get(modulo)),
+    )
+    return {"ver": cfg.ver, "criar": cfg.criar, "editar": cfg.editar, "excluir": cfg.excluir}
+
+
+def permissoes_efetivas_do_papel(papel):
+    """Grade {módulo: {ver,criar,editar,excluir}} pros módulos personalizáveis."""
+    return {modulo: permissao_efetiva(papel, modulo) for modulo in MODULOS_CUSTOMIZAVEIS}
+
+
+def _permissoes_bool(app_label, ver, criar, editar, excluir):
+    """Permissões de model do app conforme as 4 flags de CRUD independentes."""
     from django.contrib.auth.models import Permission
     from django.db.models import Q
 
-    acoes = _ACOES_FULL if nivel == FULL else ("view",)
+    mapa = {"view": ver, "add": criar, "change": editar, "delete": excluir}
+    acoes = [acao for acao, ligado in mapa.items() if ligado]
+    if not acoes:
+        return []
     filtro = Q()
     for acao in acoes:
         filtro |= Q(codename__startswith=f"{acao}_")
@@ -97,14 +151,16 @@ def _permissoes(app_label, nivel):
 
 
 def sincronizar_grupos():
-    """Cria/atualiza os grupos padrão no schema (tenant) atual conforme a matriz."""
+    """Cria/atualiza os grupos padrão no schema (tenant) atual conforme a
+    matriz (Gerente/Admin) e as personalizações salvas (Recepção/Dentista)."""
     from django.contrib.auth.models import Group
 
-    for papel, modulos in MATRIZ.items():
+    for papel in MATRIZ:
         grupo, _ = Group.objects.get_or_create(name=papel)
         permissoes = []
-        for modulo, nivel in modulos.items():
-            permissoes.extend(_permissoes(MODULOS[modulo], nivel))
+        for modulo in MODULOS:
+            cfg = permissao_efetiva(papel, modulo)
+            permissoes.extend(_permissoes_bool(MODULOS[modulo], **cfg))
         grupo.permissions.set(permissoes)
 
 

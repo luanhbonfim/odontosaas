@@ -188,6 +188,27 @@ def explorar_tabelas(schema_name: str) -> list[dict[str, Any]]:
     return list(tabelas_dict.values())
 
 
+def _schemas_conhecidos() -> set[str]:
+    """Nomes de schema de todos os tenants + `public` (schemas reais do banco)."""
+    from apps.tenants.models import Clinica
+
+    return set(Clinica.objects.values_list("schema_name", flat=True)) | {"public"}
+
+
+def _bloquear_referencia_a_outro_schema(sql_analise: str, schema_declarado: str) -> None:
+    """Rejeita a query (modo RW) se ela referenciar, por nome qualificado
+    (``outro_schema.tabela``), um schema diferente do declarado — a única
+    barreira real nesse modo além do `search_path`, que não impede referências
+    explícitas a outro schema."""
+    for outro in _schemas_conhecidos() - {schema_declarado}:
+        if re.search(rf'(?<![\w."]){re.escape(outro)}\s*\.', sql_analise, re.IGNORECASE):
+            raise PermissionError(
+                f"A query referencia o schema '{outro}', diferente do schema declarado "
+                f"('{schema_declarado}'). Operações RW só podem afetar o schema declarado — "
+                "abra uma sessão separada para o outro schema."
+            )
+
+
 def executar_sql_studio(
     schema_name: str,
     sql: str,
@@ -291,6 +312,17 @@ def executar_sql_studio(
             # Modo DML/Write: exige justificativa
             if not justificativa or len(justificativa.strip()) < 10:
                 raise ValueError("Justificativa com no mínimo 10 caracteres é obrigatória para operações de escrita.")
+
+            # RW roda com a credencial admin completa do Postgres (acesso a
+            # TODOS os schemas) — o `SET search_path` só resolve identificadores
+            # NÃO qualificados, então uma referência explícita tipo
+            # "outro_schema.tabela" escaparia do isolamento pretendido (fat-finger
+            # ou injeção). Bloqueia qualquer referência textual a outro schema
+            # conhecido (incluindo `public`) antes de conectar — usa `sem_strings`
+            # (literais neutralizados), não `sql_analise`, pra um UPDATE legítimo
+            # gravando texto livre (ex.: observação citando o nome de outra
+            # clínica seguido de ponto-final) não disparar falso positivo.
+            _bloquear_referencia_a_outro_schema(sem_strings, schema_clean)
 
             admin_user = db_conf.get("USER") or "odonto"
             admin_pass = db_conf.get("PASSWORD") or ""

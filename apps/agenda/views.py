@@ -1,5 +1,6 @@
 """Views (API REST) do app agenda."""
 
+from django.utils import timezone
 from rest_framework import status as http_status
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -59,6 +60,23 @@ class ConsultaViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
     def finalizar(self, request, pk=None):
         """EM_ATENDIMENTO -> REALIZADA."""
         return self._transicionar(request, Consulta.Status.REALIZADA, "finalizar")
+
+    @action(detail=True, methods=["post"])
+    def confirmar_manualmente(self, request, pk=None):
+        """Confirmação manual (ex.: recepção ligou e confirmou por telefone) —
+        fica com status_confirmacao=MANUAL, distinto de CONFIRMADA (via WhatsApp/
+        link), mas contando como confirmado pras mesmas regras (reagendamento,
+        lembretes, cor no Google)."""
+        consulta = self.get_object()
+        if consulta.status_confirmacao in Consulta.STATUS_CONFIRMACAO_CONFIRMADOS:
+            return Response(
+                {"detail": "Esta consulta já está confirmada."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        consulta.status_confirmacao = Consulta.StatusConfirmacao.MANUAL
+        consulta.confirmado_em = timezone.now()
+        consulta.save(update_fields=["status_confirmacao", "confirmado_em", "atualizado_em"])
+        return Response(self.get_serializer(consulta).data)
 
     @action(detail=True, methods=["post"])
     def estornar(self, request, pk=None):

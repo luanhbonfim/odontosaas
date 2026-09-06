@@ -19,6 +19,7 @@ const VARIANTE_STATUS: Record<string, VarianteStatus> = {
   CANCELADA: 'erro',
   PENDENTE: 'pendente',
   CONFIRMADA: 'sucesso',
+  MANUAL: 'sucesso',
   RECUSADA: 'erro',
   SEM_RESPOSTA: 'neutro',
   // Financeiro (LancamentoFinanceiro.Status) — PENDENTE já mapeado acima.
@@ -35,12 +36,4 @@ export function BadgeStatus({ status }: { status: string | null | undefined }) {
   return (
     <StatusBadge variante={VARIANTE_STATUS[status] ?? 'neutro'}>{rotuloStatus(status)}</StatusBadge>
   )
-}
-
-/** Badge da cobrança da consulta: cores distintas para convênio e particular. */
-export function BadgeCobranca({ convenioNome }: { convenioNome: string | null | undefined }) {
-  if (convenioNome) {
-    return <StatusBadge variante="info">Convênio — {convenioNome}</StatusBadge>
-  }
-  return <StatusBadge variante="pendente">Particular</StatusBadge>
 }

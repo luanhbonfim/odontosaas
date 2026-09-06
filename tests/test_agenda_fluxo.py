@@ -83,3 +83,63 @@ def test_fluxo_iniciar_finalizar():
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_confirmar_manualmente():
+    host = "confmanual.localhost"
+    clinica = _criar_clinica("conf_manual_tenant", host)
+    client = APIClient()
+    try:
+        pac = client.post(
+            "/api/pacientes/",
+            {"nome_completo": "P", "cpf": "20202020202"},
+            format="json",
+            HTTP_HOST=host,
+        ).json()
+        den = client.post(
+            "/api/dentistas/", {"nome_completo": "D", "cro": "CRO-10"}, format="json", HTTP_HOST=host
+        ).json()
+        inicio = (timezone.now() + timedelta(days=1)).replace(microsecond=0)
+        consulta = client.post(
+            "/api/consultas/",
+            {
+                "paciente": pac["id"],
+                "dentista": den["id"],
+                "inicio": inicio.isoformat(),
+                "fim": (inicio + timedelta(minutes=30)).isoformat(),
+            },
+            format="json",
+            HTTP_HOST=host,
+        ).json()
+        cid = consulta["id"]
+        assert consulta["status_confirmacao"] == "PENDENTE"
+
+        resp = client.post(f"/api/consultas/{cid}/confirmar_manualmente/", HTTP_HOST=host)
+        assert resp.status_code == 200
+        assert resp.json()["status_confirmacao"] == "MANUAL"
+        assert resp.json()["confirmado_em"] is not None
+
+        # Já confirmada (manual ou via WhatsApp) -> 400 ao tentar de novo.
+        assert (
+            client.post(f"/api/consultas/{cid}/confirmar_manualmente/", HTTP_HOST=host).status_code
+            == 400
+        )
+
+        # Conta como "confirmado" pras regras que dependem disso (reagendamento).
+        novo_inicio = inicio + timedelta(hours=1)
+        resp = client.patch(
+            f"/api/consultas/{cid}/",
+            {
+                "inicio": novo_inicio.isoformat(),
+                "fim": (novo_inicio + timedelta(minutes=30)).isoformat(),
+            },
+            format="json",
+            HTTP_HOST=host,
+        )
+        assert resp.status_code == 200
+        obj = Consulta.objects.get(pk=cid)
+        assert obj.reagendada_em is not None
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
