@@ -14,6 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -180,7 +181,7 @@ export function ConsultaModal({
 
 /** Valor da consulta + forma/parcelas (quando já informadas) — só leitura; a
  * ação de registrar/editar pagamento vira uma caixa própria e mais visível
- * (`CaixaPagamento`), não um ícone espremido do lado do valor. */
+ * (`RegistrarPagamentoDialog`), não um ícone espremido do lado do valor. */
 function ValorConsulta({ consulta }: { consulta: Consulta }) {
   const rotuloForma = FORMAS_PAGAMENTO.find((f) => f.valor === consulta.forma_pagamento)?.rotulo
   return (
@@ -196,50 +197,39 @@ function ValorConsulta({ consulta }: { consulta: Consulta }) {
   )
 }
 
-/** Caixa de pagamento (mesmo estilo da caixa "Insumos usados no atendimento"
- * logo abaixo) — só a partir de Realizada. Particular: botão bem visível pra
- * incluir a forma de pagamento (não é mais um ícone de lápis escondido).
- * Convênio: aviso apontando pra guia, sem botão (não se registra pagamento
- * aqui — é faturado pela guia do paciente). */
-function CaixaPagamento({ consulta, onIncluir }: { consulta: Consulta; onIncluir: () => void }) {
-  if (consulta.convenio) {
-    return (
-      <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
-        <Wallet className="size-4 shrink-0 text-muted-foreground" />
-        Cobrança por convênio — gerencie pela guia do paciente.
-      </div>
-    )
-  }
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
-      <div className="flex items-center gap-2 text-sm">
-        <Wallet className="size-4 shrink-0 text-muted-foreground" />
-        Pagamento
-      </div>
-      <Button
-        type="button"
-        variant={consulta.tem_lancamento ? 'secondary' : 'default'}
-        size="sm"
-        onClick={onIncluir}
-      >
-        {consulta.tem_lancamento ? 'Editar pagamento' : 'Incluir método de pagamento'}
-      </Button>
-    </div>
-  )
-}
-
-/** Painel de largura total para editar valor/forma de pagamento/parcelas — a
- * cobrança pode ser corrigida a qualquer momento (ex.: trabalho extra durante
- * o atendimento), mesmo depois de EM_ATENDIMENTO/REALIZADA. Mesmo estilo de
- * campo (Label + Input/select) do formulário principal de agendamento. */
-function PainelEdicaoPagamento({ consulta, aoFechar }: { consulta: Consulta; aoFechar: () => void }) {
+/** Registrar/editar a forma de pagamento de uma consulta Realizada — modal
+ * próprio (mesmo padrão do "Registrar insumos": um `Dialog` disparado por um
+ * botão bem visível, não um ícone de lápis escondido nem um painel dentro do
+ * modal de detalhes). Ao salvar, repassa a consulta já atualizada (retorno
+ * real da API) pro pai via `aoRegistrar`, pra a visualização por baixo
+ * refletir na hora — sem precisar fechar/reabrir o modal de detalhes. */
+function RegistrarPagamentoDialog({
+  consulta,
+  trigger,
+  aoRegistrar,
+}: {
+  consulta: Consulta
+  trigger: ReactNode
+  aoRegistrar: (consultaAtualizada: Consulta) => void
+}) {
   const atualizar = useAtualizarConsulta()
+  const [aberto, setAberto] = useState(false)
   const [valor, setValor] = useState(String(consulta.valor ?? ''))
   const [formaPagamento, setFormaPagamento] = useState<string>(consulta.forma_pagamento ?? '')
   const [parcelas, setParcelas] = useState(String(consulta.parcelas ?? 1))
   const [dataPrimeiraParcela, setDataPrimeiraParcela] = useState(
     consulta.data_primeira_parcela ?? '',
   )
+
+  function aoAbrir(novoAberto: boolean) {
+    if (novoAberto) {
+      setValor(String(consulta.valor ?? ''))
+      setFormaPagamento(consulta.forma_pagamento ?? '')
+      setParcelas(String(consulta.parcelas ?? 1))
+      setDataPrimeiraParcela(consulta.data_primeira_parcela ?? '')
+    }
+    setAberto(novoAberto)
+  }
 
   async function salvar() {
     if (!valor || Number(valor) <= 0) {
@@ -251,7 +241,7 @@ function PainelEdicaoPagamento({ consulta, aoFechar }: { consulta: Consulta; aoF
       return
     }
     try {
-      await atualizar.mutateAsync({
+      const consultaAtualizada = await atualizar.mutateAsync({
         id: consulta.id,
         dados: {
           valor,
@@ -260,89 +250,100 @@ function PainelEdicaoPagamento({ consulta, aoFechar }: { consulta: Consulta; aoF
           data_primeira_parcela: dataPrimeiraParcela || null,
         },
       })
-      toast.success('Pagamento registrado.')
-      aoFechar()
+      aoRegistrar(consultaAtualizada)
+      toast.success(consulta.tem_lancamento ? 'Pagamento atualizado.' : 'Pagamento incluído.')
+      setAberto(false)
     } catch (excecao) {
       toast.error((excecao as ErroApi).mensagem ?? 'Não foi possível registrar o pagamento.')
     }
   }
 
   return (
-    <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
-      <h4 className="text-sm font-semibold">
-        {consulta.tem_lancamento ? 'Editar pagamento' : 'Incluir método de pagamento'}
-      </h4>
+    <Dialog open={aberto} onOpenChange={aoAbrir}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {consulta.tem_lancamento ? 'Editar pagamento' : 'Incluir método de pagamento'}
+          </DialogTitle>
+          <DialogDescription>
+            Valor e forma de pagamento da consulta — necessário pra gerar a conta a receber.
+          </DialogDescription>
+        </DialogHeader>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="valor-edicao">
-          Valor{' '}
-          <span aria-hidden="true" className="text-destructive">
-            *
-          </span>
-        </Label>
-        <Input
-          id="valor-edicao"
-          inputMode="decimal"
-          aria-required="true"
-          value={valor}
-          onChange={(e) => setValor(e.target.value)}
-        />
-      </div>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="valor-edicao">
+              Valor{' '}
+              <span aria-hidden="true" className="text-destructive">
+                *
+              </span>
+            </Label>
+            <Input
+              id="valor-edicao"
+              inputMode="decimal"
+              aria-required="true"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+            />
+          </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="forma-pagamento-edicao">
-          Forma de pagamento{' '}
-          <span aria-hidden="true" className="text-destructive">
-            *
-          </span>
-        </Label>
-        <select
-          id="forma-pagamento-edicao"
-          className={classeSelect}
-          aria-required="true"
-          value={formaPagamento}
-          onChange={(e) => setFormaPagamento(e.target.value)}
-        >
-          <option value="">Selecione…</option>
-          {FORMAS_PAGAMENTO.map((f) => (
-            <option key={f.valor} value={f.valor}>
-              {f.rotulo}
-            </option>
-          ))}
-        </select>
-      </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="forma-pagamento-edicao">
+              Forma de pagamento{' '}
+              <span aria-hidden="true" className="text-destructive">
+                *
+              </span>
+            </Label>
+            <select
+              id="forma-pagamento-edicao"
+              className={classeSelect}
+              aria-required="true"
+              value={formaPagamento}
+              onChange={(e) => setFormaPagamento(e.target.value)}
+            >
+              <option value="">Selecione…</option>
+              {FORMAS_PAGAMENTO.map((f) => (
+                <option key={f.valor} value={f.valor}>
+                  {f.rotulo}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="parcelas-edicao">Parcelas</Label>
-          <Input
-            id="parcelas-edicao"
-            type="number"
-            min={1}
-            value={parcelas}
-            onChange={(e) => setParcelas(e.target.value)}
-          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="parcelas-edicao">Parcelas</Label>
+              <Input
+                id="parcelas-edicao"
+                type="number"
+                min={1}
+                value={parcelas}
+                onChange={(e) => setParcelas(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="data-parcela-edicao">Data da 1ª parcela</Label>
+              <Input
+                id="data-parcela-edicao"
+                type="date"
+                value={dataPrimeiraParcela}
+                onChange={(e) => setDataPrimeiraParcela(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="data-parcela-edicao">Data da 1ª parcela</Label>
-          <Input
-            id="data-parcela-edicao"
-            type="date"
-            value={dataPrimeiraParcela}
-            onChange={(e) => setDataPrimeiraParcela(e.target.value)}
-          />
-        </div>
-      </div>
 
-      <div className="flex justify-end gap-2 border-t pt-3">
-        <Button type="button" variant="outline" onClick={aoFechar}>
-          Cancelar
-        </Button>
-        <Button type="button" onClick={salvar} disabled={atualizar.isPending}>
-          {atualizar.isPending ? 'Salvando…' : 'Salvar'}
-        </Button>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setAberto(false)}>
+            Cancelar
+          </Button>
+          <Button type="button" onClick={salvar} disabled={atualizar.isPending}>
+            {atualizar.isPending ? 'Salvando…' : 'Salvar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -354,9 +355,16 @@ function VisualizacaoConsulta({
   consulta: Consulta
   aoFechar: () => void
 }) {
+  const { usuario } = useSessao()
+  const ehAdmin = usuario?.papel === 'ADMIN'
   const transicao = useTransicaoConsulta()
   const remover = useRemoverConsulta()
-  const [editandoPagamento, setEditandoPagamento] = useState(false)
+  // Sobrescreve os campos de pagamento com o retorno real da API assim que o
+  // usuário registra/edita — a consulta recebida por prop é uma foto estática
+  // (não vem de uma query reativa), então sem isso a visualização ficava com
+  // dado velho até fechar e reabrir o modal.
+  const [pagamentoAtualizado, setPagamentoAtualizado] = useState<Consulta | null>(null)
+  const consultaAtual = pagamentoAtualizado ?? consulta
 
   async function finalizar() {
     try {
@@ -384,7 +392,7 @@ function VisualizacaoConsulta({
     ['Início', <DateTime iso={consulta.inicio} />],
     ['Fim', <DateTime iso={consulta.fim} />],
     ['Procedimento', consulta.procedimento_catalogo_nome || consulta.procedimento || '—'],
-    ['Valor', <ValorConsulta consulta={consulta} />],
+    ['Valor', <ValorConsulta consulta={consultaAtual} />],
     ['Status', ROTULO_STATUS[consulta.status ?? ''] ?? consulta.status],
     ['Google Agenda', <BadgeSyncGoogle sync={consulta.sync_google} />],
   ]
@@ -405,9 +413,33 @@ function VisualizacaoConsulta({
             </div>
           ))}
         </div>
-        {consulta.status === 'REALIZADA' && (
-          <CaixaPagamento consulta={consulta} onIncluir={() => setEditandoPagamento(true)} />
-        )}
+        {consulta.status === 'REALIZADA' &&
+          (consultaAtual.convenio ? (
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
+              <Wallet className="size-4 shrink-0 text-muted-foreground" />
+              Cobrança por convênio — gerencie pela guia do paciente.
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+              <div className="flex items-center gap-2 text-sm">
+                <Wallet className="size-4 shrink-0 text-muted-foreground" />
+                Pagamento
+              </div>
+              <RegistrarPagamentoDialog
+                consulta={consultaAtual}
+                aoRegistrar={setPagamentoAtualizado}
+                trigger={
+                  <Button
+                    type="button"
+                    variant={consultaAtual.tem_lancamento ? 'secondary' : 'default'}
+                    size="sm"
+                  >
+                    {consultaAtual.tem_lancamento ? 'Editar pagamento' : 'Incluir método de pagamento'}
+                  </Button>
+                }
+              />
+            </div>
+          ))}
         {['EM_ATENDIMENTO', 'REALIZADA'].includes(consulta.status ?? '') && (
           <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
             <div className="flex items-center gap-2 text-sm">
@@ -424,18 +456,18 @@ function VisualizacaoConsulta({
             />
           </div>
         )}
-        {editandoPagamento && (
-          <PainelEdicaoPagamento
-            consulta={consulta}
-            aoFechar={() => setEditandoPagamento(false)}
-          />
-        )}
         <DialogFooter className="flex-wrap">
-          {/* Excluir: só cancelada pode (agendada excluiria pelo formulário de edição). */}
-          {consulta.status === 'CANCELADA' && (
+          {/* Excluir: cancelada pode qualquer um (agendada excluiria pelo formulário
+           * de edição); qualquer outro status (inclusive Realizada) só Admin, que
+           * cascateia de verdade pagamento e baixas de estoque vinculados. */}
+          {(consulta.status === 'CANCELADA' || ehAdmin) && (
             <ConfirmDialog
               titulo="Excluir consulta?"
-              descricao="A consulta cancelada será removida definitivamente."
+              descricao={
+                consulta.status === 'CANCELADA'
+                  ? 'A consulta cancelada será removida definitivamente.'
+                  : 'Consulta ATENDIDA: excluir também apaga em cascata o pagamento e as baixas de estoque vinculados a ela. Ação exclusiva de Admin e não pode ser desfeita.'
+              }
               rotuloConfirmar="Excluir"
               destrutivo
               onConfirmar={excluir}

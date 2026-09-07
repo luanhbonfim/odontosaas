@@ -223,3 +223,95 @@ def test_excluir_consulta_cancelada_bloqueada_por_lancamento_pago():
         clinica.delete(force_drop=True)
 
 
+@pytest.mark.no_auto_auth
+@pytest.mark.django_db(transaction=True)
+def test_admin_exclui_consulta_realizada_em_cascata():
+    """ADMIN (e só ADMIN) pode excluir uma consulta REALIZADA com pagamento já
+    PAGO e baixa de estoque — e isso cascateia de verdade (some o lançamento e
+    a baixa, não fica órfão); RECEPÇÃO continua bloqueada como antes."""
+    from django.contrib.auth import get_user_model
+    from django.core.cache import cache
+    from django_tenants.utils import schema_context
+
+    from apps.estoque.models import ConsumoInsumo, Insumo, MovimentacaoEstoque
+    from apps.financeiro.models import LancamentoFinanceiro
+    from apps.usuarios.perfis import sincronizar_grupos
+
+    Usuario = get_user_model()
+    host = "admin-exclui-realizada.localhost"
+    clinica = _criar_clinica("admin_exclui_realizada_tenant", host)
+    try:
+        with schema_context(clinica.schema_name):
+            sincronizar_grupos()
+            Usuario.objects.create_user(email="admin@c.com", password="Senha12345", papel="ADMIN")
+            Usuario.objects.create_user(email="recep@c.com", password="Senha12345", papel="RECEPCAO")
+            insumo = Insumo.objects.create(nome="Luva")
+            MovimentacaoEstoque.objects.create(
+                insumo=insumo, tipo=MovimentacaoEstoque.Tipo.ENTRADA, quantidade=10
+            )
+
+        def cliente(email):
+            cache.clear()
+            c = APIClient()
+            tok = c.post(
+                "/api/auth/token/",
+                {"email": email, "password": "Senha12345"},
+                format="json",
+                HTTP_HOST=host,
+            ).json()["access"]
+            c.credentials(HTTP_AUTHORIZATION=f"Bearer {tok}")
+            return c
+
+        admin = cliente("admin@c.com")
+        recep = cliente("recep@c.com")
+
+        pac, den = _base(admin, host)  # RECEPCAO só tem READ em dentistas
+        inicio = (timezone.now() + timedelta(days=1)).replace(microsecond=0)
+        fim = inicio + timedelta(minutes=30)
+        consulta = recep.post(
+            "/api/consultas/",
+            {
+                "paciente": pac,
+                "dentista": den,
+                "inicio": inicio.isoformat(),
+                "fim": fim.isoformat(),
+                "valor": "150.00",
+                "forma_pagamento": "PIX",
+            },
+            format="json",
+            HTTP_HOST=host,
+        ).json()
+
+        with schema_context(clinica.schema_name):
+            ConsumoInsumo.objects.create(
+                consulta_id=consulta["id"], insumo=insumo, quantidade=2
+            )
+
+        for novo in ("EM_ATENDIMENTO", "REALIZADA"):
+            recep.patch(
+                f"/api/consultas/{consulta['id']}/", {"status": novo}, format="json", HTTP_HOST=host
+            )
+
+        with schema_context(clinica.schema_name):
+            LancamentoFinanceiro.objects.filter(consulta_id=consulta["id"]).update(
+                status=LancamentoFinanceiro.Status.PAGO
+            )
+            assert insumo.calcular_saldo() == 8  # 10 - 2 (baixa automática ao Realizar)
+
+        # RECEPÇÃO: continua bloqueada (mesma regra de sempre pra não-admin).
+        resp_recep = recep.delete(f"/api/consultas/{consulta['id']}/", HTTP_HOST=host)
+        assert resp_recep.status_code == 400
+
+        # ADMIN: exclui mesmo Realizada + paga, e cascateia de verdade.
+        resp_admin = admin.delete(f"/api/consultas/{consulta['id']}/", HTTP_HOST=host)
+        assert resp_admin.status_code == 204
+
+        with schema_context(clinica.schema_name):
+            assert not LancamentoFinanceiro.objects.filter(consulta_id=consulta["id"]).exists()
+            assert not MovimentacaoEstoque.objects.filter(consulta_id=consulta["id"]).exists()
+            assert insumo.calcular_saldo() == 10  # baixa cascateada some -> saldo volta
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+

@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from apps.core.mixins import FiltraPorPacienteMixin
 from apps.financeiro.models import LancamentoFinanceiro
 from apps.pacientes.models import Guia
+from apps.usuarios.models import Usuario
 
 from .models import Anamnese, Consulta, Ficha
 from .serializers import AnamneseSerializer, ConsultaSerializer, FichaSerializer
@@ -46,22 +47,33 @@ class ConsultaViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
         self._recalcular_vinculos(instance)
 
     def destroy(self, request, *args, **kwargs):
-        """AGENDADA ou CANCELADA podem ser excluídas; realizadas usam a action 'estornar'.
+        """AGENDADA ou CANCELADA podem ser excluídas por qualquer papel com acesso
+        (bloqueia se houver lançamento financeiro PAGO vinculado — o FK é SET_NULL,
+        então sem essa checagem a exclusão órfã silenciosamente um recebimento já
+        quitado); realizadas usam a action 'estornar' antes.
 
-        Bloqueia se houver lançamento financeiro PAGO vinculado (dado vinculado real —
-        o FK é SET_NULL, então sem essa checagem a exclusão órfã silenciosamente um
-        recebimento já quitado)."""
+        ADMIN é a exceção: exclui qualquer consulta, em qualquer status (inclusive
+        Realizada e com pagamento já quitado) — e cascateia de verdade tudo que só
+        existe por causa dela (lançamentos financeiros, baixas de estoque), que por
+        padrão (SET_NULL) só ficariam órfãos numa exclusão normal. A guia do
+        convênio (se houver) só é desvinculada, não apagada — ela é um documento de
+        cobrança com vida própria, não algo "da" consulta."""
         consulta = self.get_object()
-        if consulta.status not in _STATUS_EXCLUIVEIS:
-            return Response(
-                {"detail": "Só é possível excluir uma consulta agendada ou cancelada."},
-                status=http_status.HTTP_400_BAD_REQUEST,
-            )
-        if consulta.lancamentos.filter(status=LancamentoFinanceiro.Status.PAGO).exists():
-            return Response(
-                {"detail": "Não é possível excluir: há um lançamento financeiro pago vinculado a esta consulta."},
-                status=http_status.HTTP_400_BAD_REQUEST,
-            )
+        eh_admin = getattr(request.user, "papel", None) == Usuario.Papel.ADMIN
+        if not eh_admin:
+            if consulta.status not in _STATUS_EXCLUIVEIS:
+                return Response(
+                    {"detail": "Só é possível excluir uma consulta agendada ou cancelada."},
+                    status=http_status.HTTP_400_BAD_REQUEST,
+                )
+            if consulta.lancamentos.filter(status=LancamentoFinanceiro.Status.PAGO).exists():
+                return Response(
+                    {"detail": "Não é possível excluir: há um lançamento financeiro pago vinculado a esta consulta."},
+                    status=http_status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            consulta.lancamentos.all().delete()
+            consulta.movimentacoes_estoque.all().delete()
         return super().destroy(request, *args, **kwargs)
 
     def _transicionar(self, request, novo_status, acao):

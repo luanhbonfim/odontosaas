@@ -14,6 +14,7 @@ const {
   pacientesMock,
   planosMock,
   pacienteMock,
+  useSessaoMock,
 } = vi.hoisted(() => ({
   criarMock: vi.fn(),
   atualizarMock: vi.fn(),
@@ -23,6 +24,7 @@ const {
   pacientesMock: vi.fn(),
   planosMock: vi.fn(),
   pacienteMock: vi.fn(),
+  useSessaoMock: vi.fn(),
 }))
 
 vi.mock('./use-agenda', async (importOriginal) => ({
@@ -63,11 +65,13 @@ vi.mock('@/features/pacientes/use-paciente-detalhe', () => ({
 vi.mock('@/features/estoque/consumo-consulta-dialog', () => ({
   ConsumoConsultaDialog: ({ trigger }: { trigger: ReactNode }) => trigger,
 }))
-vi.mock('@/features/auth/use-sessao', () => ({
-  useSessao: () => ({
+vi.mock('@/features/auth/use-sessao', () => ({ useSessao: useSessaoMock }))
+
+function sessaoComPapel(papel: string) {
+  return {
     usuario: {
       id: 1,
-      papel: 'ADMIN',
+      papel,
       clinica: {
         schema: 'demo',
         nomeFantasia: 'Demo',
@@ -76,12 +80,15 @@ vi.mock('@/features/auth/use-sessao', () => ({
     },
     carregando: false,
     erro: false,
-  }),
-}))
+  }
+}
 
 describe('ConsultaModal', () => {
   // Por padrão o paciente não tem vínculo -> libera todos os dentistas.
-  beforeEach(() => pacienteMock.mockReturnValue({ data: undefined }))
+  beforeEach(() => {
+    pacienteMock.mockReturnValue({ data: undefined })
+    useSessaoMock.mockReturnValue(sessaoComPapel('ADMIN'))
+  })
   afterEach(() => vi.clearAllMocks())
 
   it('agenda uma consulta particular: paciente, dentista, valor e salva', async () => {
@@ -508,7 +515,8 @@ describe('ConsultaModal', () => {
     expect(aoFechar).toHaveBeenCalled()
   })
 
-  it('modo visualização: consulta realizada não mostra opção de excluir', () => {
+  it('modo visualização: consulta realizada não mostra opção de excluir pra quem não é Admin', () => {
+    useSessaoMock.mockReturnValue(sessaoComPapel('RECEPCAO'))
     render(
       <ConsultaModal
         estado={{
@@ -529,6 +537,30 @@ describe('ConsultaModal', () => {
       />,
     )
     expect(screen.queryByRole('button', { name: 'Excluir consulta' })).toBeNull()
+  })
+
+  it('Admin pode excluir uma consulta realizada (exclusão em cascata)', () => {
+    // useSessaoMock já é ADMIN por padrão (beforeEach).
+    render(
+      <ConsultaModal
+        estado={{
+          modo: 'visualizar',
+          consulta: {
+            id: 12,
+            paciente: 10,
+            paciente_nome: 'Maria Souza',
+            dentista: 5,
+            dentista_nome: 'Dra. Ana',
+            inicio: '2026-08-10T15:00:00Z',
+            fim: '2026-08-10T15:30:00Z',
+            valor: '200.00',
+            status: 'REALIZADA',
+          } as never,
+        }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Excluir consulta' })).toBeInTheDocument()
   })
 
   it('permite editar o valor/forma de pagamento de uma consulta REALIZADA (particular) já com pagamento', async () => {
@@ -555,7 +587,7 @@ describe('ConsultaModal', () => {
       />,
     )
     await user.click(screen.getByRole('button', { name: 'Editar pagamento' }))
-    expect(screen.getByText('Editar pagamento', { selector: 'h4' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Editar pagamento' })).toBeInTheDocument()
     const campoValor = screen.getByLabelText(/^valor/i)
     await user.clear(campoValor)
     await user.type(campoValor, '250')
