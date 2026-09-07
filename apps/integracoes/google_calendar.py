@@ -13,6 +13,7 @@ import uuid
 from django.conf import settings
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from google.auth.exceptions import RefreshError
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -416,7 +417,7 @@ def reconciliar_google(credenciais=None, aplicar_cancelamento=True):
             "credencial"
         ):
             if marca.credencial_id and marca.google_event_id:
-                with contextlib.suppress(HttpError):
+                with contextlib.suppress(HttpError, RefreshError):
                     build_service(marca.credencial).events().delete(
                         calendarId=marca.calendar_id, eventId=marca.google_event_id
                     ).execute()
@@ -428,48 +429,63 @@ def reconciliar_google(credenciais=None, aplicar_cancelamento=True):
         janela = timezone.now() - dt.timedelta(days=7)
         EventoGoogleRemovido.objects.filter(processado=True, criado_em__lt=janela).delete()
 
+    credenciais_com_erro = []
     for credencial in credenciais:
-        alvo = list(_consultas_no_google_para(credencial))
-        alvo_ids = set()
-        for consulta in alvo:
-            evento = AgendaEvento.objects.filter(
-                consulta=consulta, credencial=credencial
-            ).first()
-            # Evento IMPORTADO (a clínica criou à mão no Google) é intocável: não
-            # empurramos atualização. Fica no escopo (não vira "obsoleto" a apagar).
-            if evento is not None and evento.origem == AgendaEvento.Origem.IMPORTADO:
+        try:
+            alvo = list(_consultas_no_google_para(credencial))
+            alvo_ids = set()
+            for consulta in alvo:
+                evento = AgendaEvento.objects.filter(
+                    consulta=consulta, credencial=credencial
+                ).first()
+                # Evento IMPORTADO (a clínica criou à mão no Google) é intocável: não
+                # empurramos atualização. Fica no escopo (não vira "obsoleto" a apagar).
+                if evento is not None and evento.origem == AgendaEvento.Origem.IMPORTADO:
+                    alvo_ids.add(consulta.id)
+                    continue
+                assinatura = _assinatura(consulta)
+                # Snapshot/diff: só cria (novo) ou atualiza (mudou de fato); o que já
+                # está igual no Google é ignorado (não conta como "atualizado").
+                if evento is None or not evento.google_event_id:
+                    with contextlib.suppress(HttpError):
+                        sincronizar_consulta(consulta, credencial)
+                        criados += 1
+                elif evento.assinatura != assinatura:
+                    with contextlib.suppress(HttpError):
+                        sincronizar_consulta(consulta, credencial)
+                        atualizados += 1
                 alvo_ids.add(consulta.id)
-                continue
-            assinatura = _assinatura(consulta)
-            # Snapshot/diff: só cria (novo) ou atualiza (mudou de fato); o que já
-            # está igual no Google é ignorado (não conta como "atualizado").
-            if evento is None or not evento.google_event_id:
-                with contextlib.suppress(HttpError):
-                    sincronizar_consulta(consulta, credencial)
-                    criados += 1
-            elif evento.assinatura != assinatura:
-                with contextlib.suppress(HttpError):
-                    sincronizar_consulta(consulta, credencial)
-                    atualizados += 1
-            alvo_ids.add(consulta.id)
 
-        # Eventos desta agenda cujas consultas saíram do escopo/estado (ex.:
-        # cancelada/faltou que estava no Google) -> remove do Google, mantém no app.
-        obsoletos = AgendaEvento.objects.filter(credencial=credencial).exclude(
-            consulta_id__in=alvo_ids
-        )
-        for evento in obsoletos:
-            # NUNCA toca em evento IMPORTADO (manual da clínica): não remove do
-            # Google nem apaga o espelho (evita re-importar em loop).
-            if evento.origem != AgendaEvento.Origem.SISTEMA:
-                continue
-            if evento.google_event_id:
-                with contextlib.suppress(HttpError):
-                    build_service(credencial).events().delete(
-                        calendarId=evento.calendar_id, eventId=evento.google_event_id
-                    ).execute()
-                removidos += 1
-            evento.delete()
+            # Eventos desta agenda cujas consultas saíram do escopo/estado (ex.:
+            # cancelada/faltou que estava no Google) -> remove do Google, mantém no app.
+            obsoletos = AgendaEvento.objects.filter(credencial=credencial).exclude(
+                consulta_id__in=alvo_ids
+            )
+            for evento in obsoletos:
+                # NUNCA toca em evento IMPORTADO (manual da clínica): não remove do
+                # Google nem apaga o espelho (evita re-importar em loop).
+                if evento.origem != AgendaEvento.Origem.SISTEMA:
+                    continue
+                if evento.google_event_id:
+                    with contextlib.suppress(HttpError):
+                        build_service(credencial).events().delete(
+                            calendarId=evento.calendar_id, eventId=evento.google_event_id
+                        ).execute()
+                    removidos += 1
+                evento.delete()
+        except RefreshError:
+            # Refresh token revogado/expirado no Google (ex.: app OAuth em modo
+            # "Teste" expira o refresh token em 7 dias) — nenhuma chamada a essa
+            # credencial vai funcionar até reconectar. Limpa os tokens pra
+            # `_conexao()` refletir "Desconectado" de verdade (convida a
+            # reconectar) em vez de tentar de novo, e falhar de novo, a cada
+            # ciclo do Beat — e, principalmente, sem derrubar com 500 o pedido
+            # de quem clicou em "Forçar sincronização".
+            credencial.access_token = ""
+            credencial.refresh_token = ""
+            credencial.save(update_fields=["access_token", "refresh_token", "atualizado_em"])
+            credenciais_com_erro.append(str(credencial))
+            continue
 
     # Só a reconciliação de nível clínica (Beat/gestor) carimba a última sync.
     if aplicar_cancelamento:
@@ -480,4 +496,5 @@ def reconciliar_google(credenciais=None, aplicar_cancelamento=True):
         "atualizados": atualizados,
         "removidos": removidos,
         "canceladas": canceladas,
+        "credenciais_com_erro": credenciais_com_erro,
     }

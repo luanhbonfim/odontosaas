@@ -81,6 +81,14 @@ export function IntegracoesPage() {
           ? `Sincronização: ${partes.join(', ')}.`
           : 'Sincronização concluída — nada a atualizar.',
       )
+      // Conexão(ões) com token do Google expirado/revogado durante a rodada —
+      // já foram desconectadas automaticamente (não crasham a sincronização),
+      // mas precisam ser reconectadas à mão pra voltar a sincronizar de fato.
+      if (r.credenciais_com_erro?.length) {
+        toast.warning(
+          `Conexão expirada, reconecte: ${r.credenciais_com_erro.join(', ')}.`,
+        )
+      }
     } catch (excecao) {
       toast.error((excecao as ErroApi).mensagem ?? 'Não foi possível sincronizar.')
     }

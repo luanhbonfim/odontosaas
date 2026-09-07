@@ -10,6 +10,9 @@ export type ResumoSync = {
   atualizados: number
   removidos: number
   canceladas: number
+  /** Nomes das agendas cujo token do Google expirou/foi revogado durante esta
+   * rodada (precisam reconectar em Integrações) — vazio quando tudo OK. */
+  credenciais_com_erro?: string[]
 }
 export type ConfigSync = {
   intervalo_minutos: number
