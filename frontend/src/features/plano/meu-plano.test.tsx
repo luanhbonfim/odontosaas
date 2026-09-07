@@ -158,4 +158,55 @@ describe('MeuPlanoPage', () => {
     expect(await screen.findByText('A vigência do seu plano expirou')).toBeInTheDocument()
     expect(screen.getByText('Renovar Agora')).toBeInTheDocument()
   })
+
+  it('usa o limite configurável (dias_aviso) pro aviso de vencimento próximo, não um valor fixo', async () => {
+    // 9 dias restantes só dispara o aviso porque dias_aviso=10 (config) — com o
+    // antigo limite fixo de 7 no código, isso NÃO apareceria.
+    vi.mocked(api.get).mockResolvedValueOnce({
+      data: {
+        clinica: {
+          nome_fantasia: 'Clínica Perto do Vencimento',
+          razao_social: 'Perto LTDA',
+          cnpj: null,
+          schema_name: 'perto',
+          responsavel_nome: 'Dr. Perto',
+          responsavel_email: null,
+          responsavel_telefone: '11999999999',
+        },
+        plano: {
+          id: 3,
+          nome: 'Plano Básico',
+          periodicidade: 'MENSAL',
+          periodicidade_display: 'Mensal',
+          preco_mensal: 99.9,
+          preco_anual: null,
+        },
+        status: {
+          status_assinatura: 'ATIVA',
+          status_efetivo: 'ATIVA',
+          ativo: true,
+          vigencia_fim: '2026-12-31',
+          dias_restantes: 9,
+          dias_aviso: 10,
+          vencido: false,
+        },
+        capacidade: {
+          dentistas: { atual: 2, limite: 2, ilimitado: false, percentual: 100, atingiu_limite: true },
+          usuarios: { atual: 2, limite: 2, ilimitado: false, percentual: 100, atingiu_limite: true },
+          pacientes: { atual: 10, limite: 100, ilimitado: false, percentual: 10, atingiu_limite: false },
+          armazenamento_mb: { atual_mb: 20, limite_mb: 1024, percentual: 2 },
+        },
+        modulos: { financeiro: false, estoque: false, sync_google: false, whatsapp_waha: false },
+        upgrade: {
+          contato_comercial_email: 'comercial@odontosaas.com.br',
+          contato_comercial_whatsapp: '5511999999999',
+          whatsapp_url: 'https://wa.me/5511999999999',
+        },
+      },
+    })
+
+    renderComQueryClient(<MeuPlanoPage />)
+
+    expect(await screen.findByText('Renovação próxima do vencimento')).toBeInTheDocument()
+  })
 })

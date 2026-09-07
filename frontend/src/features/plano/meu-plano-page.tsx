@@ -85,7 +85,7 @@ export function MeuPlanoPage() {
             </a>
           </Button>
         </div>
-      ) : status.dias_restantes !== null && status.dias_restantes <= 7 ? (
+      ) : status.dias_restantes !== null && status.dias_restantes <= status.dias_aviso ? (
         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">
             <Clock className="size-5 shrink-0 text-amber-600 dark:text-amber-400" />

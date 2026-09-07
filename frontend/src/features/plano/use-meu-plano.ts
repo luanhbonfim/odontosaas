@@ -26,6 +26,9 @@ export type MeuPlanoData = {
     vigencia_fim: string | null
     dias_restantes: number | null
     vencido: boolean
+    /** Configurável pelo Vendor Admin (Aviso de Vencimento) — dias de
+     * antecedência em que o aviso passa a aparecer. */
+    dias_aviso: number
   }
   capacidade: {
     dentistas: {

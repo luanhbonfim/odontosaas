@@ -213,11 +213,12 @@ describe('Sprint V9 — Suíte E2E e Hardening do Vendor Admin', () => {
     // Confere presença das 7 abas
     expect(screen.getByRole('button', { name: /1\. Dados Gerais/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /2\. Assinatura/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /3\. Google/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /4\. WhatsApp/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /5\. Métricas/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /6\. Suporte/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /7\. Trilha/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /3\. Histórico/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /4\. Google/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /5\. WhatsApp/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /6\. Métricas/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /7\. Suporte/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /8\. Trilha/i })).toBeInTheDocument()
 
     // Alterna para aba Assinatura
     await user.click(screen.getByRole('button', { name: /2\. Assinatura/i }))

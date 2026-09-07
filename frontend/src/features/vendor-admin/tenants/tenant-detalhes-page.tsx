@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   Plus,
   Package,
+  History,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -47,12 +48,13 @@ import { urlDaClinica } from '../url-clinica'
 import { mascararCnpj, mascararCpf, mascararTelefone } from '@/lib/utils/mascaras'
 import { useVendorPlanos } from '../planos/use-vendor-planos'
 import { TrocarPlanoModal } from './trocar-plano-modal'
+import { RenovarAssinaturaModal } from './renovar-assinatura-modal'
 import {
   type ErroOperacional,
   type RegistroAuditoria,
   useVendorTenantDetalhes,
   useAtualizarTenant,
-  useRenovarTenant,
+  useHistoricoPagamentos,
   useImpersonateTenant,
   useEncerrarSuporte,
   useGoogleParams,
@@ -63,7 +65,15 @@ import {
   useTenantSuporte,
 } from './use-vendor-tenants'
 
-type AbaAtiva = 'geral' | 'assinatura' | 'google' | 'whatsapp' | 'metricas' | 'suporte' | 'auditoria'
+type AbaAtiva =
+  | 'geral'
+  | 'assinatura'
+  | 'historico'
+  | 'google'
+  | 'whatsapp'
+  | 'metricas'
+  | 'suporte'
+  | 'auditoria'
 
 // Schema para atualização de dados gerais e responsáveis
 const schemaGeral = z.object({
@@ -127,7 +137,8 @@ export function TenantDetalhesPage() {
   const { data: tenant, isLoading } = useVendorTenantDetalhes(tenantId)
   const { data: planos } = useVendorPlanos()
   const atualizar = useAtualizarTenant()
-  const renovar = useRenovarTenant()
+  const { data: historicoPagamentos, isLoading: carregandoHistorico } =
+    useHistoricoPagamentos(tenantId)
   const impersonate = useImpersonateTenant()
   const encerrarSuporte = useEncerrarSuporte()
 
@@ -145,6 +156,7 @@ export function TenantDetalhesPage() {
   const [segundosDigitacao, setSegundosDigitacao] = useState<number>(4)
   const [intervaloFila, setIntervaloFila] = useState<number>(20)
   const [trocarPlanoAberto, setTrocarPlanoAberto] = useState(false)
+  const [renovarAberto, setRenovarAberto] = useState(false)
 
   // Sincroniza dados do Google e WhatsApp quando carregados da API
   useEffect(() => {
@@ -494,21 +506,22 @@ export function TenantDetalhesPage() {
         {[
           { id: 'geral', rotulo: '1. Dados Gerais & Domínios', icone: Building2 },
           { id: 'assinatura', rotulo: '2. Assinatura & Overrides', icone: Shield },
+          { id: 'historico', rotulo: '3. Histórico de Pagamentos', icone: History },
           {
             id: 'google',
-            rotulo: '3. Google Calendar',
+            rotulo: '4. Google Calendar',
             icone: Calendar,
             naoAplicavel: !googleHabilitado,
           },
           {
             id: 'whatsapp',
-            rotulo: '4. WhatsApp (WAHA)',
+            rotulo: '5. WhatsApp (WAHA)',
             icone: MessageSquare,
             naoAplicavel: !whatsappHabilitado,
           },
-          { id: 'metricas', rotulo: '5. Métricas & Erros', icone: Activity },
-          { id: 'suporte', rotulo: '6. Suporte & Conexões', icone: UserCheck },
-          { id: 'auditoria', rotulo: '7. Trilha de Auditoria (Logs)', icone: ShieldCheck },
+          { id: 'metricas', rotulo: '6. Métricas & Erros', icone: Activity },
+          { id: 'suporte', rotulo: '7. Suporte & Conexões', icone: UserCheck },
+          { id: 'auditoria', rotulo: '8. Trilha de Auditoria (Logs)', icone: ShieldCheck },
         ].map((aba) => {
           const Icone = aba.icone
           const ativa = abaAtiva === aba.id
@@ -764,27 +777,16 @@ export function TenantDetalhesPage() {
                 </Campo>
               </div>
 
-              {/* Renovar assinatura: só aparece se a clínica estiver VENCIDA. Estende a
-                  vigência conforme a periodicidade do plano e reativa a clínica. */}
-              {tenant.dias_restantes_vigencia !== null &&
-                tenant.dias_restantes_vigencia !== undefined &&
-                tenant.dias_restantes_vigencia < 0 && (
-                  <Button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await renovar.mutateAsync(tenantId)
-                        toast.success('Assinatura renovada — vigência estendida e clínica reativada.')
-                      } catch {
-                        toast.error('Falha ao renovar a assinatura.')
-                      }
-                    }}
-                    disabled={renovar.isPending}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
-                  >
-                    {renovar.isPending ? 'Renovando…' : 'Renovar assinatura (clínica vencida)'}
-                  </Button>
-                )}
+              {/* Renovar assinatura: disponível a qualquer momento (não só quando
+                  vencida) — o cliente pode já ter pago com dias ainda restantes.
+                  Estende a vigência a partir da vigência ATUAL, não de hoje. */}
+              <Button
+                type="button"
+                onClick={() => setRenovarAberto(true)}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+              >
+                Renovar assinatura
+              </Button>
 
               {/* Overrides de Limites */}
               <div className="p-4 rounded-lg bg-[#0B132B]/60 border border-[#1E2D56] space-y-4">
@@ -825,7 +827,87 @@ export function TenantDetalhesPage() {
         </Card>
       )}
 
-      {/* ABA 3: Google Calendar */}
+      {/* ABA 3: Histórico de Pagamentos & Assinatura */}
+      {abaAtiva === 'historico' && (
+        <Card className="border-[#1E2D56] bg-[#111D3B] text-slate-100">
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold text-white flex items-center gap-2">
+              <History className="size-4 text-[#D4AF37]" />
+              Histórico de Pagamentos & Assinatura
+            </CardTitle>
+            <CardDescription className="text-slate-400 text-xs">
+              Renovações e trocas de plano registradas para esta clínica — data, plano, vigência
+              antes/depois, valor e forma de pagamento (quando informados) e operador responsável.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="text-slate-400 border-b border-[#1E2D56] bg-[#0B132B]/50 font-medium">
+                  <tr>
+                    <th className="py-2.5 px-4">Data / Hora</th>
+                    <th className="py-2.5 px-4">Tipo</th>
+                    <th className="py-2.5 px-4">Plano</th>
+                    <th className="py-2.5 px-4">Vigência (antes → depois)</th>
+                    <th className="py-2.5 px-4">Valor</th>
+                    <th className="py-2.5 px-4">Forma de Pagamento</th>
+                    <th className="py-2.5 px-4">Operador</th>
+                    <th className="py-2.5 px-4">Observação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1E2D56]/60 text-slate-200">
+                  {carregandoHistorico ? (
+                    <tr>
+                      <td colSpan={8} className="p-4">
+                        <Skeleton className="h-6 w-full bg-[#1A2A4E]" />
+                      </td>
+                    </tr>
+                  ) : !historicoPagamentos || historicoPagamentos.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-slate-400">
+                        Nenhuma renovação ou troca de plano registrada ainda pra esta clínica.
+                      </td>
+                    </tr>
+                  ) : (
+                    historicoPagamentos.map((reg) => (
+                      <tr key={reg.id} className="hover:bg-[#152345]/50">
+                        <td className="py-3 px-4 font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                          {new Date(reg.criado_em).toLocaleString('pt-BR')}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-[#1A2A4E] text-[#D4AF37] border border-[#D4AF37]/30">
+                            {reg.tipo_display}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-200">{reg.plano_nome || '—'}</td>
+                        <td className="py-3 px-4 font-mono text-[11px] whitespace-nowrap">
+                          {reg.vigencia_anterior
+                            ? new Date(`${reg.vigencia_anterior}T12:00:00`).toLocaleDateString('pt-BR')
+                            : '—'}
+                          {' → '}
+                          {reg.vigencia_nova
+                            ? new Date(`${reg.vigencia_nova}T12:00:00`).toLocaleDateString('pt-BR')
+                            : 'Vitalício'}
+                        </td>
+                        <td className="py-3 px-4 font-mono text-white">
+                          {reg.valor ? `R$ ${Number(reg.valor).toFixed(2)}` : '—'}
+                        </td>
+                        <td className="py-3 px-4">{reg.forma_pagamento_display || '—'}</td>
+                        <td className="py-3 px-4 font-mono text-[11px] text-slate-300">
+                          {reg.operador_email}
+                        </td>
+                        <td className="py-3 px-4 text-slate-300">{reg.observacao || '—'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ABA 4: Google Calendar */}
       {abaAtiva === 'google' && (
         <div className="space-y-6">
           {!googleHabilitado && (
@@ -1753,6 +1835,12 @@ export function TenantDetalhesPage() {
         tenantId={tenantId}
         planoAtualId={tenant.plano_assinatura ?? null}
         planos={planos ?? []}
+      />
+
+      <RenovarAssinaturaModal
+        aberto={renovarAberto}
+        aoFechar={() => setRenovarAberto(false)}
+        tenantId={tenantId}
       />
     </div>
   )

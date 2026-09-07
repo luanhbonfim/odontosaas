@@ -120,3 +120,44 @@ class Aviso(models.Model):
         """Dentro da janela de dias configurada a partir da publicação."""
         fim = self.publicado_em + timedelta(days=self.dias_visibilidade)
         return self.ativo and self.publicado_em <= timezone.localdate() <= fim
+
+
+class HistoricoPagamentoAssinatura(models.Model):
+    """Um registro por renovação/troca de plano da assinatura da clínica —
+    histórico de verdade (valor, forma de pagamento, vigência antes/depois),
+    ao contrário do RegistroAuditoriaVendor genérico (detalhes soltos em JSON,
+    misturado com toda ação administrativa do vendor)."""
+
+    class Tipo(models.TextChoices):
+        RENOVACAO = "RENOVACAO", "Renovação"
+        TROCA_PLANO = "TROCA_PLANO", "Troca de plano"
+
+    class FormaPagamento(models.TextChoices):
+        PIX = "PIX", "Pix"
+        BOLETO = "BOLETO", "Boleto"
+        CARTAO = "CARTAO", "Cartão"
+        DINHEIRO = "DINHEIRO", "Dinheiro"
+        TRANSFERENCIA = "TRANSFERENCIA", "Transferência"
+
+    clinica = models.ForeignKey(
+        "tenants.Clinica", on_delete=models.CASCADE, related_name="historico_pagamentos"
+    )
+    plano = models.ForeignKey(
+        PlanoAssinatura, null=True, blank=True, on_delete=models.SET_NULL
+    )
+    tipo = models.CharField(max_length=20, choices=Tipo.choices)
+    vigencia_anterior = models.DateField(null=True, blank=True)
+    vigencia_nova = models.DateField(null=True, blank=True)
+    valor = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    forma_pagamento = models.CharField(max_length=20, choices=FormaPagamento.choices, blank=True)
+    observacao = models.TextField(blank=True)
+    operador_email = models.EmailField(max_length=255, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Histórico de pagamento/assinatura"
+        verbose_name_plural = "Histórico de pagamentos/assinaturas"
+        ordering = ["-criado_em"]
+
+    def __str__(self):
+        return f"{self.clinica_id} - {self.tipo} ({self.criado_em:%Y-%m-%d})"

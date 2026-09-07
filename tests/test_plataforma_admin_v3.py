@@ -446,3 +446,30 @@ def test_desabilitacao_modulos_plano_e_override(tenant_v3):
     assert resp_wa.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest.mark.django_db(transaction=True)
+def test_meu_plano_expoe_dias_aviso_configuravel(tenant_v3):
+    """`/api/meu-plano/` reflete a Configuração de Aviso de Vencimento (não mais
+    um limite fixo no código) — default 15, e o valor configurado depois."""
+    from apps.plataforma_admin.config import limpar_cache_aviso_vencimento
+    from apps.plataforma_admin.models import ConfiguracaoAvisoVencimento
+
+    client = APIClient()
+    client.defaults["HTTP_HOST"] = tenant_v3.domains.first().domain
+    with schema_context(tenant_v3.schema_name):
+        admin_user = Usuario.objects.get(email="admin@v3test.com")
+    client.force_authenticate(user=admin_user)
+
+    resp = client.get("/api/meu-plano/")
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["status"]["dias_aviso"] == 15  # default
+
+    connection.set_schema_to_public()
+    cfg = ConfiguracaoAvisoVencimento.get_solo()
+    cfg.dias_antecedencia = 20
+    cfg.save()
+    limpar_cache_aviso_vencimento()
+
+    resp2 = client.get("/api/meu-plano/")
+    assert resp2.data["status"]["dias_aviso"] == 20
+
+

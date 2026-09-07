@@ -1551,6 +1551,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/plataforma-admin/config-aviso-vencimento/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Configuração geral (singleton, schema public) de quantos dias antes do
+         *     vencimento o aviso passa a aparecer pro tenant. Leitura e escrita
+         *     restritas a SuperAdmin.
+         */
+        get: operations["plataforma_admin_config_aviso_vencimento_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Configuração geral (singleton, schema public) de quantos dias antes do
+         *     vencimento o aviso passa a aparecer pro tenant. Leitura e escrita
+         *     restritas a SuperAdmin.
+         */
+        patch: operations["plataforma_admin_config_aviso_vencimento_partial_update"];
+        trace?: never;
+    };
     "/api/plataforma-admin/config-login/": {
         parameters: {
             query?: never;
@@ -1997,6 +2023,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/plataforma-admin/tenants/{id}/historico-pagamentos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Histórico de renovações/trocas de plano da clínica (aba "Histórico" na ficha). */
+        get: operations["plataforma_admin_tenants_historico_pagamentos_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/plataforma-admin/tenants/{id}/impersonate/": {
         parameters: {
             query?: never;
@@ -2061,9 +2104,13 @@ export interface paths {
         /**
          * @description Renova a vigência da clínica conforme a periodicidade do plano e a reativa.
          *
-         *     Estende a partir do MAIOR entre hoje e a vigência atual (se ainda no futuro),
+         *     Estende a partir do MAIOR entre hoje e a vigência atual (se ainda no futuro) —
+         *     ou seja, pode ser chamado a qualquer momento (mesmo com dias restantes: o
+         *     cliente já pagou, então renova antecipado sem perder os dias que já pagou) —
          *     somando +30 dias (mensal), +365 (anual) ou tornando permanente (sem vencimento).
-         *     Reativa a clínica (ativo=True, status=ATIVA).
+         *     Reativa a clínica (ativo=True, status=ATIVA). Corpo opcional
+         *     `{valor, forma_pagamento, observacao}` — registrado no histórico da clínica
+         *     (aba "Histórico" na ficha), mas nenhum campo é obrigatório.
          */
         post: operations["plataforma_admin_tenants_renovar_create"];
         delete?: never;
@@ -7247,6 +7294,42 @@ export interface operations {
             };
         };
     };
+    plataforma_admin_config_aviso_vencimento_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_config_aviso_vencimento_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     plataforma_admin_config_login_retrieve: {
         parameters: {
             query?: never;
@@ -8000,6 +8083,28 @@ export interface operations {
                 "multipart/form-data": components["schemas"]["ClinicaDetailVendor"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicaDetailVendor"];
+                };
+            };
+        };
+    };
+    plataforma_admin_tenants_historico_pagamentos_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Clínica. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

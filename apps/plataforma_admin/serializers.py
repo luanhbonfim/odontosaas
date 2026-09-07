@@ -5,8 +5,12 @@ Serializers do Painel de Admin da Plataforma (Vendor Admin).
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.plataforma.models import Aviso, PlanoAssinatura
-from apps.plataforma_admin.models import ConfiguracaoLoginVendor, RegistroAuditoriaVendor
+from apps.plataforma.models import Aviso, HistoricoPagamentoAssinatura, PlanoAssinatura
+from apps.plataforma_admin.models import (
+    ConfiguracaoAvisoVencimento,
+    ConfiguracaoLoginVendor,
+    RegistroAuditoriaVendor,
+)
 from apps.tenants.models import Clinica, Dominio
 
 
@@ -512,3 +516,41 @@ class ConfiguracaoLoginVendorSerializer(serializers.ModelSerializer):
 
     def validate_throttle_studio(self, v):
         return self._validar_rate(v)
+
+
+class ConfiguracaoAvisoVencimentoSerializer(serializers.ModelSerializer):
+    """Configuração geral do aviso de vencimento (dias de antecedência)."""
+
+    dias_antecedencia = serializers.IntegerField(min_value=1, max_value=90)
+
+    class Meta:
+        model = ConfiguracaoAvisoVencimento
+        fields = ["dias_antecedencia", "atualizado_em"]
+        read_only_fields = ["atualizado_em"]
+
+
+class HistoricoPagamentoAssinaturaSerializer(serializers.ModelSerializer):
+    """Um registro do histórico de pagamentos/assinatura de uma clínica."""
+
+    tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
+    plano_nome = serializers.CharField(source="plano.nome", read_only=True, default=None)
+    forma_pagamento_display = serializers.CharField(
+        source="get_forma_pagamento_display", read_only=True, default=""
+    )
+
+    class Meta:
+        model = HistoricoPagamentoAssinatura
+        fields = [
+            "id",
+            "tipo",
+            "tipo_display",
+            "plano_nome",
+            "vigencia_anterior",
+            "vigencia_nova",
+            "valor",
+            "forma_pagamento",
+            "forma_pagamento_display",
+            "observacao",
+            "operador_email",
+            "criado_em",
+        ]

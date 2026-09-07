@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 from apps.core.handlers import sanitizar_texto_sensivel
 from apps.core.throttling import ImpersonateThrottle, VendorLoginThrottle
-from apps.plataforma_admin.config import get_config
-from apps.plataforma.models import Aviso, PlanoAssinatura
+from apps.plataforma_admin.config import get_config, limpar_cache_aviso_vencimento
+from apps.plataforma.models import Aviso, HistoricoPagamentoAssinatura, PlanoAssinatura
 from apps.plataforma_admin.models import OperadorMFA, RegistroAuditoriaVendor
 from apps.plataforma_admin.permissions import IsVendorHost, IsVendorStaff, IsVendorSuperAdmin
 from apps.plataforma_admin.serializers import (
@@ -19,6 +19,7 @@ from apps.plataforma_admin.serializers import (
     ClinicaDetailVendorSerializer,
     ClinicaListVendorSerializer,
     ExpurgarTenantInputSerializer,
+    HistoricoPagamentoAssinaturaSerializer,
     ImpersonateInputSerializer,
     PlanoAssinaturaVendorSerializer,
     ProvisionarClinicaInputSerializer,
@@ -265,10 +266,15 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
     def renovar(self, request, pk=None):
         """Renova a vigência da clínica conforme a periodicidade do plano e a reativa.
 
-        Estende a partir do MAIOR entre hoje e a vigência atual (se ainda no futuro),
+        Estende a partir do MAIOR entre hoje e a vigência atual (se ainda no futuro) —
+        ou seja, pode ser chamado a qualquer momento (mesmo com dias restantes: o
+        cliente já pagou, então renova antecipado sem perder os dias que já pagou) —
         somando +30 dias (mensal), +365 (anual) ou tornando permanente (sem vencimento).
-        Reativa a clínica (ativo=True, status=ATIVA)."""
+        Reativa a clínica (ativo=True, status=ATIVA). Corpo opcional
+        `{valor, forma_pagamento, observacao}` — registrado no histórico da clínica
+        (aba "Histórico" na ficha), mas nenhum campo é obrigatório."""
         import datetime as _dt
+        from decimal import Decimal, InvalidOperation
 
         from django.utils import timezone
 
@@ -304,6 +310,26 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
                 "vigencia_nova": str(nova_vigencia) if nova_vigencia else "permanente",
                 "periodicidade": plano.periodicidade if plano else None,
             },
+        )
+
+        valor_bruto = request.data.get("valor")
+        try:
+            valor = Decimal(str(valor_bruto)) if valor_bruto not in (None, "") else None
+        except InvalidOperation:
+            valor = None
+        forma_pagamento = request.data.get("forma_pagamento") or ""
+        if forma_pagamento not in HistoricoPagamentoAssinatura.FormaPagamento.values:
+            forma_pagamento = ""
+        HistoricoPagamentoAssinatura.objects.create(
+            clinica=clinica,
+            plano=plano,
+            tipo=HistoricoPagamentoAssinatura.Tipo.RENOVACAO,
+            vigencia_anterior=vig_anterior,
+            vigencia_nova=nova_vigencia,
+            valor=valor,
+            forma_pagamento=forma_pagamento,
+            observacao=request.data.get("observacao") or "",
+            operador_email=request.user.email,
         )
         return Response(ClinicaDetailVendorSerializer(clinica).data, status=status.HTTP_200_OK)
 
@@ -378,7 +404,23 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
                 "vigencia_nova": str(clinica.vigencia_fim) if clinica.vigencia_fim else "permanente",
             },
         )
+        HistoricoPagamentoAssinatura.objects.create(
+            clinica=clinica,
+            plano=novo_plano,
+            tipo=HistoricoPagamentoAssinatura.Tipo.TROCA_PLANO,
+            vigencia_anterior=vig_anterior,
+            vigencia_nova=clinica.vigencia_fim,
+            observacao=f"Troca de plano ({plano_anterior.nome if plano_anterior else '—'} → {novo_plano.nome}).",
+            operador_email=request.user.email,
+        )
         return Response(ClinicaDetailVendorSerializer(clinica).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["get"], url_path="historico-pagamentos")
+    def historico_pagamentos(self, request, pk=None):
+        """Histórico de renovações/trocas de plano da clínica (aba "Histórico" na ficha)."""
+        clinica = self.get_object()
+        registros = clinica.historico_pagamentos.select_related("plano").all()
+        return Response(HistoricoPagamentoAssinaturaSerializer(registros, many=True).data)
 
     @action(detail=True, methods=["post"], url_path="reset-admin-senha")
     def reset_admin_senha(self, request, pk=None):
@@ -1205,6 +1247,40 @@ class ConfiguracaoLoginVendorView(APIView):
             acao=RegistroAuditoriaVendor.Acao.PARAMETRIZACAO,
             schema_alvo="public",
             detalhes={"acao": "config_login", "campos": list(request.data.keys())},
+        )
+        return Response(ser.data)
+
+
+class ConfiguracaoAvisoVencimentoView(APIView):
+    """
+    Configuração geral (singleton, schema public) de quantos dias antes do
+    vencimento o aviso passa a aparecer pro tenant. Leitura e escrita
+    restritas a SuperAdmin.
+    """
+
+    permission_classes = [IsVendorSuperAdmin]
+
+    def get(self, request):
+        from apps.plataforma_admin.models import ConfiguracaoAvisoVencimento
+        from apps.plataforma_admin.serializers import ConfiguracaoAvisoVencimentoSerializer
+
+        cfg = ConfiguracaoAvisoVencimento.get_solo()
+        return Response(ConfiguracaoAvisoVencimentoSerializer(cfg).data)
+
+    def patch(self, request):
+        from apps.plataforma_admin.models import ConfiguracaoAvisoVencimento
+        from apps.plataforma_admin.serializers import ConfiguracaoAvisoVencimentoSerializer
+
+        cfg = ConfiguracaoAvisoVencimento.get_solo()
+        ser = ConfiguracaoAvisoVencimentoSerializer(cfg, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        limpar_cache_aviso_vencimento()
+        registrar_auditoria_vendor(
+            request=request,
+            acao=RegistroAuditoriaVendor.Acao.PARAMETRIZACAO,
+            schema_alvo="public",
+            detalhes={"acao": "config_aviso_vencimento", "campos": list(request.data.keys())},
         )
         return Response(ser.data)
 

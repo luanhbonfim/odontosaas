@@ -268,7 +268,7 @@ describe('Vendor Admin - Sprint V7', () => {
     expect(inputDominio).toHaveValue('odonto-estetica.localhost')
   })
 
-  it('renderiza a tela de Detalhes da Clínica com 5 abas e dados operacionais', async () => {
+  it('renderiza a tela de Detalhes da Clínica com dados operacionais', async () => {
     const user = userEvent.setup()
     renderComQueryClient(
       <MemoryRouter initialEntries={['/plataforma-admin/tenants/1']}>
@@ -283,8 +283,8 @@ describe('Vendor Admin - Sprint V7', () => {
       expect(screen.getByText('clinica_alfa')).toBeInTheDocument()
     })
 
-    // Testa navegação para Aba 5: Métricas & Erros
-    const abaMetricas = screen.getByRole('button', { name: /5\. Métricas & Erros/i })
+    // Testa navegação para a aba Métricas & Erros
+    const abaMetricas = screen.getByRole('button', { name: /6\. Métricas & Erros/i })
     await user.click(abaMetricas)
 
     await waitFor(() => {

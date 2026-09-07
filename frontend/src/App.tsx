@@ -47,6 +47,7 @@ import { TenantsPage } from '@/features/vendor-admin/tenants/tenants-page'
 import { TenantDetalhesPage } from '@/features/vendor-admin/tenants/tenant-detalhes-page'
 import { MasterAdminPage } from '@/features/vendor-admin/master-admin/master-admin-page'
 import { ConfiguracoesLoginPage } from '@/features/vendor-admin/config-login/configuracoes-login-page'
+import { ConfiguracaoAvisoVencimentoPage } from '@/features/vendor-admin/aviso-vencimento/configuracao-aviso-vencimento-page'
 import { Configuracao2FAPage } from '@/features/vendor-admin/seguranca/configuracao-2fa-page'
 import { DatabaseStudioPage } from '@/features/vendor-admin/studio/database-studio-page'
 import { CeleryMonitorPage } from '@/features/vendor-admin/celery/celery-monitor-page'
@@ -150,6 +151,7 @@ export function App() {
             <Route element={<VendorRequireSuperAdmin />}>
               <Route path="admin-master" element={<MasterAdminPage />} />
               <Route path="configuracoes" element={<ConfiguracoesLoginPage />} />
+              <Route path="aviso-vencimento" element={<ConfiguracaoAvisoVencimentoPage />} />
               <Route path="seguranca-2fa" element={<Configuracao2FAPage />} />
             </Route>
           </Route>

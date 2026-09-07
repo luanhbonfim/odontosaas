@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from apps.dentistas.models import Dentista
 from apps.pacientes.models import Paciente
 from apps.plataforma.models import Aviso, PlanoAssinatura
+from apps.plataforma_admin.config import get_aviso_vencimento_config
 from apps.usuarios.models import Usuario
 
 
@@ -77,6 +78,7 @@ class MeuPlanoView(APIView):
                 "vigencia_fim": clinica.vigencia_fim.isoformat() if clinica.vigencia_fim else None,
                 "dias_restantes": dias_restantes,
                 "vencido": bool(dias_restantes is not None and dias_restantes < 0),
+                "dias_aviso": get_aviso_vencimento_config().dias_antecedencia,
             },
             "capacidade": {
                 "dentistas": {

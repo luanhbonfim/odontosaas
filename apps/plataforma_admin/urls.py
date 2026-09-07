@@ -7,6 +7,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.plataforma_admin.views import (
     AvisoVendorViewSet,
+    ConfiguracaoAvisoVencimentoView,
     ConfiguracaoLoginVendorView,
     MFAVendorViewSet,
     PlanoAssinaturaVendorViewSet,
@@ -29,6 +30,11 @@ router.register("mfa", MFAVendorViewSet, basename="vendor-mfa")
 urlpatterns = [
     path("auth/login/", VendorLoginView.as_view(), name="vendor-auth-login"),
     path("config-login/", ConfiguracaoLoginVendorView.as_view(), name="vendor-config-login"),
+    path(
+        "config-aviso-vencimento/",
+        ConfiguracaoAvisoVencimentoView.as_view(),
+        name="vendor-config-aviso-vencimento",
+    ),
     path("", include(router.urls)),
 ]
 

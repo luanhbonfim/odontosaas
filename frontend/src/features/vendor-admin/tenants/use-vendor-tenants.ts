@@ -196,18 +196,58 @@ export function useAlternarStatusTenant() {
   })
 }
 
-/** Renova a vigência da clínica (conforme a periodicidade do plano) e a reativa. */
+/** Corpo opcional do "Renovar" — nada aqui é obrigatório, só fica registrado
+ * no histórico da clínica se informado. */
+export type RenovarInput = {
+  valor?: string
+  forma_pagamento?: string
+  observacao?: string
+}
+
+/** Renova a vigência da clínica (conforme a periodicidade do plano) e a reativa.
+ * Pode ser chamada a qualquer momento — mesmo com dias restantes (o cliente já
+ * pagou, então renova antecipado sem perder os dias já pagos). */
 export function useRenovarTenant() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: number) => {
-      const { data } = await vendorApi.post(`/plataforma-admin/tenants/${id}/renovar/`)
+    mutationFn: async ({ id, dados }: { id: number; dados?: RenovarInput }) => {
+      const { data } = await vendorApi.post(`/plataforma-admin/tenants/${id}/renovar/`, dados ?? {})
       return data
     },
-    onSuccess: (_, id) => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: CHAVE_TENANTS })
       queryClient.invalidateQueries({ queryKey: [...CHAVE_TENANTS, id] })
+      queryClient.invalidateQueries({ queryKey: [...CHAVE_TENANTS, id, 'historico-pagamentos'] })
     },
+  })
+}
+
+export type HistoricoPagamento = {
+  id: number
+  tipo: 'RENOVACAO' | 'TROCA_PLANO'
+  tipo_display: string
+  plano_nome: string | null
+  vigencia_anterior: string | null
+  vigencia_nova: string | null
+  valor: string | null
+  forma_pagamento: string
+  forma_pagamento_display: string
+  observacao: string
+  operador_email: string
+  criado_em: string
+}
+
+/** Histórico de renovações/trocas de plano da clínica (aba "Histórico" na ficha). */
+export function useHistoricoPagamentos(tenantId: number) {
+  return useQuery<HistoricoPagamento[]>({
+    queryKey: [...CHAVE_TENANTS, tenantId, 'historico-pagamentos'],
+    queryFn: async () => {
+      const { data } = await vendorApi.get(
+        `/plataforma-admin/tenants/${tenantId}/historico-pagamentos/`,
+      )
+      return data
+    },
+    enabled: Boolean(tenantId),
   })
 }
 

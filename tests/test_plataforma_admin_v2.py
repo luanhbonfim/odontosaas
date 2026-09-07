@@ -10,6 +10,8 @@ Testes automatizados da Sprint V2:
 - Testes de Isolamento de Host (requisições em subdomínio de tenant retornam 404)
 """
 
+from decimal import Decimal
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.db import connection
@@ -18,8 +20,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
-from apps.plataforma.models import Aviso, PlanoAssinatura
-from apps.plataforma_admin.models import RegistroAuditoriaVendor
+from apps.plataforma.models import Aviso, HistoricoPagamentoAssinatura, PlanoAssinatura
+from apps.plataforma_admin.models import ConfiguracaoAvisoVencimento, RegistroAuditoriaVendor
 from apps.tenants.models import Clinica, Dominio
 
 Usuario = get_user_model()
@@ -813,5 +815,127 @@ def test_trocar_plano_plano_inexistente_400(vendor_client, tenant_fixture):
         f"/api/plataforma-admin/tenants/{tenant_fixture.id}/trocar-plano/",
         {"plano_id": 999999, "vigencia_modo": "manter"},
         format="json",
+    )
+    assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db(transaction=True)
+def test_action_renovar_antecipado_com_dias_restantes_e_registra_historico(vendor_client, tenant_fixture):
+    """Renovar não exige que a clínica esteja vencida — o cliente pode já ter
+    pago com dias ainda restantes; a vigência estende a partir da vigência
+    ATUAL (não de hoje), e o valor/forma de pagamento informados ficam no
+    histórico."""
+    import datetime
+
+    from django.utils import timezone
+
+    vig_atual = timezone.localdate() + datetime.timedelta(days=10)
+    tenant_fixture.vigencia_fim = vig_atual
+    tenant_fixture.save()
+
+    resp = vendor_client.post(
+        f"/api/plataforma-admin/tenants/{tenant_fixture.id}/renovar/",
+        {"valor": "150.00", "forma_pagamento": "PIX", "observacao": "Pago via link."},
+        format="json",
+    )
+    assert resp.status_code == status.HTTP_200_OK, resp.content
+
+    tenant_fixture.refresh_from_db()
+    # Estende a partir da vigência ATUAL (10 dias à frente), não de hoje: +30 (mensal, sem
+    # plano configurado no fixture -> cai no default) a partir de vig_atual.
+    assert tenant_fixture.vigencia_fim == vig_atual + datetime.timedelta(days=30)
+
+    registro = HistoricoPagamentoAssinatura.objects.get(clinica=tenant_fixture)
+    assert registro.tipo == HistoricoPagamentoAssinatura.Tipo.RENOVACAO
+    assert registro.vigencia_anterior == vig_atual
+    assert registro.vigencia_nova == tenant_fixture.vigencia_fim
+    assert registro.valor == Decimal("150.00")
+    assert registro.forma_pagamento == "PIX"
+    assert registro.observacao == "Pago via link."
+    assert registro.operador_email == "vendor_admin@proclinica.cloud"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_action_renovar_sem_corpo_nao_falha_e_registra_historico_vazio(vendor_client, tenant_fixture):
+    """Renovar sem informar valor/forma de pagamento continua funcionando (nada
+    é obrigatório) — o histórico só fica sem esses dados."""
+    resp = vendor_client.post(
+        f"/api/plataforma-admin/tenants/{tenant_fixture.id}/renovar/", {}, format="json"
+    )
+    assert resp.status_code == status.HTTP_200_OK, resp.content
+
+    registro = HistoricoPagamentoAssinatura.objects.get(clinica=tenant_fixture)
+    assert registro.valor is None
+    assert registro.forma_pagamento == ""
+
+
+@pytest.mark.django_db(transaction=True)
+def test_trocar_plano_registra_historico(vendor_client, tenant_fixture):
+    novo = PlanoAssinatura.objects.create(nome="Plano Histórico", preco_mensal=50.0, periodicidade="MENSAL")
+    resp = vendor_client.post(
+        f"/api/plataforma-admin/tenants/{tenant_fixture.id}/trocar-plano/",
+        {"plano_id": novo.id, "vigencia_modo": "manter"},
+        format="json",
+    )
+    assert resp.status_code == status.HTTP_200_OK, resp.content
+
+    registro = HistoricoPagamentoAssinatura.objects.get(clinica=tenant_fixture)
+    assert registro.tipo == HistoricoPagamentoAssinatura.Tipo.TROCA_PLANO
+    assert registro.plano_id == novo.id
+
+
+@pytest.mark.django_db(transaction=True)
+def test_historico_pagamentos_lista_ordenado_e_isolado_por_clinica(vendor_client, tenant_fixture):
+    """O endpoint de histórico só retorna registros da própria clínica, do mais
+    recente pro mais antigo."""
+    outra = Clinica.objects.create(schema_name="v2_outra_tenant", nome_fantasia="Outra Clínica", ativo=True)
+    Dominio.objects.create(domain="v2outra.localhost", tenant=outra, is_primary=True)
+    try:
+        vendor_client.post(f"/api/plataforma-admin/tenants/{outra.id}/renovar/", {}, format="json")
+        vendor_client.post(f"/api/plataforma-admin/tenants/{tenant_fixture.id}/renovar/", {}, format="json")
+        vendor_client.post(f"/api/plataforma-admin/tenants/{tenant_fixture.id}/renovar/", {}, format="json")
+
+        resp = vendor_client.get(
+            f"/api/plataforma-admin/tenants/{tenant_fixture.id}/historico-pagamentos/"
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert len(resp.data) == 2
+        # Mais recente primeiro.
+        assert resp.data[0]["criado_em"] >= resp.data[1]["criado_em"]
+    finally:
+        connection.set_schema_to_public()
+        outra.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_config_aviso_vencimento_get_patch_e_permissao(vendor_client, vendor_staff_client):
+    """GET retorna o default (15); PATCH (só SuperAdmin) atualiza; staff comum leva 403."""
+    resp = vendor_client.get("/api/plataforma-admin/config-aviso-vencimento/")
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["dias_antecedencia"] == 15
+
+    resp_staff = vendor_staff_client.patch(
+        "/api/plataforma-admin/config-aviso-vencimento/", {"dias_antecedencia": 20}, format="json"
+    )
+    assert resp_staff.status_code == status.HTTP_403_FORBIDDEN
+
+    resp_patch = vendor_client.patch(
+        "/api/plataforma-admin/config-aviso-vencimento/", {"dias_antecedencia": 20}, format="json"
+    )
+    assert resp_patch.status_code == status.HTTP_200_OK
+    assert resp_patch.data["dias_antecedencia"] == 20
+
+    cfg = ConfiguracaoAvisoVencimento.get_solo()
+    assert cfg.dias_antecedencia == 20
+
+    assert RegistroAuditoriaVendor.objects.filter(
+        detalhes__acao="config_aviso_vencimento",
+    ).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_config_aviso_vencimento_valida_faixa(vendor_client):
+    resp = vendor_client.patch(
+        "/api/plataforma-admin/config-aviso-vencimento/", {"dias_antecedencia": 200}, format="json"
     )
     assert resp.status_code == status.HTTP_400_BAD_REQUEST

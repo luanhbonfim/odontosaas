@@ -210,3 +210,33 @@ class ConfiguracaoLoginVendor(models.Model):
         """Retorna o singleton (cria com os defaults se ainda não existir)."""
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class ConfiguracaoAvisoVencimento(models.Model):
+    """
+    Configuração global (singleton, schema `public`) de quantos dias antes do
+    vencimento da assinatura o aviso aparece pro tenant (barra do topo e tela
+    "Meu Plano" — antes eram dois limites fixos e inconsistentes no código,
+    15 e 7 dias; agora é um valor só, configurável aqui).
+
+    Leitura via `get_solo()` (cache de 30s em `apps/plataforma_admin/config.py`);
+    escrita restrita a SuperAdmin.
+    """
+
+    dias_antecedencia = models.PositiveSmallIntegerField(
+        default=15,
+        help_text="Dias antes do vencimento em que o aviso passa a aparecer pro tenant. 1–90.",
+    )
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuração de Aviso de Vencimento"
+        verbose_name_plural = "Configurações de Aviso de Vencimento"
+
+    def __str__(self):
+        return "Configuração de Aviso de Vencimento"
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

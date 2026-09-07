@@ -22,11 +22,14 @@ export function AppShell() {
   const [avisoVencimentoDismissed, setAvisoVencimentoDismissed] = useState(false)
 
   const diasRestantes = meuPlano?.status?.dias_restantes
+  // Limite configurável pelo Vendor Admin (Aviso de Vencimento) — 15 é só o
+  // fallback antes da config carregar/se faltar.
+  const diasAviso = meuPlano?.status?.dias_aviso ?? 15
   const isVencimentoProximo =
     !avisoVencimentoDismissed &&
     diasRestantes !== null &&
     diasRestantes !== undefined &&
-    diasRestantes <= 15 &&
+    diasRestantes <= diasAviso &&
     diasRestantes >= 0
 
   async function encerrarSuporte() {

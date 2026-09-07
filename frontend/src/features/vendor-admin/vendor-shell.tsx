@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Megaphone,
   Menu,
+  BellRing,
   type LucideIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -78,6 +79,12 @@ const GRUPOS_NAV: GrupoVendor[] = [
         rotulo: 'Avisos & Novidades',
         icone: Megaphone,
         para: `${VENDOR_BASE_PATH}/avisos`,
+      },
+      {
+        rotulo: 'Aviso de Vencimento',
+        icone: BellRing,
+        para: `${VENDOR_BASE_PATH}/aviso-vencimento`,
+        soSuperAdmin: true,
       },
     ],
   },
