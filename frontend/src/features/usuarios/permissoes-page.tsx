@@ -1,14 +1,15 @@
-import { Lock } from 'lucide-react'
+import { ChevronRight, Lock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { EmptyState } from '@/components/common/empty-state'
+import { LinhaToggle } from '@/components/common/form-kit'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { ErroApi } from '@/lib/api/client'
+import { cn } from '@/lib/utils'
 
 import {
   type CelulaPermissao,
@@ -22,26 +23,121 @@ const PAPEIS: { valor: PapelCustomizavel; rotulo: string }[] = [
   { valor: 'DENTISTA', rotulo: 'Dentista' },
 ]
 
-const MODULOS: { valor: string; rotulo: string }[] = [
-  { valor: 'agenda', rotulo: 'Agenda' },
-  { valor: 'pacientes', rotulo: 'Pacientes' },
-  { valor: 'convenios', rotulo: 'Convênios' },
-  { valor: 'dentistas', rotulo: 'Dentistas' },
-  { valor: 'procedimentos', rotulo: 'Procedimentos' },
-  { valor: 'estoque', rotulo: 'Estoque' },
-  { valor: 'financeiro', rotulo: 'Financeiro' },
-  { valor: 'notificacoes', rotulo: 'WhatsApp' },
-  { valor: 'usuarios', rotulo: 'Equipe' },
+type CampoCrud = 'criar' | 'editar' | 'excluir'
+
+/** Substantivo (+ artigo/gênero) usado nas frases descritivas de cada módulo —
+ * ex.: "Permite cadastrar nova consulta" em vez do genérico "Criar". */
+const CONFIG_MODULO: {
+  valor: string
+  rotulo: string
+  substantivo: string
+  artigo: 'o' | 'a'
+  novo: 'novo' | 'nova'
+}[] = [
+  { valor: 'agenda', rotulo: 'Agenda', substantivo: 'consulta', artigo: 'a', novo: 'nova' },
+  { valor: 'pacientes', rotulo: 'Pacientes', substantivo: 'paciente', artigo: 'o', novo: 'novo' },
+  { valor: 'convenios', rotulo: 'Convênios', substantivo: 'convênio', artigo: 'o', novo: 'novo' },
+  { valor: 'dentistas', rotulo: 'Dentistas', substantivo: 'dentista', artigo: 'o', novo: 'novo' },
+  {
+    valor: 'procedimentos',
+    rotulo: 'Procedimentos',
+    substantivo: 'procedimento',
+    artigo: 'o',
+    novo: 'novo',
+  },
+  { valor: 'estoque', rotulo: 'Estoque', substantivo: 'insumo', artigo: 'o', novo: 'novo' },
+  { valor: 'financeiro', rotulo: 'Financeiro', substantivo: 'lançamento', artigo: 'o', novo: 'novo' },
+  {
+    valor: 'notificacoes',
+    rotulo: 'WhatsApp',
+    substantivo: 'modelo de mensagem',
+    artigo: 'o',
+    novo: 'novo',
+  },
+  { valor: 'usuarios', rotulo: 'Equipe', substantivo: 'usuário', artigo: 'o', novo: 'novo' },
 ]
 
-const COLUNAS: { campo: 'ver' | 'criar' | 'editar' | 'excluir'; rotulo: string }[] = [
-  { campo: 'ver', rotulo: 'Ver' },
-  { campo: 'criar', rotulo: 'Criar' },
-  { campo: 'editar', rotulo: 'Editar' },
-  { campo: 'excluir', rotulo: 'Excluir' },
-]
+const ROTULO_CURTO: Record<CampoCrud, string> = {
+  criar: 'Criar',
+  editar: 'Editar',
+  excluir: 'Excluir',
+}
 
-function TabelaPapel({
+function rotuloCampo(campo: CampoCrud, cfg: (typeof CONFIG_MODULO)[number]): string {
+  if (campo === 'criar') return `Permite cadastrar ${cfg.novo} ${cfg.substantivo}`
+  if (campo === 'editar') return `Permite editar ${cfg.artigo} ${cfg.substantivo}`
+  return `Permite excluir ${cfg.artigo} ${cfg.substantivo}`
+}
+
+function CardModulo({
+  rotuloPapel,
+  cfg,
+  celula,
+  aberto,
+  aoAlternarAberto,
+  aoMudar,
+}: {
+  rotuloPapel: string
+  cfg: (typeof CONFIG_MODULO)[number]
+  celula: CelulaPermissao
+  aberto: boolean
+  aoAlternarAberto: () => void
+  aoMudar: (campo: 'ver' | CampoCrud, valor: boolean) => void
+}) {
+  return (
+    <div className="rounded-lg border">
+      <div className="flex items-center gap-3 p-3">
+        <button
+          type="button"
+          onClick={aoAlternarAberto}
+          aria-expanded={aberto}
+          aria-label={`${aberto ? 'Recolher' : 'Expandir'} permissões de ${cfg.rotulo}`}
+          className="rounded p-1 text-muted-foreground hover:bg-muted"
+        >
+          <ChevronRight className={cn('size-4 transition-transform', aberto && 'rotate-90')} />
+        </button>
+        <button
+          type="button"
+          onClick={aoAlternarAberto}
+          className="min-w-0 flex-1 truncate text-left text-sm font-medium"
+        >
+          {cfg.rotulo}
+        </button>
+        <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
+          Ver
+          <input
+            type="checkbox"
+            aria-label={`${rotuloPapel} — ${cfg.rotulo} — Ver`}
+            className="size-4 cursor-pointer accent-primary"
+            checked={celula.ver}
+            onChange={(e) => aoMudar('ver', e.target.checked)}
+          />
+        </label>
+      </div>
+      {aberto && (
+        <div className="space-y-2 border-t p-3">
+          {!celula.ver && (
+            <p className="text-xs text-muted-foreground">
+              Ative &quot;Ver&quot; acima para liberar as permissões abaixo.
+            </p>
+          )}
+          {(['criar', 'editar', 'excluir'] as const).map((campo) => (
+            <LinhaToggle
+              key={campo}
+              titulo={rotuloCampo(campo, cfg)}
+              aria-label={`${rotuloPapel} — ${cfg.rotulo} — ${ROTULO_CURTO[campo]}`}
+              checked={celula[campo]}
+              disabled={!celula.ver}
+              onChange={(e) => aoMudar(campo, e.target.checked)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GrupoPapel({
   papel,
   rotulo,
   grade,
@@ -50,49 +146,40 @@ function TabelaPapel({
   papel: PapelCustomizavel
   rotulo: string
   grade: CelulaPermissao[]
-  aoMudar: (modulo: string, campo: 'ver' | 'criar' | 'editar' | 'excluir', valor: boolean) => void
+  aoMudar: (modulo: string, campo: 'ver' | CampoCrud, valor: boolean) => void
 }) {
+  const [abertos, setAbertos] = useState<Set<string>>(new Set())
+
+  function alternar(modulo: string) {
+    setAbertos((atual) => {
+      const novo = new Set(atual)
+      if (novo.has(modulo)) novo.delete(modulo)
+      else novo.add(modulo)
+      return novo
+    })
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{rotulo}</CardTitle>
       </CardHeader>
-      <CardContent className="overflow-x-auto p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Tela</TableHead>
-              {COLUNAS.map((c) => (
-                <TableHead key={c.campo} className="text-center">
-                  {c.rotulo}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {MODULOS.map((modulo) => {
-              const celula = grade.find((c) => c.papel === papel && c.modulo === modulo.valor)
-              if (!celula) return null
-              return (
-                <TableRow key={modulo.valor}>
-                  <TableCell className="font-medium">{modulo.rotulo}</TableCell>
-                  {COLUNAS.map((c) => (
-                    <TableCell key={c.campo} className="text-center">
-                      <input
-                        type="checkbox"
-                        aria-label={`${rotulo} — ${modulo.rotulo} — ${c.rotulo}`}
-                        className="size-4 cursor-pointer accent-primary disabled:cursor-not-allowed disabled:opacity-40"
-                        checked={celula[c.campo]}
-                        disabled={c.campo !== 'ver' && !celula.ver}
-                        onChange={(e) => aoMudar(modulo.valor, c.campo, e.target.checked)}
-                      />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+      <CardContent className="space-y-2">
+        {CONFIG_MODULO.map((cfg) => {
+          const celula = grade.find((c) => c.papel === papel && c.modulo === cfg.valor)
+          if (!celula) return null
+          return (
+            <CardModulo
+              key={cfg.valor}
+              rotuloPapel={rotulo}
+              cfg={cfg}
+              celula={celula}
+              aberto={abertos.has(cfg.valor)}
+              aoAlternarAberto={() => alternar(cfg.valor)}
+              aoMudar={(campo, valor) => aoMudar(cfg.valor, campo, valor)}
+            />
+          )
+        })}
       </CardContent>
     </Card>
   )
@@ -107,12 +194,7 @@ export function PermissoesPage() {
     if (data) setGrade(data)
   }, [data])
 
-  function aoMudar(
-    papel: PapelCustomizavel,
-    modulo: string,
-    campo: 'ver' | 'criar' | 'editar' | 'excluir',
-    valor: boolean,
-  ) {
+  function aoMudar(papel: PapelCustomizavel, modulo: string, campo: 'ver' | CampoCrud, valor: boolean) {
     setGrade((atual) =>
       (atual ?? []).map((celula) => {
         if (celula.papel !== papel || celula.modulo !== modulo) return celula
@@ -139,7 +221,7 @@ export function PermissoesPage() {
     <div className="space-y-6">
       <PageHeader
         titulo="Permissões"
-        descricao='Defina quais telas a Recepção e o Dentista enxergam e o que podem fazer em cada uma. Gerente e Admin sempre têm acesso total.'
+        descricao='Defina quais telas a Recepção e o Dentista enxergam. Clique numa tela para detalhar o que cada um pode criar, editar ou excluir nela. Gerente e Admin sempre têm acesso total.'
       />
 
       {isError ? (
@@ -157,7 +239,7 @@ export function PermissoesPage() {
         <>
           <div className="grid gap-4 lg:grid-cols-2">
             {PAPEIS.map((p) => (
-              <TabelaPapel
+              <GrupoPapel
                 key={p.valor}
                 papel={p.valor}
                 rotulo={p.rotulo}

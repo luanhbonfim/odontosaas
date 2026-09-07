@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { server } from '@/test/server'
 import { api, normalizarErro } from './client'
+import { queryClient } from './query-client'
 import { tokenStore } from './token-store'
 
 afterEach(() => tokenStore.limpar())
@@ -161,6 +162,21 @@ describe('camada de API', () => {
     window.dispatchEvent(new Event('focus'))
     await vi.waitFor(() => expect(tokenStore.access).toBe('renovado-proativo'))
     expect(renovacoes).toBe(1)
+  })
+
+  it('invalida as queries em cache após a renovação proativa (tela não fica "congelada")', async () => {
+    const payloadVencido = btoa(JSON.stringify({ exp: 1 })) // exp no passado
+    tokenStore.definir({ access: `h.${payloadVencido}.s`, refresh: 'r1' })
+    server.use(
+      http.post('/api/auth/token/refresh/', () => HttpResponse.json({ access: 'renovado-proativo' })),
+    )
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    window.dispatchEvent(new Event('focus'))
+    await vi.waitFor(() => expect(tokenStore.access).toBe('renovado-proativo'))
+    await vi.waitFor(() => expect(invalidateSpy).toHaveBeenCalled())
+
+    invalidateSpy.mockRestore()
   })
 
   it('não renova ao voltar o foco se o access ainda está válido', async () => {

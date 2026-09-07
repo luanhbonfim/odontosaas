@@ -54,6 +54,37 @@ describe('PermissoesPage', () => {
     expect(screen.getAllByText('Financeiro')).toHaveLength(2)
   })
 
+  it('cada tela começa recolhida: só o toggle "Ver" aparece até expandir', () => {
+    const grade = gradeVazia().map((c) =>
+      c.papel === 'RECEPCAO' && c.modulo === 'agenda'
+        ? { ...c, ver: true, criar: true, editar: true, excluir: true }
+        : c,
+    )
+    gradeMock.mockReturnValue({ data: grade, isLoading: false, isError: false })
+    render(<PermissoesPage />)
+
+    expect(screen.getByLabelText('Recepção — Agenda — Ver')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Recepção — Agenda — Criar')).toBeNull()
+  })
+
+  it('expandir uma tela mostra as permissões descritivas de criar/editar/excluir', async () => {
+    const grade = gradeVazia().map((c) =>
+      c.papel === 'RECEPCAO' && c.modulo === 'agenda'
+        ? { ...c, ver: true, criar: true, editar: true, excluir: true }
+        : c,
+    )
+    gradeMock.mockReturnValue({ data: grade, isLoading: false, isError: false })
+    const user = userEvent.setup()
+    render(<PermissoesPage />)
+
+    // Recepção e Dentista têm cada um seu próprio card "Agenda" -> pega o 1º (Recepção).
+    await user.click(screen.getAllByRole('button', { name: 'Expandir permissões de Agenda' })[0])
+
+    expect(screen.getByText('Permite cadastrar nova consulta')).toBeInTheDocument()
+    expect(screen.getByText('Permite editar a consulta')).toBeInTheDocument()
+    expect(screen.getByText('Permite excluir a consulta')).toBeInTheDocument()
+  })
+
   it('desmarcar "Ver" desabilita e desmarca Criar/Editar/Excluir da mesma linha', async () => {
     const grade = gradeVazia().map((c) =>
       c.papel === 'RECEPCAO' && c.modulo === 'agenda'
@@ -63,6 +94,9 @@ describe('PermissoesPage', () => {
     gradeMock.mockReturnValue({ data: grade, isLoading: false, isError: false })
     const user = userEvent.setup()
     render(<PermissoesPage />)
+
+    // Recepção e Dentista têm cada um seu próprio card "Agenda" -> pega o 1º (Recepção).
+    await user.click(screen.getAllByRole('button', { name: 'Expandir permissões de Agenda' })[0])
 
     const verAgendaRecepcao = screen.getByLabelText('Recepção — Agenda — Ver')
     const criarAgendaRecepcao = screen.getByLabelText('Recepção — Agenda — Criar') as HTMLInputElement

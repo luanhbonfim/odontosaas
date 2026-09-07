@@ -1,5 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
+import { queryClient } from './query-client'
 import { tokenStore } from './token-store'
 
 /** Erro normalizado da API para uso em toasts (mensagem) e forms (campos). */
@@ -53,12 +54,20 @@ function accessPrecisaRenovar(margemSegundos = 10): boolean {
 // (lifetime de 30min) enquanto nada disparava requisição. Sem isso, a primeira query
 // real (ex.: sidebar/topbar remontando) bateria com 401 antes do retry automático,
 // gerando ruído no log de erros do backend mesmo com a sessão se recuperando sozinha.
+//
+// `refetchOnWindowFocus` fica desligado globalmente (evita rebuscar tudo em todo
+// foco de janela) — então isso aqui é o único lugar que revalida a sessão ao
+// voltar. Sem invalidar as queries depois, a tela ficava com dado de horas atrás
+// (ou, se o refresh também já tivesse vencido — notebook em suspensão por muito
+// tempo —, o app só percebia a sessão morta num F5 manual, nunca sozinho).
 function renovarSeVoltouOcioso() {
   if (!tokenStore.refresh || !accessPrecisaRenovar()) return
-  obterTokenRenovado().catch(() => {
-    tokenStore.limpar()
-    window.dispatchEvent(new Event('sessao-expirada'))
-  })
+  obterTokenRenovado()
+    .then(() => queryClient.invalidateQueries())
+    .catch(() => {
+      tokenStore.limpar()
+      window.dispatchEvent(new Event('sessao-expirada'))
+    })
 }
 
 if (typeof document !== 'undefined') {
