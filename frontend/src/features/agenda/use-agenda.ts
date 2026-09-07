@@ -47,9 +47,15 @@ export const LEGENDA_AGENDA: { chave: string; rotulo: string; cor: string }[] = 
 
 const COR_PADRAO = '#3b82f6'
 
+/** Confirmações que contam como "paciente confirmou" pro fluxo de atendimento
+ * (via WhatsApp/link OU manualmente pela recepção) — só o rótulo/origem difere. */
+export const CONFIRMACOES_CONFIRMADAS = ['CONFIRMADA', 'MANUAL']
+
 /** Cor do evento pela combinação status + confirmação (Agendada Pendente/Confirmada). */
 export function corDaConsulta(status?: string | null, confirmacao?: string | null): string {
-  if (status === 'AGENDADA') return confirmacao === 'CONFIRMADA' ? '#22c55e' : '#3b82f6'
+  if (status === 'AGENDADA') {
+    return CONFIRMACOES_CONFIRMADAS.includes(confirmacao ?? '') ? '#22c55e' : '#3b82f6'
+  }
   const cores: Record<string, string> = {
     EM_ATENDIMENTO: '#8b5cf6', // roxo
     REALIZADA: '#15803d', // verde-escuro
@@ -130,7 +136,13 @@ export function useAtualizarConsulta() {
   return useMutation({
     mutationFn: async ({ id, dados }: { id: number; dados: Partial<ConsultaEntrada> }) =>
       (await api.patch<Consulta>(`/consultas/${id}/`, dados)).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: CHAVE_AGENDA }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: CHAVE_AGENDA })
+      // Editar valor/forma de pagamento/parcelas resincroniza as parcelas no
+      // financeiro (backend) — sem isso, a aba Financeiro do paciente ficava
+      // com dados velhos até a página recarregar.
+      qc.invalidateQueries({ queryKey: ['lancamentos'] })
+    },
   })
 }
 
@@ -150,7 +162,12 @@ export function useTransicaoConsulta() {
   return useMutation({
     mutationFn: async ({ id, acao }: { id: number; acao: AcaoConsulta }) =>
       (await api.post<Consulta>(`/consultas/${id}/${acao}/`, {})).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: CHAVE_AGENDA }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: CHAVE_AGENDA })
+      // "finalizar" gera as parcelas no financeiro (e "estornar" as cancela) —
+      // sem isso, a aba Financeiro do paciente não refletia na hora.
+      qc.invalidateQueries({ queryKey: ['lancamentos'] })
+    },
   })
 }
 

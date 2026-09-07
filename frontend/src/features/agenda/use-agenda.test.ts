@@ -41,6 +41,12 @@ describe('consultaParaEvento', () => {
       consultaParaEvento(consulta({ status: 'AGENDADA', status_confirmacao: 'CONFIRMADA' }))
         .backgroundColor,
     ).toBe('#22c55e')
+    // Confirmação manual (recepção) conta como confirmada pro mesmo verde —
+    // senão a consulta ficava "presa" na cor de pendente pra sempre.
+    expect(
+      consultaParaEvento(consulta({ status: 'AGENDADA', status_confirmacao: 'MANUAL' }))
+        .backgroundColor,
+    ).toBe('#22c55e')
   })
 
   it('só consultas AGENDADA são editáveis (arrastar/redimensionar/editar)', () => {

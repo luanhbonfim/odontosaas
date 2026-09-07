@@ -5,22 +5,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AgendaPage } from './agenda-page'
 
-const { consultasMock, atualizarMock, revertMock, changeViewMock, unselectMock } = vi.hoisted(
-  () => ({
+const { consultasMock, atualizarMock, revertMock, changeViewMock, unselectMock, toastErrorMock } =
+  vi.hoisted(() => ({
     consultasMock: vi.fn(),
     atualizarMock: vi.fn(),
     revertMock: vi.fn(),
     changeViewMock: vi.fn(),
     unselectMock: vi.fn(),
-  }),
-)
+    toastErrorMock: vi.fn(),
+  }))
+vi.mock('sonner', () => ({ toast: { error: toastErrorMock, success: vi.fn() } }))
 
 type Vista = { type: string }
 type FCProps = {
   events: { id: string; title: string; backgroundColor: string }[]
   eventDisplay: string
   select: (info: { start: Date; end: Date; view: Vista }) => void
-  dateClick: (info: { dateStr: string; view: Vista }) => void
+  dateClick: (info: { date: Date; dateStr: string; view: Vista }) => void
   eventClick: (info: { event: { id: string } }) => void
   eventDrop: (info: {
     event: { id: string; start: Date; end: Date | null }
@@ -63,12 +64,34 @@ vi.mock('@fullcalendar/react', async () => {
           >
             slot-passado
           </button>
+          <button
+            onClick={() => {
+              // O FullCalendar dispara os DOIS callbacks pro mesmo clique num
+              // slot (fora do mês) quando `selectable` está ligado.
+              props.dateClick({
+                date: new Date('2026-07-01T09:00'),
+                dateStr: '2026-07-01',
+                view: { type: 'timeGridWeek' },
+              })
+              props.select({
+                start: new Date('2026-07-01T09:00'),
+                end: new Date('2026-07-01T09:30'),
+                view: { type: 'timeGridWeek' },
+              })
+            }}
+          >
+            slot-passado-clique-duplo
+          </button>
           <button onClick={() => props.select({ ...slot, view: { type: 'dayGridMonth' } })}>
             slot-mes
           </button>
           <button
             onClick={() =>
-              props.dateClick({ dateStr: '2026-08-10', view: { type: 'dayGridMonth' } })
+              props.dateClick({
+                date: new Date('2026-08-10T00:00'),
+                dateStr: '2026-08-10',
+                view: { type: 'dayGridMonth' },
+              })
             }
           >
             dia-mes
@@ -95,16 +118,21 @@ vi.mock('@fullcalendar/react', async () => {
 vi.mock('@fullcalendar/daygrid', () => ({ default: {} }))
 vi.mock('@fullcalendar/timegrid', () => ({ default: {} }))
 vi.mock('@fullcalendar/interaction', () => ({ default: {} }))
-// Modal isolado (testado à parte) -> só mostra "modo:identificador".
+// Modal isolado (testado à parte) -> só mostra "modo:identificador" + um botão
+// pra simular fechar sem salvar (Cancelar/Esc/clique fora — tudo cai no mesmo
+// `aoFechar`).
 vi.mock('./consulta-modal', () => ({
   ConsultaModal: ({
     estado,
+    aoFechar,
   }: {
     estado: { modo: string; consulta?: { id: number }; inicio?: string } | null
+    aoFechar: () => void
   }) =>
     estado ? (
       <div data-testid="modal">
         {estado.modo}:{estado.modo === 'criar' ? estado.inicio : estado.consulta!.id}
+        <button onClick={aoFechar}>fechar-modal</button>
       </div>
     ) : null,
 }))
@@ -188,6 +216,29 @@ describe('AgendaPage', () => {
     renderPage()
     await userEvent.setup().click(screen.getByRole('button', { name: 'slot-passado' }))
     expect(screen.queryByTestId('modal')).toBeNull()
+    expect(unselectMock).toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('data passada: só 1 toast mesmo quando dateClick e select disparam pro mesmo clique', async () => {
+    consultasMock.mockReturnValue({ data: [], isError: false })
+    renderPage()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'slot-passado-clique-duplo' }))
+    expect(screen.queryByTestId('modal')).toBeNull()
+    expect(toastErrorMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('fechar o modal de criação sem salvar limpa a seleção do calendário', async () => {
+    consultasMock.mockReturnValue({ data: [], isError: false })
+    renderPage()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'slot-semana' }))
+    expect(screen.getByTestId('modal')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'fechar-modal' }))
+    expect(screen.queryByTestId('modal')).toBeNull()
+    // Sem isso, o intervalo arrastado ficaria destacado por baixo do modal
+    // fechado, parecendo uma consulta salva mesmo sem ter sido.
     expect(unselectMock).toHaveBeenCalled()
   })
 

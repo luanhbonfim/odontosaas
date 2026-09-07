@@ -31,6 +31,7 @@ import type { ErroApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
 import {
+  CONFIRMACOES_CONFIRMADAS,
   type Consulta,
   type ConsultaEntrada,
   ROTULO_STATUS,
@@ -42,10 +43,6 @@ import {
   useRemoverConsulta,
   useTransicaoConsulta,
 } from './use-agenda'
-
-// CONFIRMADA (via WhatsApp/link) e MANUAL (recepção confirmou por fora) contam
-// como "confirmado" pro fluxo de atendimento (iniciar) — só o rótulo difere.
-const CONFIRMACOES_CONFIRMADAS = ['CONFIRMADA', 'MANUAL']
 
 /** Criar (início/fim pré-preenchidos do slot) ou editar uma consulta AGENDADA. */
 type EstadoEdicao =
@@ -471,6 +468,10 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
   const [convenio, setConvenio] = useState<number>(consulta?.convenio ?? 0) // 0 = particular
   const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
+  // Override local do status de confirmação — "Confirmar manualmente" não fecha
+  // o modal (a recepção normalmente segue direto pra "Iniciar atendimento"), então
+  // sem isso os botões ficavam com o valor antigo (PENDENTE) até um F5.
+  const [statusConfirmacao, setStatusConfirmacao] = useState(consulta?.status_confirmacao ?? '')
 
   // Catálogo de procedimentos (ativos) para o select do agendamento.
   const { data: procedimentos } = useProcedimentos()
@@ -535,7 +536,8 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
   async function confirmarManual() {
     if (!consulta) return
     try {
-      await confirmarManualmente.mutateAsync(consulta.id)
+      const atualizada = await confirmarManualmente.mutateAsync(consulta.id)
+      setStatusConfirmacao(atualizada.status_confirmacao ?? 'MANUAL')
       toast.success('Consulta confirmada manualmente.')
     } catch (excecao) {
       toast.error((excecao as ErroApi).mensagem ?? 'Não foi possível confirmar manualmente.')
@@ -609,7 +611,7 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
               {/* Confirmação: consultas AGENDADA ainda PENDENTES podem ser
                   confirmadas via WhatsApp (se o plano tiver o módulo) ou
                   manualmente (ex.: recepção confirmou por telefone). */}
-              {editando && consulta?.status === 'AGENDADA' && consulta?.status_confirmacao === 'PENDENTE' && (
+              {editando && consulta?.status === 'AGENDADA' && statusConfirmacao === 'PENDENTE' && (
                 <div className="flex items-center gap-1.5">
                   {whatsappHabilitado && (
                     <Button
@@ -815,7 +817,7 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
           {/* Iniciar atendimento: só quando o paciente confirmou (via WhatsApp ou manualmente). */}
           {editando &&
             consulta?.status === 'AGENDADA' &&
-            CONFIRMACOES_CONFIRMADAS.includes(consulta?.status_confirmacao ?? '') && (
+            CONFIRMACOES_CONFIRMADAS.includes(statusConfirmacao) && (
               <Button
                 type="button"
                 variant="secondary"

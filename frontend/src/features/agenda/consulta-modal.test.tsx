@@ -368,7 +368,7 @@ describe('ConsultaModal', () => {
   it('confirma manualmente uma consulta pendente', async () => {
     pacientesMock.mockReturnValue({ data: { results: [] } })
     planosMock.mockReturnValue({ data: [] })
-    confirmarManualmenteMock.mockResolvedValue({})
+    confirmarManualmenteMock.mockResolvedValue({ id: 7, status_confirmacao: 'MANUAL' })
     const user = userEvent.setup()
     render(
       <ConsultaModal
@@ -391,6 +391,12 @@ describe('ConsultaModal', () => {
     )
     await user.click(screen.getByRole('button', { name: /confirmar manualmente/i }))
     await waitFor(() => expect(confirmarManualmenteMock).toHaveBeenCalledWith(7))
+
+    // Sem precisar fechar/reabrir o modal (nem F5): os botões de confirmação
+    // somem e "Iniciar atendimento" aparece assim que a chamada retorna.
+    expect(screen.queryByRole('button', { name: /confirmar manualmente/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /enviar confirmação/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /iniciar atendimento/i })).toBeInTheDocument()
   })
 
   it('finaliza o atendimento em andamento (visualização)', async () => {

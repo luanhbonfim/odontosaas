@@ -41,6 +41,16 @@ export function AgendaPage() {
   const atualizar = useAtualizarConsulta()
   const calRef = useRef<FullCalendar>(null)
   const [modal, setModal] = useState<EstadoModal | null>(null)
+  // O FullCalendar dispara `dateClick` E `select` pro mesmo clique num slot
+  // (fora da visão Mês) quando `selectable` está ligado — sem isso, o aviso
+  // de data passada apareceria em dobro (2 toasts pro mesmo clique).
+  const ultimoAvisoPassadoEm = useRef(0)
+  function avisarDataPassada() {
+    const agora = Date.now()
+    if (agora - ultimoAvisoPassadoEm.current < 300) return
+    ultimoAvisoPassadoEm.current = agora
+    toast.error('Não é possível agendar em uma data passada.')
+  }
   const eventos = (data ?? []).map(consultaParaEvento)
   // No mobile a semana (7 colunas) não cabe: começa na visão Dia com toolbar compacta.
   const desktop = useEhDesktop()
@@ -118,7 +128,7 @@ export function AgendaPage() {
                   return
                 }
                 if (ehDataPassada(info.date)) {
-                  toast.error('Não é possível agendar em uma data passada.')
+                  avisarDataPassada()
                   return
                 }
                 const fim = new Date(info.date.getTime() + 60 * 60 * 1000)
@@ -131,7 +141,7 @@ export function AgendaPage() {
               select={(info) => {
                 if (info.view.type === 'dayGridMonth') return
                 if (ehDataPassada(info.start)) {
-                  toast.error('Não é possível agendar em uma data passada.')
+                  avisarDataPassada()
                   calRef.current?.getApi().unselect()
                   return
                 }
@@ -187,7 +197,17 @@ export function AgendaPage() {
         </Card>
       )}
 
-      <ConsultaModal estado={modal} aoFechar={() => setModal(null)} />
+      <ConsultaModal
+        estado={modal}
+        aoFechar={() => {
+          // Fechar sem salvar (Cancelar, Esc, clique fora) tem que limpar a
+          // seleção de arrastar-pra-selecionar — senão o intervalo continua
+          // destacado no calendário por baixo do modal, parecendo uma consulta
+          // salva mesmo sem ter sido.
+          calRef.current?.getApi().unselect()
+          setModal(null)
+        }}
+      />
     </div>
   )
 }
