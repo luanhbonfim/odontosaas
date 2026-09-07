@@ -569,7 +569,7 @@ describe('ConsultaModal', () => {
     })
   })
 
-  it('mostra "Registrar pagamento" quando a consulta ainda não tem lançamento', () => {
+  it('mostra "Incluir método de pagamento" quando a consulta ainda não tem lançamento', () => {
     render(
       <ConsultaModal
         estado={{
@@ -590,7 +590,7 @@ describe('ConsultaModal', () => {
         aoFechar={vi.fn()}
       />,
     )
-    expect(screen.getByRole('button', { name: 'Registrar pagamento' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Incluir método de pagamento' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Editar pagamento' })).toBeNull()
   })
 
@@ -615,7 +615,7 @@ describe('ConsultaModal', () => {
         aoFechar={vi.fn()}
       />,
     )
-    await user.click(screen.getByRole('button', { name: 'Registrar pagamento' }))
+    await user.click(screen.getByRole('button', { name: 'Incluir método de pagamento' }))
     await user.click(screen.getByRole('button', { name: /^salvar$/i }))
     expect(atualizarMock).not.toHaveBeenCalled()
   })

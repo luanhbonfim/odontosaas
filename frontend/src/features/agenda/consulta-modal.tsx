@@ -1,4 +1,4 @@
-import { CalendarClock, FileText, Package, Pencil, User, Wallet } from 'lucide-react'
+import { CalendarClock, FileText, Package, User, Wallet } from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -178,37 +178,52 @@ export function ConsultaModal({
   return <Formulario estado={estado} aoFechar={aoFechar} />
 }
 
-/** Linha "Valor" do resumo: valor + forma/parcelas (quando informadas) + botão
- * de editar. Fica só na grade de resumo — a edição em si vira um painel à
- * parte (`PainelEdicaoPagamento`), não cabe espremida numa célula da grade. */
-function LinhaValor({ consulta, onEditar }: { consulta: Consulta; onEditar: () => void }) {
-  // Pagamento só é registrado depois que a consulta está Realizada (nunca
-  // durante o atendimento), e só pra particular — convênio é faturado via Guia.
-  const podeEditar = !consulta.convenio && consulta.status === 'REALIZADA'
+/** Valor da consulta + forma/parcelas (quando já informadas) — só leitura; a
+ * ação de registrar/editar pagamento vira uma caixa própria e mais visível
+ * (`CaixaPagamento`), não um ícone espremido do lado do valor. */
+function ValorConsulta({ consulta }: { consulta: Consulta }) {
   const rotuloForma = FORMAS_PAGAMENTO.find((f) => f.valor === consulta.forma_pagamento)?.rotulo
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-sm font-medium">
-        {consulta.valor && Number(consulta.valor) > 0 ? <Money valor={consulta.valor} /> : '—'}
-        {(rotuloForma || (consulta.parcelas ?? 1) > 1) && (
-          <span className="ml-1 text-xs font-normal text-muted-foreground">
-            ({rotuloForma ?? 'forma não informada'}
-            {(consulta.parcelas ?? 1) > 1 ? ` · ${consulta.parcelas}x` : ''})
-          </span>
-        )}
-      </span>
-      {podeEditar && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-6"
-          onClick={onEditar}
-          aria-label={consulta.tem_lancamento ? 'Editar pagamento' : 'Registrar pagamento'}
-        >
-          <Pencil className="size-3.5" />
-        </Button>
+    <span className="text-sm font-medium">
+      {consulta.valor && Number(consulta.valor) > 0 ? <Money valor={consulta.valor} /> : '—'}
+      {(rotuloForma || (consulta.parcelas ?? 1) > 1) && (
+        <span className="ml-1 text-xs font-normal text-muted-foreground">
+          ({rotuloForma ?? 'forma não informada'}
+          {(consulta.parcelas ?? 1) > 1 ? ` · ${consulta.parcelas}x` : ''})
+        </span>
       )}
+    </span>
+  )
+}
+
+/** Caixa de pagamento (mesmo estilo da caixa "Insumos usados no atendimento"
+ * logo abaixo) — só a partir de Realizada. Particular: botão bem visível pra
+ * incluir a forma de pagamento (não é mais um ícone de lápis escondido).
+ * Convênio: aviso apontando pra guia, sem botão (não se registra pagamento
+ * aqui — é faturado pela guia do paciente). */
+function CaixaPagamento({ consulta, onIncluir }: { consulta: Consulta; onIncluir: () => void }) {
+  if (consulta.convenio) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
+        <Wallet className="size-4 shrink-0 text-muted-foreground" />
+        Cobrança por convênio — gerencie pela guia do paciente.
+      </div>
+    )
+  }
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+      <div className="flex items-center gap-2 text-sm">
+        <Wallet className="size-4 shrink-0 text-muted-foreground" />
+        Pagamento
+      </div>
+      <Button
+        type="button"
+        variant={consulta.tem_lancamento ? 'secondary' : 'default'}
+        size="sm"
+        onClick={onIncluir}
+      >
+        {consulta.tem_lancamento ? 'Editar pagamento' : 'Incluir método de pagamento'}
+      </Button>
     </div>
   )
 }
@@ -255,7 +270,7 @@ function PainelEdicaoPagamento({ consulta, aoFechar }: { consulta: Consulta; aoF
   return (
     <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
       <h4 className="text-sm font-semibold">
-        {consulta.tem_lancamento ? 'Editar pagamento' : 'Registrar pagamento'}
+        {consulta.tem_lancamento ? 'Editar pagamento' : 'Incluir método de pagamento'}
       </h4>
 
       <div className="space-y-1.5">
@@ -369,16 +384,7 @@ function VisualizacaoConsulta({
     ['Início', <DateTime iso={consulta.inicio} />],
     ['Fim', <DateTime iso={consulta.fim} />],
     ['Procedimento', consulta.procedimento_catalogo_nome || consulta.procedimento || '—'],
-    [
-      'Valor',
-      consulta.convenio && consulta.status === 'REALIZADA' ? (
-        <span className="text-xs text-muted-foreground">
-          Cobrança por convênio — gerencie pela guia do paciente.
-        </span>
-      ) : (
-        <LinhaValor consulta={consulta} onEditar={() => setEditandoPagamento(true)} />
-      ),
-    ],
+    ['Valor', <ValorConsulta consulta={consulta} />],
     ['Status', ROTULO_STATUS[consulta.status ?? ''] ?? consulta.status],
     ['Google Agenda', <BadgeSyncGoogle sync={consulta.sync_google} />],
   ]
@@ -399,6 +405,9 @@ function VisualizacaoConsulta({
             </div>
           ))}
         </div>
+        {consulta.status === 'REALIZADA' && (
+          <CaixaPagamento consulta={consulta} onIncluir={() => setEditandoPagamento(true)} />
+        )}
         {['EM_ATENDIMENTO', 'REALIZADA'].includes(consulta.status ?? '') && (
           <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
             <div className="flex items-center gap-2 text-sm">
