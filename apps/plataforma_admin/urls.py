@@ -14,6 +14,7 @@ from apps.plataforma_admin.views import (
     TenantVendorViewSet,
     MasterAdminVendorViewSet,
     VendorLoginView,
+    VendorTokenRefreshView,
 )
 from apps.plataforma_admin.views_celery import CeleryTarefasViewSet
 from apps.plataforma_admin.views_studio import StudioViewSet
@@ -29,6 +30,7 @@ router.register("mfa", MFAVendorViewSet, basename="vendor-mfa")
 
 urlpatterns = [
     path("auth/login/", VendorLoginView.as_view(), name="vendor-auth-login"),
+    path("auth/refresh/", VendorTokenRefreshView.as_view(), name="vendor-auth-refresh"),
     path("config-login/", ConfiguracaoLoginVendorView.as_view(), name="vendor-config-login"),
     path(
         "config-aviso-vencimento/",

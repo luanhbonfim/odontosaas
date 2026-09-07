@@ -26,7 +26,11 @@ vendorApi.interceptors.request.use((config) => {
 let renovacaoVendorEmAndamento: Promise<string> | null = null
 
 async function renovarAccessVendor(): Promise<string> {
-  const resposta = await axios.post('/api/auth/token/refresh/', {
+  // Endpoint proprio do Vendor -- o /api/auth/token/refresh/ generico revalida
+  // o usuario no schema ATUAL da conexao (public, nesse host), onde o model
+  // Usuario (de tenant) nao existe; isso derrubava a renovacao a cada ciclo
+  // do access token e deslogava o operador.
+  const resposta = await axios.post('/api/plataforma-admin/auth/refresh/', {
     refresh: vendorTokenStore.refresh,
   })
   const novo = resposta.data.access as string

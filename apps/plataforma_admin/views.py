@@ -1211,6 +1211,70 @@ class VendorLoginView(APIView):
         )
 
 
+class VendorTokenRefreshView(APIView):
+    """
+    Renova o access token do operador Vendor a partir do refresh token.
+
+    Não pode usar o `TokenRefreshView` padrão do SimpleJWT: ele revalida o
+    usuário com `get_user_model().objects.get(...)` na conexão ATUAL — que,
+    chamada do host público (Vendor Admin), está no schema `public`, onde o
+    model `Usuario` (app de tenant) nem existe (`relation "usuarios_usuario"
+    does not exist`). Isso derrubava a renovação a cada ciclo do access token,
+    e o frontend interpretava a falha como sessão expirada — deslogando o
+    operador periodicamente mesmo dentro da janela configurada do refresh.
+
+    Revalida o operador no `operator_schema` do próprio token (mesma lógica
+    de `MultiTenantJWTAuthentication`) antes de emitir o novo access token.
+    """
+
+    permission_classes = [IsVendorHost]
+    authentication_classes = []
+
+    def post(self, request):
+        from datetime import timedelta
+
+        from rest_framework_simplejwt.exceptions import TokenError
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        from apps.plataforma_admin.config import get_config
+        from apps.usuarios.models import Usuario
+
+        refresh_str = request.data.get("refresh")
+        if not refresh_str:
+            return Response({"detail": "Refresh token ausente."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            refresh = RefreshToken(refresh_str)
+        except TokenError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if refresh.get("schema_name") != "public":
+            return Response(
+                {"detail": "Refresh token inválido para o Vendor Admin."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        operator_schema = refresh.get("operator_schema")
+        user_id = refresh.get("user_id")
+        user = None
+        if operator_schema:
+            with schema_context(operator_schema):
+                user = Usuario.objects.filter(pk=user_id).first()
+
+        if user is None or not user.is_superuser or not user.is_active:
+            return Response(
+                {"detail": "Operador não encontrado ou sem privilégios de plataforma."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        cfg = get_config()
+        # `access_token` copia os claims presentes no refresh (schema_name,
+        # operator_schema, is_staff/is_superuser, email, nome) — só a duração
+        # dinâmica precisa ser reaplicada aqui, igual ao login.
+        access_token = refresh.access_token
+        access_token.set_exp(lifetime=timedelta(minutes=cfg.access_token_min or 30))
+
+        return Response({"access": str(access_token)}, status=status.HTTP_200_OK)
 
 
 

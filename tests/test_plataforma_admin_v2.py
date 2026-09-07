@@ -725,6 +725,53 @@ def test_vendor_login_view_sucesso_no_host_publico(tenant_fixture):
     assert resp_bloqueado.status_code == status.HTTP_401_UNAUTHORIZED, resp_bloqueado.content
 
 
+@pytest.mark.django_db(transaction=True)
+def test_vendor_refresh_view_renova_access_no_host_publico(tenant_fixture):
+    """POST /api/plataforma-admin/auth/refresh/ renova o access token do operador
+    a partir do host público, sem derrubar (o TokenRefreshView padrão do SimpleJWT
+    quebrava aqui: revalidava o usuário na conexão atual, schema `public`, onde o
+    model Usuario — de tenant — não existe). O novo access token precisa
+    autenticar de verdade num endpoint real do vendor (claims preservados)."""
+    from django.core.cache import cache
+
+    cache.clear()
+    _garantir_tenant_publico()
+
+    with schema_context(tenant_fixture.schema_name):
+        Usuario.objects.create_user(
+            email="operador-refresh@proclinica.cloud",
+            password="SenhaOperadorRefresh1",
+            nome_completo="Operador Refresh",
+            papel=Usuario.Papel.ADMIN,
+            is_staff=True,
+            is_superuser=True,
+        )
+
+    client = APIClient()
+    login = client.post(
+        "/api/plataforma-admin/auth/login/",
+        {"email": "operador-refresh@proclinica.cloud", "password": "SenhaOperadorRefresh1"},
+        format="json",
+        HTTP_HOST="localhost",
+    )
+    assert login.status_code == status.HTTP_200_OK, login.content
+    refresh_token = login.json()["refresh"]
+
+    resp = client.post(
+        "/api/plataforma-admin/auth/refresh/",
+        {"refresh": refresh_token},
+        format="json",
+        HTTP_HOST="localhost",
+    )
+    assert resp.status_code == status.HTTP_200_OK, resp.content
+    novo_access = resp.json()["access"]
+
+    # O novo access token precisa continuar autenticando num endpoint real do
+    # vendor (prova que schema_name/operator_schema foram preservados).
+    client2 = APIClient()
+    client2.credentials(HTTP_AUTHORIZATION=f"Bearer {novo_access}")
+    resp_tenants = client2.get("/api/plataforma-admin/tenants/", HTTP_HOST="localhost")
+    assert resp_tenants.status_code == status.HTTP_200_OK, resp_tenants.content
 
 
 
