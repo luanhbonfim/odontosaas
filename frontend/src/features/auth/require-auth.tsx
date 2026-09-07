@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 
+import { obterTokenRenovado } from '@/lib/api/client'
 import { tokenStore } from '@/lib/api/token-store'
 import { useClinicaAtual } from '@/features/auth/use-clinica-atual'
 import { useSessao } from '@/features/auth/use-sessao'
@@ -9,11 +11,27 @@ import type { ModuloRecurso } from '@/routes/nav'
 /**
  * Guarda de rotas: valida a sessão (token) a cada navegação. Sem sessão,
  * redireciona para /login — assim cada menu/rota exige usuário autenticado.
+ *
+ * O access só vive em memória (nunca é persistido) — só o refresh sobrevive
+ * a um F5. Sem esperar por um access novo aqui, o `<Outlet />` liberava as
+ * telas na hora e cada uma delas disparava sua consulta sem Authorization
+ * nenhum: 401 "NotAuthenticated" (não "token inválido") em toda primeira
+ * requisição pós-reload — a sessão se recuperava sozinha (o interceptor de
+ * resposta já reagia ao 401 renovando e refazendo), mas cada uma dessas
+ * tentativas ficava registrada como erro real nos logs.
  */
 export function RequireAuth() {
   const { data: infoClinica, isLoading, isError } = useClinicaAtual()
+  const [pronto, setPronto] = useState(!tokenStore.refresh || Boolean(tokenStore.access))
 
-  if (isLoading) return null
+  useEffect(() => {
+    if (pronto) return
+    obterTokenRenovado()
+      .catch(() => {}) // falha aqui: a checagem de `autenticado` abaixo já resolve com o login.
+      .finally(() => setPronto(true))
+  }, [pronto])
+
+  if (isLoading || !pronto) return null
   // Host não resolve para clínica (404): página terminal, sem redirecionar (evita loop).
   if (isError) return <ClinicaNaoEncontradaPage />
 

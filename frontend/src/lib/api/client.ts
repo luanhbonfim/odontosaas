@@ -33,7 +33,9 @@ async function renovarAccess(): Promise<string> {
   return novo
 }
 
-async function obterTokenRenovado(): Promise<string> {
+/** Exportado para o bootstrap de `RequireAuth` — obtém (e dedupe) um access
+ * novo a partir do refresh persistido, antes de liberar as rotas autenticadas. */
+export async function obterTokenRenovado(): Promise<string> {
   if (!renovacaoEmAndamento) {
     renovacaoEmAndamento = renovarAccess().finally(() => {
       renovacaoEmAndamento = null

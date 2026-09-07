@@ -11,6 +11,12 @@ vi.mock('./use-clinica-atual', () => ({
   useClinicaAtual: () => mockUseClinicaAtual(),
 }))
 
+const obterTokenRenovadoMock = vi.fn()
+vi.mock('@/lib/api/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/api/client')>()),
+  obterTokenRenovado: () => obterTokenRenovadoMock(),
+}))
+
 function Arvore() {
   return (
     <Routes>
@@ -79,6 +85,29 @@ describe('Guarda de rotas', () => {
 
     renderizar('/dashboard')
     expect(screen.getByText('Raiz Pública ou Painel')).toBeInTheDocument()
+  })
+
+  it('reload com só refresh persistido (sem access em memória): espera renovar antes de liberar a rota', async () => {
+    // Simula exatamente o cenário do F5: nada passou por tokenStore.definir()
+    // nesta "aba" ainda, só o refresh sobrevive no localStorage de antes.
+    localStorage.setItem('odonto-refresh', 'r-antigo')
+    let resolver: ((valor: string) => void) | undefined
+    obterTokenRenovadoMock.mockReturnValue(
+      new Promise<string>((resolve) => {
+        resolver = resolve
+      }),
+    )
+
+    renderizar('/dashboard')
+    // Enquanto a renovação não resolve, não libera a rota nem redireciona pro
+    // login (evita a corrida: consulta disparando sem Authorization nenhum).
+    expect(screen.queryByText('Painel protegido')).not.toBeInTheDocument()
+    expect(screen.queryByText('Tela de login')).not.toBeInTheDocument()
+
+    // Renovação resolve (efeito colateral real: define o access novo).
+    tokenStore.definir({ access: 'novo', refresh: 'r-antigo' })
+    resolver?.('novo')
+    expect(await screen.findByText('Painel protegido')).toBeInTheDocument()
   })
 
   it('quando o host não resolve para clínica (404/isError), mostra página terminal e NÃO redireciona (anti-loop)', () => {
