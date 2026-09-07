@@ -90,7 +90,7 @@ export function TrocarPlanoModal({ aberto, aoFechar, tenantId, planoAtualId, pla
             </Label>
             <select
               id="trocar-plano-select"
-              className={classeCampoSelect}
+              className={`${classeCampoSelect} bg-[#0B132B]/80 border-[#1E2D56] text-white`}
               value={planoId ?? ''}
               onChange={(e) => setPlanoId(e.target.value ? Number(e.target.value) : null)}
             >

@@ -100,7 +100,7 @@ export function RenovarAssinaturaModal({ aberto, aoFechar, tenantId }: Props) {
             </Label>
             <select
               id="renovar-forma"
-              className={classeCampoSelect}
+              className={`${classeCampoSelect} bg-[#0B132B]/80 border-[#1E2D56] text-white`}
               value={formaPagamento}
               onChange={(e) => setFormaPagamento(e.target.value)}
             >
