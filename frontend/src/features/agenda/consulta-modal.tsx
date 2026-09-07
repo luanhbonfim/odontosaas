@@ -1,8 +1,9 @@
-import { Package, Pencil } from 'lucide-react'
+import { CalendarClock, FileText, Package, Pencil, User, Wallet } from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
+import { Campo, SecaoForm } from '@/components/common/form-kit'
 import { DateTime, Money } from '@/components/common/formato'
 import { StatusBadge, type VarianteStatus } from '@/components/common/status-badge'
 import { Button } from '@/components/ui/button'
@@ -363,7 +364,7 @@ function VisualizacaoConsulta({
   ]
   return (
     <Dialog open onOpenChange={(aberto) => !aberto && aoFechar()}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Consulta</DialogTitle>
           <DialogDescription>
@@ -596,7 +597,7 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
 
   return (
     <Dialog open onOpenChange={(aberto) => !aberto && aoFechar()}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{editando ? 'Editar consulta' : 'Agendar consulta'}</DialogTitle>
           <DialogDescription>
@@ -604,215 +605,213 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label>Paciente</Label>
-              {/* Confirmação: consultas AGENDADA ainda PENDENTES podem ser
-                  confirmadas via WhatsApp (se o plano tiver o módulo) ou
-                  manualmente (ex.: recepção confirmou por telefone). */}
-              {editando && consulta?.status === 'AGENDADA' && statusConfirmacao === 'PENDENTE' && (
-                <div className="flex items-center gap-1.5">
-                  {whatsappHabilitado && (
+        <div className="space-y-5">
+          <SecaoForm titulo="Paciente e dentista" icone={User}>
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label>Paciente</Label>
+                {/* Confirmação: consultas AGENDADA ainda PENDENTES podem ser
+                    confirmadas via WhatsApp (se o plano tiver o módulo) ou
+                    manualmente (ex.: recepção confirmou por telefone). */}
+                {editando && consulta?.status === 'AGENDADA' && statusConfirmacao === 'PENDENTE' && (
+                  <div className="flex items-center gap-1.5">
+                    {whatsappHabilitado && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={enviarConf}
+                        disabled={enviarConfirmacao.isPending}
+                      >
+                        {enviarConfirmacao.isPending ? 'Enviando…' : 'Enviar confirmação'}
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={enviarConf}
-                      disabled={enviarConfirmacao.isPending}
+                      onClick={confirmarManual}
+                      disabled={confirmarManualmente.isPending}
                     >
-                      {enviarConfirmacao.isPending ? 'Enviando…' : 'Enviar confirmação'}
+                      {confirmarManualmente.isPending ? 'Confirmando…' : 'Confirmar manualmente'}
                     </Button>
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={confirmarManual}
-                    disabled={confirmarManualmente.isPending}
-                  >
-                    {confirmarManualmente.isPending ? 'Confirmando…' : 'Confirmar manualmente'}
-                  </Button>
-                </div>
-              )}
-            </div>
-            <SeletorPaciente
-              nome={pacienteNome}
-              aoEscolher={(id, nome) => {
-                setPacienteId(id)
-                setPacienteNome(nome)
-                setConvenio(0) // troca de paciente reseta a cobrança
-                setDentista('') // e o dentista (a lista depende do paciente)
-              }}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="dentista">Dentista</Label>
-            <select
-              id="dentista"
-              className={cn(classeSelect, !pacienteId && 'cursor-not-allowed opacity-60')}
-              value={dentista}
-              onChange={(e) => setDentista(e.target.value)}
-              disabled={!pacienteId}
-            >
-              <option value="">Selecione…</option>
-              {dentistasPermitidos.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.nome_completo}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-muted-foreground">
-              {pacienteId
-                ? 'Apenas o dentista responsável e os compartilhados do paciente.'
-                : 'Selecione o paciente primeiro.'}
-            </p>
-          </div>
-
-          {/* Cobrança: sempre visível. Sem convênio -> travado em Particular;
-              com convênio -> escolhe qual (ou Particular). */}
-          <div className="space-y-1.5">
-            <Label htmlFor="convenio">Cobrança</Label>
-            <select
-              id="convenio"
-              className={cn(
-                classeSelect,
-                conveniosPaciente.length === 0 && 'cursor-not-allowed opacity-60',
-              )}
-              value={String(convenio)}
-              onChange={(e) => setConvenio(Number(e.target.value))}
-              disabled={conveniosPaciente.length === 0}
-            >
-              <option value="0">Particular</option>
-              {conveniosPaciente.map((c) => (
-                <option key={c.id} value={c.id}>
-                  Convênio — {c.nome}
-                  {c.vencido ? ' (vencido)' : ''}
-                </option>
-              ))}
-            </select>
-            {convenioVencido && (
-              <p className="text-xs text-destructive">
-                Convênio vencido — renove a validade do plano para agendar por ele.
-              </p>
-            )}
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="inicio">Início</Label>
-              <Input
-                id="inicio"
-                type="datetime-local"
-                value={inicio}
-                onChange={(e) => setInicio(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="fim">Fim</Label>
-              <Input
-                id="fim"
-                type="datetime-local"
-                value={fim}
-                onChange={(e) => setFim(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="procedimento">Procedimento</Label>
-              <select
-                id="procedimento"
-                className={classeSelect}
-                value={String(procedimentoCatalogo)}
-                onChange={(e) => {
-                  const id = Number(e.target.value)
-                  setProcedimentoCatalogo(id)
-                  // Pré-preenche o valor com o padrão do procedimento (só ao criar
-                  // e se a pessoa ainda não tiver digitado nada — nunca sobrescreve).
-                  if (!editando && !valor) {
-                    const escolhido = (procedimentos ?? []).find((p) => p.id === id)
-                    if (escolhido && escolhido.valor && Number(escolhido.valor) > 0) {
-                      setValor(escolhido.valor)
-                    }
-                  }
+                  </div>
+                )}
+              </div>
+              <SeletorPaciente
+                nome={pacienteNome}
+                aoEscolher={(id, nome) => {
+                  setPacienteId(id)
+                  setPacienteNome(nome)
+                  setConvenio(0) // troca de paciente reseta a cobrança
+                  setDentista('') // e o dentista (a lista depende do paciente)
                 }}
+              />
+            </div>
+
+            <Campo
+              id="dentista"
+              label="Dentista"
+              ajuda={
+                pacienteId
+                  ? 'Apenas o dentista responsável e os compartilhados do paciente.'
+                  : 'Selecione o paciente primeiro.'
+              }
+            >
+              <select
+                id="dentista"
+                className={cn(classeSelect, !pacienteId && 'cursor-not-allowed opacity-60')}
+                value={dentista}
+                onChange={(e) => setDentista(e.target.value)}
+                disabled={!pacienteId}
               >
-                <option value="0">Selecione…</option>
-                {procedimentosAtivos.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nome}
+                <option value="">Selecione…</option>
+                {dentistasPermitidos.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.nome_completo}
                   </option>
                 ))}
               </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="valor">
-                Valor{' '}
-                <span aria-hidden="true" className="text-destructive">
-                  *
-                </span>
-              </Label>
-              <Input
-                id="valor"
-                inputMode="decimal"
-                aria-required="true"
-                value={valor}
-                onChange={(e) => setValor(e.target.value)}
-              />
-            </div>
-          </div>
+            </Campo>
+          </SecaoForm>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="forma_pagamento">Forma de pagamento</Label>
-            <select
-              id="forma_pagamento"
-              className={classeSelect}
-              value={formaPagamento}
-              onChange={(e) => setFormaPagamento(e.target.value)}
+          <SecaoForm titulo="Data e horário" icone={CalendarClock}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Campo id="inicio" label="Início">
+                <Input
+                  id="inicio"
+                  type="datetime-local"
+                  value={inicio}
+                  onChange={(e) => setInicio(e.target.value)}
+                />
+              </Campo>
+              <Campo id="fim" label="Fim">
+                <Input
+                  id="fim"
+                  type="datetime-local"
+                  value={fim}
+                  onChange={(e) => setFim(e.target.value)}
+                />
+              </Campo>
+            </div>
+          </SecaoForm>
+
+          <SecaoForm titulo="Procedimento e cobrança" icone={Wallet}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Campo id="procedimento" label="Procedimento">
+                <select
+                  id="procedimento"
+                  className={classeSelect}
+                  value={String(procedimentoCatalogo)}
+                  onChange={(e) => {
+                    const id = Number(e.target.value)
+                    setProcedimentoCatalogo(id)
+                    // Pré-preenche o valor com o padrão do procedimento (só ao criar
+                    // e se a pessoa ainda não tiver digitado nada — nunca sobrescreve).
+                    if (!editando && !valor) {
+                      const escolhido = (procedimentos ?? []).find((p) => p.id === id)
+                      if (escolhido && escolhido.valor && Number(escolhido.valor) > 0) {
+                        setValor(escolhido.valor)
+                      }
+                    }
+                  }}
+                >
+                  <option value="0">Selecione…</option>
+                  {procedimentosAtivos.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome}
+                    </option>
+                  ))}
+                </select>
+              </Campo>
+              <Campo id="valor" label="Valor" obrigatorio>
+                <Input
+                  id="valor"
+                  inputMode="decimal"
+                  aria-required="true"
+                  value={valor}
+                  onChange={(e) => setValor(e.target.value)}
+                />
+              </Campo>
+            </div>
+
+            {/* Cobrança: sempre visível. Sem convênio -> travado em Particular;
+                com convênio -> escolhe qual (ou Particular). */}
+            <Campo
+              id="convenio"
+              label="Cobrança"
+              erro={
+                convenioVencido
+                  ? 'Convênio vencido — renove a validade do plano para agendar por ele.'
+                  : undefined
+              }
             >
-              <option value="">Não informado</option>
-              {FORMAS_PAGAMENTO.map((f) => (
-                <option key={f.valor} value={f.valor}>
-                  {f.rotulo}
-                </option>
-              ))}
-            </select>
-          </div>
+              <select
+                id="convenio"
+                className={cn(
+                  classeSelect,
+                  conveniosPaciente.length === 0 && 'cursor-not-allowed opacity-60',
+                )}
+                value={String(convenio)}
+                onChange={(e) => setConvenio(Number(e.target.value))}
+                disabled={conveniosPaciente.length === 0}
+              >
+                <option value="0">Particular</option>
+                {conveniosPaciente.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    Convênio — {c.nome}
+                    {c.vencido ? ' (vencido)' : ''}
+                  </option>
+                ))}
+              </select>
+            </Campo>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="parcelas">Parcelas</Label>
-              <Input
-                id="parcelas"
-                type="number"
-                min={1}
-                value={parcelas}
-                onChange={(e) => setParcelas(e.target.value)}
-              />
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Campo id="forma_pagamento" label="Forma de pagamento">
+                <select
+                  id="forma_pagamento"
+                  className={classeSelect}
+                  value={formaPagamento}
+                  onChange={(e) => setFormaPagamento(e.target.value)}
+                >
+                  <option value="">Não informado</option>
+                  {FORMAS_PAGAMENTO.map((f) => (
+                    <option key={f.valor} value={f.valor}>
+                      {f.rotulo}
+                    </option>
+                  ))}
+                </select>
+              </Campo>
+              <Campo id="parcelas" label="Parcelas">
+                <Input
+                  id="parcelas"
+                  type="number"
+                  min={1}
+                  value={parcelas}
+                  onChange={(e) => setParcelas(e.target.value)}
+                />
+              </Campo>
+              <Campo id="data_primeira_parcela" label="Data da 1ª parcela">
+                <Input
+                  id="data_primeira_parcela"
+                  type="date"
+                  value={dataPrimeiraParcela}
+                  onChange={(e) => setDataPrimeiraParcela(e.target.value)}
+                />
+              </Campo>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="data_primeira_parcela">Data da 1ª parcela</Label>
-              <Input
-                id="data_primeira_parcela"
-                type="date"
-                value={dataPrimeiraParcela}
-                onChange={(e) => setDataPrimeiraParcela(e.target.value)}
-              />
-            </div>
-          </div>
+          </SecaoForm>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="observacoes">Observação</Label>
-            <Input
-              id="observacoes"
-              placeholder="Observações do atendimento (opcional)"
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-            />
-          </div>
+          <SecaoForm titulo="Observações" icone={FileText}>
+            <Campo id="observacoes" label="Observação">
+              <Input
+                id="observacoes"
+                placeholder="Observações do atendimento (opcional)"
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+              />
+            </Campo>
+          </SecaoForm>
 
           {/* Iniciar atendimento: só quando o paciente confirmou (via WhatsApp ou manualmente). */}
           {editando &&
