@@ -38,9 +38,21 @@ export function formatarDataHora(iso: string | null | undefined): string {
   }).format(data)
 }
 
-/** Apenas a data no formato pt-BR (dd/MM/yyyy). */
+/** Apenas a data no formato pt-BR (dd/MM/yyyy). Datas "puras" (YYYY-MM-DD, sem
+ * hora — ex.: `vencimento` de um DateField do Django) são um dia de calendário,
+ * não um instante: convertidas pro fuso America/São_Paulo como as demais, viravam
+ * o dia anterior (meia-noite UTC = 21h do dia anterior em UTC-3). Por isso usam
+ * hora local diretamente, sem conversão de fuso. */
 export function formatarData(iso: string | null | undefined): string {
   if (!iso) return ''
+  const somenteData = /^\d{4}-\d{2}-\d{2}$/.exec(iso)
+  if (somenteData) {
+    const [ano, mes, dia] = iso.split('-').map(Number)
+    const data = new Date(ano, mes - 1, dia)
+    return Number.isNaN(data.getTime())
+      ? ''
+      : new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(data)
+  }
   const data = new Date(iso)
   if (Number.isNaN(data.getTime())) return ''
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeZone: TZ }).format(data)

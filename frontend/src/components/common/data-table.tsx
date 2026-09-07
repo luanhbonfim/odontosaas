@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 import { useEhTelaLarga } from '@/stores/ui'
 
 /** Paginação controlada pelo servidor (1-based). Quando ausente, a `DataTable`
@@ -49,6 +50,9 @@ type DataTableProps<T> = {
   /** Card customizado no mobile (< lg). Recebe o item; DataTable envolve no card padrão.
    *  Quando ausente, usa o card genérico (título + pares rótulo/valor + ações). */
   cardMobile?: (item: T) => ReactNode
+  /** Classe extra por linha (ex.: destacar vencido/pago) — aplicada na `TableRow`
+   *  no desktop e no card equivalente no mobile. */
+  linhaClassName?: (item: T) => string | undefined
 }
 
 export function DataTable<T>({
@@ -59,6 +63,7 @@ export function DataTable<T>({
   paginacaoManual,
   ordenacaoManual,
   cardMobile,
+  linhaClassName,
 }: DataTableProps<T>) {
   const [sortingCliente, setSortingCliente] = useState<SortingState>([])
   // Tabela só em telas largas (>= lg); em celular/tablet estreito vira cards (sem scroll lateral).
@@ -160,7 +165,7 @@ export function DataTable<T>({
                 </TableRow>
               ) : (
                 linhas.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow key={row.id} className={linhaClassName?.(row.original)}>
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -190,7 +195,10 @@ export function DataTable<T>({
               // Card customizado da tela (ex.: consultas), quando fornecido.
               if (cardMobile) {
                 return (
-                  <div key={row.id} className="rounded-lg border bg-card p-4">
+                  <div
+                    key={row.id}
+                    className={cn('rounded-lg border bg-card p-4', linhaClassName?.(row.original))}
+                  >
                     {cardMobile(row.original)}
                   </div>
                 )
@@ -204,7 +212,10 @@ export function DataTable<T>({
               )
               const primeira = cells[0]
               return (
-                <div key={row.id} className="rounded-lg border bg-card p-4">
+                <div
+                  key={row.id}
+                  className={cn('rounded-lg border bg-card p-4', linhaClassName?.(row.original))}
+                >
                   {/* Topo: título (1ª coluna) à esquerda + ações no canto superior direito */}
                   <div className="flex items-start justify-between gap-3">
                     {primeira && (

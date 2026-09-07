@@ -35,4 +35,12 @@ describe('formatadores', () => {
     expect(formatarDataHora('')).toBe('')
     expect(formatarDataHora('data-invalida')).toBe('')
   })
+
+  it('data "pura" (YYYY-MM-DD, sem hora) não recua um dia ao converter o fuso', () => {
+    // Um DateField (ex.: vencimento) vira meia-noite UTC ao passar por `new
+    // Date(iso)` — convertido pra America/São_Paulo (-03:00) isso vira 21h do
+    // dia anterior, exibindo a data errada perto da meia-noite/madrugada.
+    expect(formatarData('2026-09-06')).toBe('06/09/2026')
+    expect(formatarData('2026-01-01')).toBe('01/01/2026')
+  })
 })
