@@ -135,35 +135,18 @@ describe('ConsultaModal', () => {
     expect(screen.getByLabelText(/valor/i)).toHaveValue('999')
   })
 
-  it('agenda com forma de pagamento e parcelas', async () => {
+  it('não pede forma de pagamento/parcelas ao agendar (só depois de Realizada)', async () => {
     pacientesMock.mockReturnValue({ data: { results: [{ id: 10, nome_completo: 'João Silva' }] } })
     planosMock.mockReturnValue({ data: [] })
-    criarMock.mockResolvedValue({})
-    const user = userEvent.setup()
     render(
       <ConsultaModal
         estado={{ modo: 'criar', inicio: '2026-08-10T09:00', fim: '2026-08-10T09:30' }}
         aoFechar={vi.fn()}
       />,
     )
-    await user.type(screen.getByPlaceholderText(/buscar paciente/i), 'João')
-    await user.click(screen.getByRole('button', { name: 'João Silva' }))
-    await user.selectOptions(screen.getByLabelText('Dentista'), '5')
-    await user.type(screen.getByLabelText(/valor/i), '300')
-    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'CARTAO')
-    await user.clear(screen.getByLabelText('Parcelas'))
-    await user.type(screen.getByLabelText('Parcelas'), '3')
-    await user.type(screen.getByLabelText(/data da 1ª parcela/i), '2026-08-15')
-    await user.click(screen.getByRole('button', { name: 'Agendar' }))
-
-    await waitFor(() => expect(criarMock).toHaveBeenCalled())
-    expect(criarMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        forma_pagamento: 'CARTAO',
-        parcelas: 3,
-        data_primeira_parcela: '2026-08-15',
-      }),
-    )
+    expect(screen.queryByLabelText('Forma de pagamento')).toBeNull()
+    expect(screen.queryByLabelText('Parcelas')).toBeNull()
+    expect(screen.queryByLabelText(/data da 1ª parcela/i)).toBeNull()
   })
 
   it('exige o valor (mesmo particular)', async () => {
@@ -548,8 +531,70 @@ describe('ConsultaModal', () => {
     expect(screen.queryByRole('button', { name: 'Excluir consulta' })).toBeNull()
   })
 
-  it('permite editar o valor/forma de pagamento de uma consulta REALIZADA', async () => {
+  it('permite editar o valor/forma de pagamento de uma consulta REALIZADA (particular) já com pagamento', async () => {
     atualizarMock.mockResolvedValue({})
+    const user = userEvent.setup()
+    render(
+      <ConsultaModal
+        estado={{
+          modo: 'visualizar',
+          consulta: {
+            id: 9,
+            paciente: 10,
+            paciente_nome: 'Maria Souza',
+            dentista: 5,
+            dentista_nome: 'Dra. Ana',
+            inicio: '2026-08-10T15:00:00Z',
+            fim: '2026-08-10T15:30:00Z',
+            valor: '200.00',
+            status: 'REALIZADA',
+            tem_lancamento: true,
+          } as never,
+        }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Editar pagamento' }))
+    expect(screen.getByText('Editar pagamento', { selector: 'h4' })).toBeInTheDocument()
+    const campoValor = screen.getByLabelText(/^valor/i)
+    await user.clear(campoValor)
+    await user.type(campoValor, '250')
+    await user.selectOptions(screen.getByLabelText(/forma de pagamento/i), 'PIX')
+    await user.click(screen.getByRole('button', { name: /^salvar$/i }))
+
+    await waitFor(() => expect(atualizarMock).toHaveBeenCalled())
+    expect(atualizarMock).toHaveBeenCalledWith({
+      id: 9,
+      dados: { valor: '250', forma_pagamento: 'PIX', parcelas: 1, data_primeira_parcela: null },
+    })
+  })
+
+  it('mostra "Registrar pagamento" quando a consulta ainda não tem lançamento', () => {
+    render(
+      <ConsultaModal
+        estado={{
+          modo: 'visualizar',
+          consulta: {
+            id: 9,
+            paciente: 10,
+            paciente_nome: 'Maria Souza',
+            dentista: 5,
+            dentista_nome: 'Dra. Ana',
+            inicio: '2026-08-10T15:00:00Z',
+            fim: '2026-08-10T15:30:00Z',
+            valor: '200.00',
+            status: 'REALIZADA',
+            tem_lancamento: false,
+          } as never,
+        }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Registrar pagamento' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Editar pagamento' })).toBeNull()
+  })
+
+  it('não deixa registrar o pagamento sem escolher a forma de pagamento', async () => {
     const user = userEvent.setup()
     render(
       <ConsultaModal
@@ -570,19 +615,57 @@ describe('ConsultaModal', () => {
         aoFechar={vi.fn()}
       />,
     )
-    await user.click(screen.getByRole('button', { name: 'Editar pagamento' }))
-    expect(screen.getByText('Editar pagamento', { selector: 'h4' })).toBeInTheDocument()
-    const campoValor = screen.getByLabelText(/^valor/i)
-    await user.clear(campoValor)
-    await user.type(campoValor, '250')
-    await user.selectOptions(screen.getByLabelText('Forma de pagamento'), 'PIX')
+    await user.click(screen.getByRole('button', { name: 'Registrar pagamento' }))
     await user.click(screen.getByRole('button', { name: /^salvar$/i }))
+    expect(atualizarMock).not.toHaveBeenCalled()
+  })
 
-    await waitFor(() => expect(atualizarMock).toHaveBeenCalled())
-    expect(atualizarMock).toHaveBeenCalledWith({
-      id: 9,
-      dados: { valor: '250', forma_pagamento: 'PIX', parcelas: 1, data_primeira_parcela: null },
-    })
+  it('consulta de convênio EM_ATENDIMENTO não mostra a opção de pagamento (não é Realizada ainda)', () => {
+    render(
+      <ConsultaModal
+        estado={{
+          modo: 'visualizar',
+          consulta: {
+            id: 9,
+            paciente: 10,
+            paciente_nome: 'Maria Souza',
+            dentista: 5,
+            dentista_nome: 'Dra. Ana',
+            inicio: '2026-08-10T15:00:00Z',
+            fim: '2026-08-10T15:30:00Z',
+            valor: '200.00',
+            status: 'EM_ATENDIMENTO',
+          } as never,
+        }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /pagamento/i })).toBeNull()
+  })
+
+  it('consulta de convênio REALIZADA mostra aviso de guia no lugar do formulário de pagamento', () => {
+    render(
+      <ConsultaModal
+        estado={{
+          modo: 'visualizar',
+          consulta: {
+            id: 9,
+            paciente: 10,
+            paciente_nome: 'Maria Souza',
+            dentista: 5,
+            dentista_nome: 'Dra. Ana',
+            inicio: '2026-08-10T15:00:00Z',
+            fim: '2026-08-10T15:30:00Z',
+            valor: '200.00',
+            status: 'REALIZADA',
+            convenio: 3,
+          } as never,
+        }}
+        aoFechar={vi.fn()}
+      />,
+    )
+    expect(screen.getByText(/gerencie pela guia do paciente/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /pagamento/i })).toBeNull()
   })
 
   it('não permite editar o valor de uma consulta CANCELADA', () => {

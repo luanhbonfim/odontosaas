@@ -88,6 +88,8 @@ export type GuiaEntrada = {
   status?: string
   /** Procedimentos por dente (odontograma), notação FDI. */
   dentes?: { dente: number; procedimento: string }[]
+  /** Consulta de convênio vinculada (opcional) — de onde a guia se origina. */
+  consulta?: number | null
 }
 
 /** Uma guia específica (para a página de edição). */

@@ -83,11 +83,17 @@ def gerar_conta_da_consulta(consulta):
     realizada — uma por parcela (`consulta.parcelas`; 1 = à vista).
 
     Consulta por convênio é faturada via Guia — não gera conta particular (evita
-    cobrança em dobro). Idempotente (só gera se a consulta ainda não tem nenhum
-    lançamento) e ignora consultas sem valor. Retorna a lista de
-    LancamentoFinanceiro criados (vazia se não gerou nada).
+    cobrança em dobro). Só gera com forma de pagamento definida — o pagamento é
+    registrado depois que a consulta já está Realizada (não no agendamento), via
+    o painel de "Registrar pagamento"; sem isso, ficaria gerando uma conta com
+    forma de pagamento em branco assim que a consulta terminasse. Idempotente
+    (só gera se a consulta ainda não tem nenhum lançamento) e ignora consultas
+    sem valor. Retorna a lista de LancamentoFinanceiro criados (vazia se não
+    gerou nada).
     """
     if consulta.convenio_id:
+        return []
+    if not consulta.forma_pagamento:
         return []
     if not consulta.valor or consulta.valor <= 0:
         return []

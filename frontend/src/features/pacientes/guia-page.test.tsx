@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GuiaPage } from './guia-page'
 
@@ -13,16 +13,23 @@ function renderPage() {
   )
 }
 
-const { paramsMock, navegarMock, planosMock, guiaMock, criarMock, atualizarMock } = vi.hoisted(
-  () => ({
-    paramsMock: vi.fn(),
-    navegarMock: vi.fn(),
-    planosMock: vi.fn(),
-    guiaMock: vi.fn(),
-    criarMock: vi.fn(),
-    atualizarMock: vi.fn(),
-  }),
-)
+const {
+  paramsMock,
+  navegarMock,
+  planosMock,
+  guiaMock,
+  criarMock,
+  atualizarMock,
+  consultasMock,
+} = vi.hoisted(() => ({
+  paramsMock: vi.fn(),
+  navegarMock: vi.fn(),
+  planosMock: vi.fn(),
+  guiaMock: vi.fn(),
+  criarMock: vi.fn(),
+  atualizarMock: vi.fn(),
+  consultasMock: vi.fn(),
+}))
 vi.mock('react-router-dom', async (importOriginal) => {
   const real = await importOriginal<typeof import('react-router-dom')>()
   return { ...real, useParams: paramsMock, useNavigate: () => navegarMock }
@@ -32,9 +39,11 @@ vi.mock('./use-paciente-detalhe', () => ({
   useGuia: guiaMock,
   useCriarGuia: () => ({ mutateAsync: criarMock }),
   useAtualizarGuia: () => ({ mutateAsync: atualizarMock }),
+  useConsultasDoPaciente: consultasMock,
 }))
 
 describe('GuiaPage', () => {
+  beforeEach(() => consultasMock.mockReturnValue({ data: [] }))
   afterEach(() => vi.clearAllMocks())
 
   it('nova guia: preenche, seleciona dentes, cria e volta ao paciente', async () => {
@@ -63,8 +72,47 @@ describe('GuiaPage', () => {
       valor: '250',
       procedimento: 'Dente 44: Restauração', // resumo derivado dos dentes
       dentes: [{ dente: 44, procedimento: 'Restauração' }],
+      consulta: null,
     })
     expect(navegarMock).toHaveBeenCalledWith('/pacientes/5')
+  })
+
+  it('vincula uma consulta de convênio à guia', async () => {
+    paramsMock.mockReturnValue({ pacienteId: '5' })
+    planosMock.mockReturnValue({
+      data: [{ id: 7, convenio_nome: 'Amil', numero_carteirinha: '123' }],
+    })
+    guiaMock.mockReturnValue({ data: undefined })
+    consultasMock.mockReturnValue({
+      data: [
+        {
+          id: 40,
+          convenio: 3,
+          inicio: '2026-08-10T13:00:00Z',
+          procedimento_catalogo_nome: 'Canal',
+        },
+        { id: 41, convenio: null, inicio: '2026-08-11T13:00:00Z', procedimento: 'Particular' },
+      ],
+    })
+    criarMock.mockResolvedValue({})
+    const user = userEvent.setup()
+    renderPage()
+
+    // Só a consulta de convênio (id 40) aparece nas opções -- a particular (41) não.
+    const seletor = screen.getByLabelText(/consulta vinculada/i)
+    expect(within(seletor).getByRole('option', { name: /Canal/ })).toBeInTheDocument()
+    expect(within(seletor).queryByRole('option', { name: /Particular/ })).toBeNull()
+
+    await user.selectOptions(seletor, '40')
+    await user.selectOptions(screen.getByLabelText(/plano/i), '7')
+    await user.type(screen.getByLabelText(/número/i), 'G-3')
+    await user.type(screen.getByLabelText(/valor/i), '250')
+    await user.click(screen.getByRole('button', { name: 'Dente 44' }))
+    await user.type(screen.getByLabelText('Procedimento 1'), 'Restauração')
+    await user.click(screen.getByRole('button', { name: /salvar/i }))
+
+    await waitFor(() => expect(criarMock).toHaveBeenCalled())
+    expect(criarMock).toHaveBeenCalledWith(expect.objectContaining({ consulta: 40 }))
   })
 
   it('editar: pré-preenche do backend (inclusive dentes) e faz PATCH', async () => {

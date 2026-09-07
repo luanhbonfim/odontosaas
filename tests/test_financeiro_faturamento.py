@@ -122,7 +122,8 @@ def test_cancelar_consulta_estorna_conta():
                 valor=Decimal("120"),
             )
             consulta.status = Consulta.Status.REALIZADA
-            consulta.save(update_fields=["status", "atualizado_em"])
+            consulta.forma_pagamento = "PIX"
+            consulta.save(update_fields=["status", "forma_pagamento", "atualizado_em"])
             conta = LancamentoFinanceiro.objects.get(consulta=consulta)
             assert conta.status == LancamentoFinanceiro.Status.PENDENTE
 
@@ -312,7 +313,8 @@ def test_consulta_por_convenio_nao_gera_conta_particular():
                 valor=Decimal("120"),
             )
             c_part.status = Consulta.Status.REALIZADA
-            c_part.save(update_fields=["status", "atualizado_em"])
+            c_part.forma_pagamento = "PIX"
+            c_part.save(update_fields=["status", "forma_pagamento", "atualizado_em"])
             assert LancamentoFinanceiro.objects.get(consulta=c_part).valor == Decimal("120")
     finally:
         connection.set_schema_to_public()

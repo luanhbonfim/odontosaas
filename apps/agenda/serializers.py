@@ -16,6 +16,9 @@ class ConsultaSerializer(serializers.ModelSerializer):
     )
     # Estado da sincronização com o Google Calendar (do AgendaEvento espelho).
     sync_google = serializers.SerializerMethodField()
+    # Pagamento/guia já vinculados — pro badge "sem pagamento" da agenda (front).
+    tem_lancamento = serializers.SerializerMethodField()
+    tem_guia = serializers.SerializerMethodField()
 
     class Meta:
         model = Consulta
@@ -41,6 +44,8 @@ class ConsultaSerializer(serializers.ModelSerializer):
             "confirmado_em",
             "google_event_id",
             "sync_google",
+            "tem_lancamento",
+            "tem_guia",
             "observacoes",
             "ativo",
             "criado_em",
@@ -51,6 +56,18 @@ class ConsultaSerializer(serializers.ModelSerializer):
 
     def get_convenio_nome(self, obj) -> str | None:
         return obj.convenio.nome if obj.convenio_id else None
+
+    def get_tem_lancamento(self, obj) -> bool:
+        """Usa a anotação `_tem_lancamento` (lista, via ConsultaViewSet.get_queryset,
+        sem N+1) quando presente; senão cai no `.exists()` da relação (detalhe/criação)."""
+        if hasattr(obj, "_tem_lancamento"):
+            return bool(obj._tem_lancamento)
+        return obj.lancamentos.exists()
+
+    def get_tem_guia(self, obj) -> bool:
+        if hasattr(obj, "_tem_guia"):
+            return bool(obj._tem_guia)
+        return obj.guias.exists()
 
     def get_sync_google(self, obj) -> str | None:
         # Pode haver 1 evento por agenda (clínica/dentista); reporta o mais recente.

@@ -61,6 +61,37 @@ describe('consultaParaEvento', () => {
       'Paciente — Consulta',
     )
   })
+
+  it('semPagamento: só true em Realizada, e só quando falta o vínculo certo (lançamento p/ particular, guia p/ convênio)', () => {
+    // Particular (sem convênio): depende de tem_lancamento.
+    expect(
+      consultaParaEvento(consulta({ status: 'REALIZADA', convenio: null, tem_lancamento: false }))
+        .extendedProps.semPagamento,
+    ).toBe(true)
+    expect(
+      consultaParaEvento(consulta({ status: 'REALIZADA', convenio: null, tem_lancamento: true }))
+        .extendedProps.semPagamento,
+    ).toBe(false)
+    // Convênio: depende de tem_guia (tem_lancamento é irrelevante aqui).
+    expect(
+      consultaParaEvento(consulta({ status: 'REALIZADA', convenio: 3, tem_guia: false }))
+        .extendedProps.semPagamento,
+    ).toBe(true)
+    expect(
+      consultaParaEvento(consulta({ status: 'REALIZADA', convenio: 3, tem_guia: true }))
+        .extendedProps.semPagamento,
+    ).toBe(false)
+    // Fora de Realizada, nunca acende (mesmo sem lançamento/guia).
+    expect(
+      consultaParaEvento(
+        consulta({ status: 'EM_ATENDIMENTO', convenio: null, tem_lancamento: false }),
+      ).extendedProps.semPagamento,
+    ).toBe(false)
+    expect(
+      consultaParaEvento(consulta({ status: 'AGENDADA', convenio: null, tem_lancamento: false }))
+        .extendedProps.semPagamento,
+    ).toBe(false)
+  })
 })
 
 describe('helpers de datetime', () => {

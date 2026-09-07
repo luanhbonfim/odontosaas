@@ -89,7 +89,14 @@ export type EventoAgenda = {
   borderColor: string
   /** Só consultas AGENDADA podem ser arrastadas/redimensionadas/editadas. */
   editable: boolean
-  extendedProps: { status: string; statusConfirmacao: string; dentista: string }
+  extendedProps: {
+    status: string
+    statusConfirmacao: string
+    dentista: string
+    /** Realizada sem pagamento vinculado ainda (particular) ou sem guia
+     * vinculada ainda (convênio) — badge de aviso na agenda. */
+    semPagamento: boolean
+  }
 }
 
 /** Converte uma consulta da API num evento do FullCalendar (cor por status + confirmação). */
@@ -107,6 +114,9 @@ export function consultaParaEvento(c: Consulta): EventoAgenda {
       status: c.status ?? '',
       statusConfirmacao: c.status_confirmacao ?? '',
       dentista: c.dentista_nome ?? '',
+      semPagamento:
+        c.status === 'REALIZADA' &&
+        (c.convenio ? !c.tem_guia : !c.tem_lancamento),
     },
   }
 }

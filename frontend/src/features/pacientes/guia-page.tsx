@@ -13,11 +13,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { ErroApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
+import { formatarDataHora } from '@/lib/utils/format'
 
 import { Odontograma, type ProcedimentoDente } from './odontograma'
 import {
   type GuiaEntrada,
   useAtualizarGuia,
+  useConsultasDoPaciente,
   useCriarGuia,
   useGuia,
   usePlanosDoPaciente,
@@ -32,6 +34,7 @@ const schema = z.object({
   plano: z.string().min(1, 'Selecione um plano'),
   numero_guia: z.string().min(1, 'Informe o número'),
   valor: z.string().min(1, 'Informe o valor'),
+  consulta: z.string().optional(),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -47,6 +50,10 @@ export function GuiaPage() {
   const { data: guia } = useGuia(edicao ? guiaId : 0)
   const criar = useCriarGuia(pacienteId)
   const atualizar = useAtualizarGuia(pacienteId)
+  // Consulta de convênio pra vincular a guia (opcional) — mesmo padrão de
+  // faturamento por Guia usado nas consultas de convênio.
+  const { data: consultas } = useConsultasDoPaciente(pacienteId)
+  const consultasConvenio = (consultas ?? []).filter((c) => c.convenio != null)
 
   const [procedimentos, setProcedimentos] = useState<ProcedimentoDente[]>([])
   const [erroDentes, setErroDentes] = useState('')
@@ -58,7 +65,7 @@ export function GuiaPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { plano: '', numero_guia: '', valor: '' },
+    defaultValues: { plano: '', numero_guia: '', valor: '', consulta: '' },
   })
 
   // Ao carregar a guia (edição), preenche o formulário e o odontograma.
@@ -68,6 +75,7 @@ export function GuiaPage() {
         plano: guia.plano ? String(guia.plano) : '',
         numero_guia: guia.numero_guia ?? '',
         valor: guia.valor ?? '',
+        consulta: guia.consulta ? String(guia.consulta) : '',
       })
       setProcedimentos((guia.dentes as ProcedimentoDente[] | undefined) ?? [])
     }
@@ -93,6 +101,7 @@ export function GuiaPage() {
         .map((p) => `Dente ${p.dente}${p.procedimento ? `: ${p.procedimento}` : ''}`)
         .join('; '),
       dentes: itens,
+      consulta: valores.consulta ? Number(valores.consulta) : null,
     }
     try {
       if (edicao && guia) await atualizar.mutateAsync({ id: guia.id, dados })
@@ -145,6 +154,21 @@ export function GuiaPage() {
                   Cadastre um plano na aba Planos do paciente antes de emitir guias.
                 </p>
               )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="consulta">Consulta vinculada</Label>
+              <select id="consulta" className={classeSelect} {...register('consulta')}>
+                <option value="">Nenhuma</option>
+                {consultasConvenio.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {formatarDataHora(c.inicio)} — {c.procedimento_catalogo_nome || c.procedimento || 'Consulta'}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Opcional — vincule a consulta de convênio que originou esta guia.
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

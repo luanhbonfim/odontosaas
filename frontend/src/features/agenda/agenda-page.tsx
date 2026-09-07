@@ -105,6 +105,22 @@ export function AgendaPage() {
                 right: 'dayGridMonth,timeGridWeek,timeGridDay',
               }}
               events={eventos}
+              // Bolinha vermelha no evento: Realizada sem pagamento (particular) ou
+              // sem guia (convênio) vinculados ainda — só o texto já explica o rótulo
+              // "sem pagamento registrado" no title (cor nunca sozinha).
+              eventContent={(arg) => (
+                <div className="relative overflow-hidden px-1">
+                  <span className="truncate">{arg.event.title}</span>
+                  {arg.event.extendedProps.semPagamento && (
+                    <span
+                      role="img"
+                      aria-label="Sem pagamento registrado"
+                      title="Sem pagamento registrado"
+                      className="absolute top-0 right-0.5 size-2 rounded-full bg-red-500 ring-1 ring-white"
+                    />
+                  )}
+                </div>
+              )}
               // Ao trocar de visão, marca se precisa de largura (Semana/Mês) para o
               // wrapper rolar horizontalmente no mobile em vez de espremer as colunas.
               datesSet={(arg) => setPrecisaLargura(arg.view.type !== 'timeGridDay')}

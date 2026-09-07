@@ -182,7 +182,9 @@ export function ConsultaModal({
  * de editar. Fica só na grade de resumo — a edição em si vira um painel à
  * parte (`PainelEdicaoPagamento`), não cabe espremida numa célula da grade. */
 function LinhaValor({ consulta, onEditar }: { consulta: Consulta; onEditar: () => void }) {
-  const podeEditar = ['EM_ATENDIMENTO', 'REALIZADA'].includes(consulta.status ?? '')
+  // Pagamento só é registrado depois que a consulta está Realizada (nunca
+  // durante o atendimento), e só pra particular — convênio é faturado via Guia.
+  const podeEditar = !consulta.convenio && consulta.status === 'REALIZADA'
   const rotuloForma = FORMAS_PAGAMENTO.find((f) => f.valor === consulta.forma_pagamento)?.rotulo
   return (
     <div className="flex items-center gap-1.5">
@@ -202,7 +204,7 @@ function LinhaValor({ consulta, onEditar }: { consulta: Consulta; onEditar: () =
           size="icon"
           className="size-6"
           onClick={onEditar}
-          aria-label="Editar pagamento"
+          aria-label={consulta.tem_lancamento ? 'Editar pagamento' : 'Registrar pagamento'}
         >
           <Pencil className="size-3.5" />
         </Button>
@@ -229,6 +231,10 @@ function PainelEdicaoPagamento({ consulta, aoFechar }: { consulta: Consulta; aoF
       toast.error('Informe o valor da consulta.')
       return
     }
+    if (!formaPagamento) {
+      toast.error('Selecione a forma de pagamento.')
+      return
+    }
     try {
       await atualizar.mutateAsync({
         id: consulta.id,
@@ -239,16 +245,18 @@ function PainelEdicaoPagamento({ consulta, aoFechar }: { consulta: Consulta; aoF
           data_primeira_parcela: dataPrimeiraParcela || null,
         },
       })
-      toast.success('Pagamento atualizado.')
+      toast.success('Pagamento registrado.')
       aoFechar()
     } catch (excecao) {
-      toast.error((excecao as ErroApi).mensagem ?? 'Não foi possível atualizar o pagamento.')
+      toast.error((excecao as ErroApi).mensagem ?? 'Não foi possível registrar o pagamento.')
     }
   }
 
   return (
     <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
-      <h4 className="text-sm font-semibold">Editar pagamento</h4>
+      <h4 className="text-sm font-semibold">
+        {consulta.tem_lancamento ? 'Editar pagamento' : 'Registrar pagamento'}
+      </h4>
 
       <div className="space-y-1.5">
         <Label htmlFor="valor-edicao">
@@ -267,14 +275,20 @@ function PainelEdicaoPagamento({ consulta, aoFechar }: { consulta: Consulta; aoF
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="forma-pagamento-edicao">Forma de pagamento</Label>
+        <Label htmlFor="forma-pagamento-edicao">
+          Forma de pagamento{' '}
+          <span aria-hidden="true" className="text-destructive">
+            *
+          </span>
+        </Label>
         <select
           id="forma-pagamento-edicao"
           className={classeSelect}
+          aria-required="true"
           value={formaPagamento}
           onChange={(e) => setFormaPagamento(e.target.value)}
         >
-          <option value="">Não informado</option>
+          <option value="">Selecione…</option>
           {FORMAS_PAGAMENTO.map((f) => (
             <option key={f.valor} value={f.valor}>
               {f.rotulo}
@@ -357,7 +371,13 @@ function VisualizacaoConsulta({
     ['Procedimento', consulta.procedimento_catalogo_nome || consulta.procedimento || '—'],
     [
       'Valor',
-      <LinhaValor consulta={consulta} onEditar={() => setEditandoPagamento(true)} />,
+      consulta.convenio && consulta.status === 'REALIZADA' ? (
+        <span className="text-xs text-muted-foreground">
+          Cobrança por convênio — gerencie pela guia do paciente.
+        </span>
+      ) : (
+        <LinhaValor consulta={consulta} onEditar={() => setEditandoPagamento(true)} />
+      ),
     ],
     ['Status', ROTULO_STATUS[consulta.status ?? ''] ?? consulta.status],
     ['Google Agenda', <BadgeSyncGoogle sync={consulta.sync_google} />],
@@ -461,11 +481,6 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
   )
   const [observacoes, setObservacoes] = useState(consulta?.observacoes ?? '')
   const [valor, setValor] = useState(consulta ? String(consulta.valor ?? '') : '')
-  const [formaPagamento, setFormaPagamento] = useState<string>(consulta?.forma_pagamento ?? '')
-  const [parcelas, setParcelas] = useState(consulta ? String(consulta.parcelas ?? 1) : '1')
-  const [dataPrimeiraParcela, setDataPrimeiraParcela] = useState(
-    consulta?.data_primeira_parcela ?? '',
-  )
   const [convenio, setConvenio] = useState<number>(consulta?.convenio ?? 0) // 0 = particular
   const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
@@ -575,9 +590,6 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
       procedimento_catalogo: procedimentoCatalogo || null,
       observacoes,
       valor,
-      forma_pagamento: formaPagamento,
-      parcelas: Number(parcelas) || 1,
-      data_primeira_parcela: dataPrimeiraParcela || null,
       convenio: convenio || null,
     }
     setSalvando(true)
@@ -765,41 +777,6 @@ function Formulario({ estado, aoFechar }: { estado: EstadoEdicao; aoFechar: () =
                 ))}
               </select>
             </Campo>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Campo id="forma_pagamento" label="Forma de pagamento">
-                <select
-                  id="forma_pagamento"
-                  className={classeSelect}
-                  value={formaPagamento}
-                  onChange={(e) => setFormaPagamento(e.target.value)}
-                >
-                  <option value="">Não informado</option>
-                  {FORMAS_PAGAMENTO.map((f) => (
-                    <option key={f.valor} value={f.valor}>
-                      {f.rotulo}
-                    </option>
-                  ))}
-                </select>
-              </Campo>
-              <Campo id="parcelas" label="Parcelas">
-                <Input
-                  id="parcelas"
-                  type="number"
-                  min={1}
-                  value={parcelas}
-                  onChange={(e) => setParcelas(e.target.value)}
-                />
-              </Campo>
-              <Campo id="data_primeira_parcela" label="Data da 1ª parcela">
-                <Input
-                  id="data_primeira_parcela"
-                  type="date"
-                  value={dataPrimeiraParcela}
-                  onChange={(e) => setDataPrimeiraParcela(e.target.value)}
-                />
-              </Campo>
-            </div>
           </SecaoForm>
 
           <SecaoForm titulo="Observações" icone={FileText}>

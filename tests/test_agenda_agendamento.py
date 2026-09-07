@@ -193,6 +193,9 @@ def test_excluir_consulta_cancelada_bloqueada_por_lancamento_pago():
                 "inicio": inicio.isoformat(),
                 "fim": fim.isoformat(),
                 "valor": "150.00",
+                # Pagamento só é registrado depois que a consulta é Realizada — sem
+                # forma de pagamento aqui, nenhum lançamento nasceria pra virar PAGO.
+                "forma_pagamento": "PIX",
             },
             format="json",
             HTTP_HOST=host,

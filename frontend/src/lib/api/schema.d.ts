@@ -418,6 +418,28 @@ export interface paths {
         patch: operations["consultas_partial_update"];
         trace?: never;
     };
+    "/api/consultas/{id}/confirmar_manualmente/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Confirmação manual (ex.: recepção ligou e confirmou por telefone) —
+         *     fica com status_confirmacao=MANUAL, distinto de CONFIRMADA (via WhatsApp/
+         *     link), mas contando como confirmado pras mesmas regras (reagendamento,
+         *     lembretes, cor no Google).
+         */
+        post: operations["consultas_confirmar_manualmente_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/consultas/{id}/estornar/": {
         parameters: {
             query?: never;
@@ -2645,6 +2667,12 @@ export interface components {
             readonly confirmado_em: string | null;
             readonly google_event_id: string;
             readonly sync_google: string | null;
+            /**
+             * @description Usa a anotação `_tem_lancamento` (lista, via ConsultaViewSet.get_queryset,
+             *     sem N+1) quando presente; senão cai no `.exists()` da relação (detalhe/criação).
+             */
+            readonly tem_lancamento: boolean;
+            readonly tem_guia: boolean;
             observacoes?: string;
             ativo?: boolean;
             /** Format: date-time */
@@ -3197,6 +3225,12 @@ export interface components {
             readonly confirmado_em?: string | null;
             readonly google_event_id?: string;
             readonly sync_google?: string | null;
+            /**
+             * @description Usa a anotação `_tem_lancamento` (lista, via ConsultaViewSet.get_queryset,
+             *     sem N+1) quando presente; senão cai no `.exists()` da relação (detalhe/criação).
+             */
+            readonly tem_lancamento?: boolean;
+            readonly tem_guia?: boolean;
             observacoes?: string;
             ativo?: boolean;
             /** Format: date-time */
@@ -3676,11 +3710,12 @@ export interface components {
         /**
          * @description * `PENDENTE` - Pendente
          *     * `CONFIRMADA` - Confirmada
+         *     * `MANUAL` - Confirmada manualmente
          *     * `RECUSADA` - Recusada
          *     * `SEM_RESPOSTA` - Sem resposta
          * @enum {string}
          */
-        StatusConfirmacaoEnum: "PENDENTE" | "CONFIRMADA" | "RECUSADA" | "SEM_RESPOSTA";
+        StatusConfirmacaoEnum: "PENDENTE" | "CONFIRMADA" | "MANUAL" | "RECUSADA" | "SEM_RESPOSTA";
         /**
          * @description * `AJUSTE` - Ajuste
          *     * `COMPRA` - Compra
@@ -4603,6 +4638,34 @@ export interface operations {
                 "application/json": components["schemas"]["PatchedConsulta"];
                 "application/x-www-form-urlencoded": components["schemas"]["PatchedConsulta"];
                 "multipart/form-data": components["schemas"]["PatchedConsulta"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Consulta"];
+                };
+            };
+        };
+    };
+    consultas_confirmar_manualmente_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Consulta. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Consulta"];
+                "application/x-www-form-urlencoded": components["schemas"]["Consulta"];
+                "multipart/form-data": components["schemas"]["Consulta"];
             };
         };
         responses: {

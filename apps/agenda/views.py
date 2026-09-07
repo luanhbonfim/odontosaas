@@ -1,5 +1,6 @@
 """Views (API REST) do app agenda."""
 
+from django.db.models import Exists, OuterRef
 from django.utils import timezone
 from rest_framework import status as http_status
 from rest_framework import viewsets
@@ -8,6 +9,7 @@ from rest_framework.response import Response
 
 from apps.core.mixins import FiltraPorPacienteMixin
 from apps.financeiro.models import LancamentoFinanceiro
+from apps.pacientes.models import Guia
 
 from .models import Anamnese, Consulta, Ficha
 from .serializers import AnamneseSerializer, ConsultaSerializer, FichaSerializer
@@ -20,6 +22,28 @@ class ConsultaViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
 
     queryset = Consulta.objects.all()
     serializer_class = ConsultaSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # Anota se já tem lançamento/guia vinculado (pro badge "sem pagamento" da
+        # agenda no front, sem N+1 — mesmo padrão de PacienteViewSet.get_queryset).
+        return queryset.annotate(
+            _tem_lancamento=Exists(LancamentoFinanceiro.objects.filter(consulta=OuterRef("pk"))),
+            _tem_guia=Exists(Guia.objects.filter(consulta=OuterRef("pk"))),
+        )
+
+    def _recalcular_vinculos(self, consulta):
+        """Recalcula `_tem_lancamento`/`_tem_guia` na própria instância depois de
+        um save — a anotação do `get_queryset` foi computada ANTES desse save, e
+        fica desatualizada quando o próprio save (via signal) gera o lançamento
+        nesta mesma requisição (ex.: PATCH define forma_pagamento -> gera a conta
+        -> a resposta precisa refletir isso, não o estado de antes do save)."""
+        consulta._tem_lancamento = consulta.lancamentos.exists()
+        consulta._tem_guia = consulta.guias.exists()
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        self._recalcular_vinculos(instance)
 
     def destroy(self, request, *args, **kwargs):
         """AGENDADA ou CANCELADA podem ser excluídas; realizadas usam a action 'estornar'.
@@ -49,6 +73,7 @@ class ConsultaViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
             )
         consulta.status = novo_status
         consulta.save(update_fields=["status", "atualizado_em"])
+        self._recalcular_vinculos(consulta)
         return Response(self.get_serializer(consulta).data)
 
     @action(detail=True, methods=["post"])
@@ -90,6 +115,7 @@ class ConsultaViewSet(FiltraPorPacienteMixin, viewsets.ModelViewSet):
             )
         consulta.status = Consulta.Status.CANCELADA
         consulta.save(update_fields=["status", "atualizado_em"])
+        self._recalcular_vinculos(consulta)
         return Response(self.get_serializer(consulta).data)
 
 

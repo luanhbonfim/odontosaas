@@ -41,7 +41,8 @@ def _consulta_realizada(paciente_nome, cpf, valor):
         valor=Decimal(valor),
     )
     consulta.status = Consulta.Status.REALIZADA
-    consulta.save(update_fields=["status", "atualizado_em"])
+    consulta.forma_pagamento = "PIX"
+    consulta.save(update_fields=["status", "forma_pagamento", "atualizado_em"])
     return paciente, consulta
 
 

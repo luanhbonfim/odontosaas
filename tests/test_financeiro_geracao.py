@@ -100,7 +100,8 @@ def test_consulta_realizada_gera_conta_a_receber():
         with schema_context(clinica.schema_name):
             consulta = _consulta("150.00")
             consulta.status = Consulta.Status.REALIZADA
-            consulta.save(update_fields=["status", "atualizado_em"])
+            consulta.forma_pagamento = "PIX"
+            consulta.save(update_fields=["status", "forma_pagamento", "atualizado_em"])
 
             lanc = LancamentoFinanceiro.objects.get(consulta=consulta)
             assert lanc.tipo == LancamentoFinanceiro.Tipo.RECEITA
@@ -171,9 +172,16 @@ def test_editar_consulta_recria_parcelas_pendentes_preserva_paga():
             consulta = _consulta("300.00")
             consulta.parcelas = 3
             consulta.data_primeira_parcela = date(2026, 1, 10)
+            consulta.forma_pagamento = "CARTAO"
             consulta.status = Consulta.Status.REALIZADA
             consulta.save(
-                update_fields=["parcelas", "data_primeira_parcela", "status", "atualizado_em"]
+                update_fields=[
+                    "parcelas",
+                    "data_primeira_parcela",
+                    "forma_pagamento",
+                    "status",
+                    "atualizado_em",
+                ]
             )
             parcela_1 = LancamentoFinanceiro.objects.get(consulta=consulta, numero_parcela=1)
             parcela_1.status = LancamentoFinanceiro.Status.PAGO
@@ -226,6 +234,37 @@ def test_consulta_sem_valor_ou_nao_realizada_nao_gera():
             c1.status = Consulta.Status.EM_ATENDIMENTO
             c1.save(update_fields=["status", "atualizado_em"])
             assert not LancamentoFinanceiro.objects.filter(consulta=c1).exists()
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_consulta_realizada_sem_forma_pagamento_nao_gera_conta_ate_definir():
+    """O pagamento só é registrado depois que a consulta já está Realizada — a
+    conta não pode nascer com forma de pagamento em branco assim que o
+    atendimento termina."""
+    clinica = _criar_clinica("fin_cons_semforma_tenant", "finconssemforma.localhost")
+    try:
+        with schema_context(clinica.schema_name):
+            consulta = _consulta("200.00")
+            consulta.status = Consulta.Status.REALIZADA
+            consulta.save(update_fields=["status", "atualizado_em"])
+            assert not LancamentoFinanceiro.objects.filter(consulta=consulta).exists()
+
+            # Registrar o pagamento depois (forma de pagamento definida num save
+            # separado) gera a conta agora, com a forma escolhida.
+            consulta.forma_pagamento = "PIX"
+            consulta.save(update_fields=["forma_pagamento", "atualizado_em"])
+            lanc = LancamentoFinanceiro.objects.get(consulta=consulta)
+            assert lanc.forma_pagamento == "PIX"
+            assert lanc.valor == Decimal("200.00")
+
+            # Idempotente: salvar de novo não duplica nem recria o lançamento.
+            lanc_id = lanc.id
+            consulta.save(update_fields=["atualizado_em"])
+            assert LancamentoFinanceiro.objects.filter(consulta=consulta).count() == 1
+            assert LancamentoFinanceiro.objects.get(consulta=consulta).id == lanc_id
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)
