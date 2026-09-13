@@ -405,11 +405,17 @@ export interface paths {
         put: operations["consultas_update"];
         post?: never;
         /**
-         * @description AGENDADA ou CANCELADA podem ser excluídas; realizadas usam a action 'estornar'.
+         * @description AGENDADA ou CANCELADA podem ser excluídas por qualquer papel com acesso
+         *     (bloqueia se houver lançamento financeiro PAGO vinculado — o FK é SET_NULL,
+         *     então sem essa checagem a exclusão órfã silenciosamente um recebimento já
+         *     quitado); realizadas usam a action 'estornar' antes.
          *
-         *     Bloqueia se houver lançamento financeiro PAGO vinculado (dado vinculado real —
-         *     o FK é SET_NULL, então sem essa checagem a exclusão órfã silenciosamente um
-         *     recebimento já quitado).
+         *     ADMIN é a exceção: exclui qualquer consulta, em qualquer status (inclusive
+         *     Realizada e com pagamento já quitado) — e cascateia de verdade tudo que só
+         *     existe por causa dela (lançamentos financeiros, baixas de estoque), que por
+         *     padrão (SET_NULL) só ficariam órfãos numa exclusão normal. A guia do
+         *     convênio (se houver) só é desvinculada, não apagada — ela é um documento de
+         *     cobrança com vida própria, não algo "da" consulta.
          */
         delete: operations["consultas_destroy"];
         options?: never;
@@ -1420,6 +1426,36 @@ export interface paths {
          *     Inclui bloqueio por tentativas excessivas (proteção contra força bruta).
          */
         post: operations["plataforma_admin_auth_login_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plataforma-admin/auth/refresh/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Renova o access token do operador Vendor a partir do refresh token.
+         *
+         *     Não pode usar o `TokenRefreshView` padrão do SimpleJWT: ele revalida o
+         *     usuário com `get_user_model().objects.get(...)` na conexão ATUAL — que,
+         *     chamada do host público (Vendor Admin), está no schema `public`, onde o
+         *     model `Usuario` (app de tenant) nem existe (`relation "usuarios_usuario"
+         *     does not exist`). Isso derrubava a renovação a cada ciclo do access token,
+         *     e o frontend interpretava a falha como sessão expirada — deslogando o
+         *     operador periodicamente mesmo dentro da janela configurada do refresh.
+         *
+         *     Revalida o operador no `operator_schema` do próprio token (mesma lógica
+         *     de `MultiTenantJWTAuthentication`) antes de emitir o novo access token.
+         */
+        post: operations["plataforma_admin_auth_refresh_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2938,11 +2974,25 @@ export interface components {
             readonly consulta_procedimento: string;
             readonly consulta_data: string | null;
             guia?: number | null;
+            /**
+             * @description Nome do paciente do lançamento (particular via consulta, convênio via
+             *     guia) — a tela geral de Contas a Receber/Pagar precisa disso; na aba do
+             *     paciente é implícito, mas aqui não.
+             */
+            readonly paciente_nome: string;
             fornecedor?: number | null;
             readonly fornecedor_nome: string;
             forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
             numero_parcela?: number;
             total_parcelas?: number;
+            /**
+             * @description True quando o lançamento foi gerado automaticamente (consulta, guia,
+             *     fatura ou compra de insumo) — não editável/excluível pela tela geral.
+             *     Não dá pra derivar isso só de consulta/guia/fatura: uma despesa de
+             *     compra de insumo (`gerar_conta_da_compra`) não tem nenhum dos três,
+             *     só `fornecedor` — mas é gerenciada pelo Estoque, não pelo Financeiro.
+             */
+            readonly origem_automatica: boolean;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em: string;
@@ -3425,11 +3475,25 @@ export interface components {
             readonly consulta_procedimento?: string;
             readonly consulta_data?: string | null;
             guia?: number | null;
+            /**
+             * @description Nome do paciente do lançamento (particular via consulta, convênio via
+             *     guia) — a tela geral de Contas a Receber/Pagar precisa disso; na aba do
+             *     paciente é implícito, mas aqui não.
+             */
+            readonly paciente_nome?: string;
             fornecedor?: number | null;
             readonly fornecedor_nome?: string;
             forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
             numero_parcela?: number;
             total_parcelas?: number;
+            /**
+             * @description True quando o lançamento foi gerado automaticamente (consulta, guia,
+             *     fatura ou compra de insumo) — não editável/excluível pela tela geral.
+             *     Não dá pra derivar isso só de consulta/guia/fatura: uma despesa de
+             *     compra de insumo (`gerar_conta_da_compra`) não tem nenhum dos três,
+             *     só `fornecedor` — mas é gerenciada pelo Estoque, não pelo Financeiro.
+             */
+            readonly origem_automatica?: boolean;
             ativo?: boolean;
             /** Format: date-time */
             readonly criado_em?: string;
@@ -7038,6 +7102,24 @@ export interface operations {
         };
     };
     plataforma_admin_auth_login_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    plataforma_admin_auth_refresh_create: {
         parameters: {
             query?: never;
             header?: never;

@@ -13,7 +13,9 @@ from rest_framework.test import APIClient
 
 from apps.agenda.models import Consulta
 from apps.dentistas.models import Dentista
-from apps.pacientes.models import Paciente
+from apps.estoque.models import Fornecedor, Insumo, MovimentacaoEstoque
+from apps.estoque.services import gerar_conta_da_compra
+from apps.pacientes.models import Guia, Paciente, PlanoOdontologico
 from apps.tenants.models import Clinica, Dominio
 from apps.usuarios.perfis import sincronizar_grupos
 
@@ -167,6 +169,88 @@ def test_recepcao_tem_acesso_ao_financeiro():
         quitado = c.post(f"/api/lancamentos/{lid}/quitar/", HTTP_HOST=host)
         assert quitado.status_code == 200
         assert quitado.json()["status"] == "PAGO"
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_paciente_nome_e_origem_automatica():
+    """`paciente_nome` (particular via consulta, convênio via guia) e
+    `origem_automatica` (não editável/excluível pela tela geral do Financeiro)
+    — o caso da despesa de compra de insumo é o que prova que a regra não dá
+    pra derivar só de consulta/guia/fatura: ela não tem nenhum dos três, só
+    `fornecedor`, mas é gerada automaticamente (gerenciada pelo Estoque)."""
+    host = "apifinorigem.localhost"
+    clinica = _criar_clinica("api_fin_origem", host)
+    client = APIClient()
+    try:
+        with schema_context(clinica.schema_name):
+            # 1) Particular (via consulta) — origem automática.
+            _paciente_a, consulta_a = _consulta_realizada("Ana", "11122233301", "150.00")
+
+            # 2) Convênio (via guia) — origem automática.
+            paciente_b = Paciente.objects.create(nome_completo="Bia", cpf="11122233302")
+            plano = PlanoOdontologico.objects.create(paciente=paciente_b, operadora="Amil")
+            guia = Guia.objects.create(
+                plano=plano,
+                numero_guia="G-ORIGEM-1",
+                procedimento="Proc",
+                valor=Decimal("200.00"),
+                status=Guia.Status.AUTORIZADA,
+            )
+            guia.status = Guia.Status.EXECUTADA
+            guia.save(update_fields=["status", "atualizado_em"])
+
+            # 3) Despesa de compra de insumo — SEM consulta/guia/fatura, só
+            #    fornecedor, mas gerada automaticamente (gerenciada pelo Estoque).
+            fornecedor = Fornecedor.objects.create(nome="Distribuidora X")
+            insumo = Insumo.objects.create(nome="Luva")
+            movimentacao = MovimentacaoEstoque.objects.create(
+                insumo=insumo,
+                tipo=MovimentacaoEstoque.Tipo.ENTRADA,
+                subtipo=MovimentacaoEstoque.Subtipo.COMPRA,
+                quantidade=Decimal("10"),
+            )
+            gerar_conta_da_compra(movimentacao, fornecedor, Decimal("300.00"))
+
+        resp = client.get("/api/lancamentos/", HTTP_HOST=host)
+        assert resp.status_code == 200
+        lancamentos = resp.json()
+
+        particular = next(v for v in lancamentos if v["consulta"])
+        assert particular["paciente_nome"] == "Ana"
+        assert particular["origem_automatica"] is True
+
+        convenio = next(v for v in lancamentos if v["guia"])
+        assert convenio["paciente_nome"] == "Bia"
+        assert convenio["origem_automatica"] is True
+
+        compra = next(v for v in lancamentos if v["fornecedor_nome"] == "Distribuidora X")
+        assert compra["consulta"] is None
+        assert compra["guia"] is None
+        assert compra["fatura"] is None
+        assert compra["paciente_nome"] == ""
+        assert compra["origem_automatica"] is True
+
+        # 4) Lançamentos manuais (RECEITA e DESPESA, sem nenhum vínculo) —
+        #    origem_automatica=False, únicos editáveis/excluíveis pela tela geral.
+        manual_receita = client.post(
+            "/api/lancamentos/",
+            {"tipo": "RECEITA", "descricao": "Venda avulsa", "valor": "50"},
+            format="json",
+            HTTP_HOST=host,
+        ).json()
+        assert manual_receita["paciente_nome"] == ""
+        assert manual_receita["origem_automatica"] is False
+
+        manual_despesa = client.post(
+            "/api/lancamentos/",
+            {"tipo": "DESPESA", "descricao": "Material de escritório", "valor": "40"},
+            format="json",
+            HTTP_HOST=host,
+        ).json()
+        assert manual_despesa["origem_automatica"] is False
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)

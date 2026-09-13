@@ -6,6 +6,12 @@ import { DataTable } from '@/components/common/data-table'
 import { DateText, DateTime, Money } from '@/components/common/formato'
 import { classeCampoSelect } from '@/components/common/form-kit'
 import { Button } from '@/components/ui/button'
+import {
+  COR_LINHA,
+  ROTULO_FORMA_PAGAMENTO,
+  type Situacao,
+  situacaoDe,
+} from '@/features/financeiro/formato'
 import { useEstornarLancamento, useQuitarLancamento } from '@/features/financeiro/use-lancamentos'
 import type { ErroApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
@@ -13,40 +19,8 @@ import { cn } from '@/lib/utils'
 import { BadgeStatus } from './status'
 import { type Lancamento, useLancamentosDoPaciente } from './use-paciente-detalhe'
 
-const ROTULO_FORMA_PAGAMENTO: Record<string, string> = {
-  PIX: 'Pix',
-  BOLETO: 'Boleto',
-  CARTAO: 'Cartão',
-  DINHEIRO: 'Dinheiro',
-  TRANSFERENCIA: 'Transferência',
-}
-
 function rotuloParcela(l: Lancamento): string {
   return (l.total_parcelas ?? 1) > 1 ? `${l.numero_parcela}/${l.total_parcelas}` : '—'
-}
-
-/** Situação de exibição — "Vencido" não é um status real do backend (só
- * PENDENTE/PAGO/CANCELADO): é PENDENTE cujo vencimento já passou. */
-type Situacao = 'VENCIDO' | 'PENDENTE' | 'PAGO' | 'CANCELADO'
-
-function hojeISO(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function situacaoDe(l: Lancamento): Situacao {
-  if (l.status === 'PAGO') return 'PAGO'
-  if (l.status === 'CANCELADO') return 'CANCELADO'
-  return l.vencimento && l.vencimento < hojeISO() ? 'VENCIDO' : 'PENDENTE'
-}
-
-// Fundo "fraco" (translúcido) da linha pela situação — tons do próprio tema
-// (destructive/warning/success), acompanham dark mode automaticamente.
-const COR_LINHA: Record<Situacao, string> = {
-  VENCIDO: 'bg-destructive/10',
-  PENDENTE: 'bg-warning/10',
-  PAGO: 'bg-success/10',
-  CANCELADO: '',
 }
 
 const LEGENDA_SITUACAO: { situacao: Situacao; rotulo: string; cor: string }[] = [

@@ -19,6 +19,9 @@ import { InsumosPage } from '@/features/estoque/insumos-page'
 import { MovimentacoesPage } from '@/features/estoque/movimentacoes-page'
 import { ProcedimentosPage } from '@/features/procedimentos/procedimentos-page'
 import { DentistasPage } from '@/features/dentistas/dentistas-page'
+import { ContasPagarPage } from '@/features/financeiro/contas-pagar-page'
+import { ContasReceberPage } from '@/features/financeiro/contas-receber-page'
+import { VisaoGeralPage } from '@/features/financeiro/visao-geral-page'
 import { IntegracoesPage } from '@/features/integracoes/integracoes-page'
 import { NotificacoesPage } from '@/features/notificacoes/notificacoes-page'
 import { FichaPage } from '@/features/pacientes/ficha-page'
@@ -183,9 +186,9 @@ export function App() {
             </Route>
 
             <Route element={<RequireModulo modulo="financeiro" />}>
-              <Route path="financeiro" element={<EmConstrucao titulo="Financeiro — Visão Geral" />} />
-              <Route path="financeiro/receber" element={<EmConstrucao titulo="Contas a Receber" />} />
-              <Route path="financeiro/pagar" element={<EmConstrucao titulo="Contas a Pagar" />} />
+              <Route path="financeiro" element={<VisaoGeralPage />} />
+              <Route path="financeiro/receber" element={<ContasReceberPage />} />
+              <Route path="financeiro/pagar" element={<ContasPagarPage />} />
             </Route>
 
             <Route element={<RequireModulo modulo="whatsapp" />}>
