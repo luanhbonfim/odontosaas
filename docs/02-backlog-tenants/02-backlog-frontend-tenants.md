@@ -146,15 +146,20 @@
 > (Dentista Gerente / Admin). Menus/rotas já criados (placeholders `Em construção`); esta sprint
 > implementa as telas.
 
-- [ ] **Visão Geral (`/financeiro`)**: KPIs consolidados (a receber × a pagar, saldo), **fluxo de
-      caixa** (`/api/lancamentos/fluxo-caixa/`) com **gráfico**, e atalhos para as duas telas
-- [ ] **Contas a Receber (`/financeiro/receber`)**: `DataTable` de RECEITA (filtros `?tipo=RECEITA&?status`),
+- [x] **Visão Geral (`/financeiro`)**: KPIs consolidados (a receber × a pagar, recebido, pago),
+      gráfico (Previsto × Realizado — `calcular_fluxo_caixa` só tem totais agregados, sem série
+      mensal; não inventamos série mensal nesta sprint), e atalhos para as duas telas
+- [x] **Contas a Receber (`/financeiro/receber`)**: `DataTable` de RECEITA (filtros `?tipo=RECEITA&?status`),
       incluindo as **contas geradas automaticamente** (origem guia/consulta) e **faturamento por
-      operadora** (ação `/api/faturas/faturar/`) + listagem de faturas
-- [ ] **Contas a Pagar (`/financeiro/pagar`)**: `DataTable` de DESPESA (filtros `?tipo=DESPESA&?status`)
-- [ ] Ações comuns às duas telas: criar **lançamento manual** (RECEITA/DESPESA) + **ajustes** (editar)
-      + **quitar** (baixa) em 1 clique
-- [ ] Testes: filtros por tipo/status, quitar, faturar, gráfico de fluxo de caixa, escopo por papel
+      operadora** (ação `/api/faturas/faturar/`, seletor via catálogo de Convênios) + listagem de faturas
+- [x] **Contas a Pagar (`/financeiro/pagar`)**: `DataTable` de DESPESA (filtros `?tipo=DESPESA&?status`)
+- [x] Ações comuns às duas telas: criar **lançamento manual** (RECEITA/DESPESA) + **ajustes** (editar)
+      + **quitar** (baixa) em 1 clique — editar/excluir só em lançamentos manuais (`origem_automatica`
+      no serializer, novo, cobre inclusive despesa de compra de insumo sem consulta/guia/fatura)
+- [x] Testes: filtros por tipo/status, criar/editar/excluir (só manual), quitar/estornar, faturar
+      operadora, gráfico. **Escopo por papel não se aplica**: não existe (nem existia) filtro de
+      dentista em Agenda/Financeiro — só em Pacientes/Fichas/Guias via `FiltraPorPacienteMixin`;
+      implementar isso no Financeiro seria trabalho de backend novo, fora do pedido desta sprint.
 
 ---
 
