@@ -201,11 +201,14 @@ class PermissaoModulo(DjangoModelPermissions):
                     raise PermissionDenied(
                         "O módulo de notificações e automações por WhatsApp está desabilitado para esta clínica pelo plano contratado."
                     )
-            elif "/api/financeiro/" in caminho:
-                if hasattr(tenant, "recurso_habilitado") and not tenant.recurso_habilitado("financeiro"):
-                    raise PermissionDenied(
-                        "O módulo financeiro está desabilitado para esta clínica pelo plano contratado."
-                    )
+            elif (
+                any(p in caminho for p in ("/api/lancamentos/", "/api/faturas/"))
+                and hasattr(tenant, "recurso_habilitado")
+                and not tenant.recurso_habilitado("financeiro")
+            ):
+                raise PermissionDenied(
+                    "O módulo financeiro está desabilitado para esta clínica pelo plano contratado."
+                )
             elif (
                 any(
                     p in caminho

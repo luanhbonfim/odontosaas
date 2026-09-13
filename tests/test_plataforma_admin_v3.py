@@ -447,6 +447,47 @@ def test_desabilitacao_modulos_plano_e_override(tenant_v3):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_desabilitacao_modulo_financeiro_bloqueia_lancamentos_e_faturas(tenant_v3):
+    """O gate de módulo do Financeiro checava o path `/api/financeiro/`, que não
+    existe (os endpoints reais são `/api/lancamentos/` e `/api/faturas/`) — o
+    bloqueio nunca disparava de verdade. Confirma que, com o módulo desabilitado
+    no plano, os dois endpoints reais retornam 403; e que reabilitar libera de
+    novo."""
+    from apps.usuarios.perfis import sincronizar_grupos
+
+    connection.set_schema_to_public()
+
+    plano = tenant_v3.plano_assinatura
+    plano.modulo_financeiro_ativo = False
+    plano.save()
+
+    client = APIClient()
+    client.defaults["HTTP_HOST"] = tenant_v3.domains.first().domain
+    with schema_context(tenant_v3.schema_name):
+        # LancamentoFinanceiroViewSet/FaturaViewSet exigem permissão de model de
+        # verdade (view_/add_/...) — o fixture `tenant_v3` cria o usuário ANTES
+        # de qualquer grupo existir, e o signal que vincula papel->grupo só
+        # roda no save() do usuário; sem isto o 403 seria por falta de
+        # permissão de model, mascarando o que este teste quer provar (o gate
+        # de plano). `sincronizar_grupos()` cria/atualiza os grupos; o
+        # `.save()` seguinte re-dispara o signal agora que o grupo existe.
+        sincronizar_grupos()
+        admin_user = Usuario.objects.get(email="admin@v3test.com")
+        admin_user.save()
+    client.force_authenticate(user=admin_user)
+
+    assert client.get("/api/lancamentos/").status_code == status.HTTP_403_FORBIDDEN
+    assert client.get("/api/faturas/").status_code == status.HTTP_403_FORBIDDEN
+
+    connection.set_schema_to_public()
+    plano.modulo_financeiro_ativo = True
+    plano.save()
+
+    assert client.get("/api/lancamentos/").status_code == status.HTTP_200_OK
+    assert client.get("/api/faturas/").status_code == status.HTTP_200_OK
+
+
+@pytest.mark.django_db(transaction=True)
 def test_meu_plano_expoe_dias_aviso_configuravel(tenant_v3):
     """`/api/meu-plano/` reflete a Configuração de Aviso de Vencimento (não mais
     um limite fixo no código) — default 15, e o valor configurado depois."""
