@@ -22,6 +22,14 @@ export const COR_LINHA: Record<Situacao, string> = {
   CANCELADO: '',
 }
 
+export const ROTULO_CATEGORIA: Record<string, string> = {
+  MATERIAIS: 'Materiais',
+  SALARIOS: 'Salários',
+  ALUGUEL: 'Aluguel',
+  LABORATORIO: 'Laboratório',
+  OUTRAS: 'Outras',
+}
+
 export const ROTULO_FORMA_PAGAMENTO: Record<string, string> = {
   PIX: 'Pix',
   BOLETO: 'Boleto',

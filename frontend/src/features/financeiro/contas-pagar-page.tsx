@@ -13,7 +13,7 @@ import { BadgeStatus } from '@/features/pacientes/status'
 import type { ErroApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 
-import { COR_LINHA, ROTULO_FORMA_PAGAMENTO, situacaoDe } from './formato'
+import { COR_LINHA, ROTULO_CATEGORIA, ROTULO_FORMA_PAGAMENTO, situacaoDe } from './formato'
 import { LancamentoFormDrawer } from './lancamento-form-drawer'
 import {
   type LancamentoFinanceiro,
@@ -109,6 +109,11 @@ export function ContasPagarPage() {
   const colunas: ColumnDef<LancamentoFinanceiro, unknown>[] = [
     { id: 'fornecedor', header: 'Fornecedor', cell: ({ row }) => row.original.fornecedor_nome || '—' },
     { accessorKey: 'descricao', header: 'Descrição' },
+    {
+      id: 'categoria',
+      header: 'Categoria',
+      cell: ({ row }) => ROTULO_CATEGORIA[row.original.categoria ?? ''] ?? '—',
+    },
     {
       id: 'vencimento',
       header: 'Vencimento',

@@ -24,6 +24,8 @@ export type LancamentoEntrada = {
   vencimento?: string | null
   forma_pagamento?: string
   fornecedor?: number | null
+  /** Só DESPESA ('' = sem categoria). */
+  categoria?: string
 }
 
 const CHAVE_LANCAMENTOS = ['lancamentos'] as const

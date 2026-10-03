@@ -12,7 +12,7 @@ import { Sheet, SheetClose, SheetContent, SheetFooter, SheetTrigger } from '@/co
 import { useFornecedores } from '@/features/estoque/use-fornecedores'
 import type { ErroApi } from '@/lib/api/client'
 
-import { ROTULO_FORMA_PAGAMENTO } from './formato'
+import { ROTULO_CATEGORIA, ROTULO_FORMA_PAGAMENTO } from './formato'
 import {
   type LancamentoEntrada,
   type LancamentoFinanceiro,
@@ -29,6 +29,7 @@ const schema = z.object({
   vencimento: z.string(),
   forma_pagamento: z.string(),
   fornecedor: z.string(),
+  categoria: z.string(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -40,6 +41,7 @@ function valoresIniciais(lancamento?: LancamentoFinanceiro): FormValues {
     vencimento: lancamento?.vencimento ?? '',
     forma_pagamento: lancamento?.forma_pagamento ?? '',
     fornecedor: lancamento?.fornecedor ? String(lancamento.fornecedor) : '',
+    categoria: lancamento?.categoria ?? '',
   }
 }
 
@@ -85,6 +87,7 @@ export function LancamentoFormDrawer({ trigger, tipo, lancamento }: Props) {
       forma_pagamento: valores.forma_pagamento || undefined,
       fornecedor:
         tipoEfetivo === 'DESPESA' && valores.fornecedor ? Number(valores.fornecedor) : null,
+      categoria: tipoEfetivo === 'DESPESA' ? valores.categoria : undefined,
     }
     try {
       if (edicao && lancamento) await atualizar.mutateAsync({ id: lancamento.id, dados })
@@ -149,6 +152,19 @@ export function LancamentoFormDrawer({ trigger, tipo, lancamento }: Props) {
                 ))}
               </select>
             </Campo>
+
+            {tipoEfetivo === 'DESPESA' && (
+              <Campo id="categoria" label="Categoria (opcional)">
+                <select id="categoria" className={classeCampoSelect} {...register('categoria')}>
+                  <option value="">Sem categoria</option>
+                  {Object.entries(ROTULO_CATEGORIA).map(([valor, rotulo]) => (
+                    <option key={valor} value={valor}>
+                      {rotulo}
+                    </option>
+                  ))}
+                </select>
+              </Campo>
+            )}
 
             {tipoEfetivo === 'DESPESA' && (
               <Campo id="fornecedor" label="Fornecedor (opcional)">

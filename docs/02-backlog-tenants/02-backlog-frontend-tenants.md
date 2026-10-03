@@ -165,7 +165,7 @@
 
 ## 🚀 Sprint F9 — Dashboard, Polimento & Entrega
 
-- [ ] **Dashboard** inicial: consultas do dia, confirmações pendentes, alertas de estoque, KPIs financeiros (ligar aos endpoints reais). **Escopo por papel:** DENTISTA vê só os **seus** dados; Financeiro só para quem tem permissão (nota 1 da matriz)
+- [x] **Dashboard** inicial: consultas do dia, confirmações pendentes, alertas de estoque, KPIs financeiros (ligar aos endpoints reais). **Escopo por papel:** DENTISTA vê só os **seus** dados; Financeiro só para quem tem permissão (nota 1 da matriz) — **entregue**: `GET /api/dashboard/?periodo=` agregado (blocos `financeiro`/`estoque` nulos sem permissão/módulo), comparação like-for-like, campo `categoria` em despesas, `Insumo.objects.com_saldo()`.
 - [ ] **Busca global** (paciente/consulta) na Topbar
 - [ ] Auditoria: tela **read-only** de trilha LGPD (consumindo `/api/auditoria/`) para ADMIN
 - [ ] Revisão de **acessibilidade AA** (axe/teclado/foco) e **responsividade** (mobile/tablet/desktop)

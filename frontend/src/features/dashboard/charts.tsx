@@ -17,15 +17,11 @@ import {
 
 import { formatarMoeda } from '@/lib/utils/format'
 
-import {
-  consultasPorDia,
-  consultasPorStatus,
-  despesasPorCategoria,
-  materiaisConsumidos,
-  type Periodo,
-  serieFaturamento,
-  serieFluxo,
-} from './dados-demo'
+import type { DashboardDados } from './use-dashboard'
+
+type Atendimento = DashboardDados['atendimento']
+type Financeiro = NonNullable<DashboardDados['financeiro']>
+type Estoque = NonNullable<DashboardDados['estoque']>
 
 const eixo = { fill: 'var(--muted-foreground)', fontSize: 12 }
 const estiloTooltip = {
@@ -40,14 +36,38 @@ const estiloTooltip = {
 const DEBOUNCE = 200
 const emReais = (valor: unknown) => `R$${(Number(valor) / 1000).toFixed(0)}k`
 
-const coresStatus = ['var(--chart-3)', 'var(--chart-1)', 'var(--chart-5)', 'var(--destructive)']
-const coresDespesas = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-4)', 'var(--chart-5)']
+// Cores por CHAVE (não por índice): categorias/status com ordem variável não
+// trocam de cor nem repetem quando passam de 4 itens.
+const COR_STATUS: Record<string, string> = {
+  confirmadas: 'var(--chart-3)',
+  aguardando: 'var(--chart-1)',
+  em_atendimento: 'var(--chart-2)',
+  realizadas: 'var(--chart-4)',
+  canceladas: 'var(--destructive)',
+  faltaram: 'var(--chart-5)',
+}
+const COR_CATEGORIA: Record<string, string> = {
+  MATERIAIS: 'var(--chart-1)',
+  SALARIOS: 'var(--chart-2)',
+  ALUGUEL: 'var(--chart-4)',
+  LABORATORIO: 'var(--chart-5)',
+  OUTRAS: 'var(--chart-3)',
+  SEM_CATEGORIA: 'var(--muted-foreground)',
+}
 
-/** Consultas por dia (últimos 7 dias): confirmadas x pendentes. */
-export function ConsultasPorDiaChart() {
+function SemDados() {
+  return (
+    <p className="flex h-[260px] items-center justify-center text-sm text-muted-foreground">
+      Sem dados no período.
+    </p>
+  )
+}
+
+/** Consultas da semana atual (seg–dom): confirmadas x pendentes. */
+export function ConsultasPorDiaChart({ dados }: { dados: Atendimento['consultas_por_dia'] }) {
   return (
     <ResponsiveContainer width="100%" height={260} debounce={DEBOUNCE}>
-      <BarChart data={consultasPorDia} barGap={4}>
+      <BarChart data={dados} barGap={4}>
         <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
         <XAxis dataKey="dia" tick={eixo} axisLine={false} tickLine={false} />
         <YAxis tick={eixo} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
@@ -60,11 +80,16 @@ export function ConsultasPorDiaChart() {
   )
 }
 
-/** Faturamento no período: bruto (área) x líquido (linha). */
-export function FaturamentoChart({ periodo }: { periodo: Periodo }) {
+/** Faturamento no período: bruto (área) x líquido (linha), por mês. */
+export function FaturamentoChart({ dados }: { dados: Financeiro['fluxo_caixa'] }) {
+  const serie = dados.map((m) => ({
+    rotulo: m.rotulo,
+    bruto: m.entradas,
+    liquido: m.entradas - m.saidas,
+  }))
   return (
     <ResponsiveContainer width="100%" height={260} debounce={DEBOUNCE}>
-      <ComposedChart data={serieFaturamento(periodo)}>
+      <ComposedChart data={serie}>
         <defs>
           <linearGradient id="grad-faturamento" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.5} />
@@ -72,7 +97,7 @@ export function FaturamentoChart({ periodo }: { periodo: Periodo }) {
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-        <XAxis dataKey="mes" tick={eixo} axisLine={false} tickLine={false} />
+        <XAxis dataKey="rotulo" tick={eixo} axisLine={false} tickLine={false} />
         <YAxis tick={eixo} axisLine={false} tickLine={false} width={56} tickFormatter={emReais} />
         <Tooltip contentStyle={estiloTooltip} formatter={(valor) => formatarMoeda(Number(valor))} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -97,23 +122,26 @@ export function FaturamentoChart({ periodo }: { periodo: Periodo }) {
   )
 }
 
-/** Distribuição de consultas por status (rosca). */
-export function ConsultasPorStatusChart() {
+/** Distribuição de consultas por status no período (rosca). */
+export function ConsultasPorStatusChart({ dados }: { dados: Atendimento['consultas_por_status'] }) {
+  if (dados.every((item) => item.total === 0)) return <SemDados />
   return (
     <ResponsiveContainer width="100%" height={260} debounce={DEBOUNCE}>
       <PieChart>
         <Pie
-          data={consultasPorStatus}
+          data={dados.filter((item) => item.total > 0)}
           dataKey="total"
-          nameKey="status"
+          nameKey="rotulo"
           innerRadius={55}
           outerRadius={85}
           paddingAngle={2}
           stroke="var(--card)"
         >
-          {consultasPorStatus.map((item, indice) => (
-            <Cell key={item.status} fill={coresStatus[indice % coresStatus.length]} />
-          ))}
+          {dados
+            .filter((item) => item.total > 0)
+            .map((item) => (
+              <Cell key={item.status} fill={COR_STATUS[item.status] ?? 'var(--muted-foreground)'} />
+            ))}
         </Pie>
         <Tooltip contentStyle={estiloTooltip} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -122,13 +150,13 @@ export function ConsultasPorStatusChart() {
   )
 }
 
-/** Fluxo de caixa: entradas x saídas no período. */
-export function FluxoCaixaChart({ periodo }: { periodo: Periodo }) {
+/** Fluxo de caixa: entradas x saídas (pagas) por mês. */
+export function FluxoCaixaChart({ dados }: { dados: Financeiro['fluxo_caixa'] }) {
   return (
     <ResponsiveContainer width="100%" height={260} debounce={DEBOUNCE}>
-      <BarChart data={serieFluxo(periodo)} barGap={4}>
+      <BarChart data={dados} barGap={4}>
         <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-        <XAxis dataKey="mes" tick={eixo} axisLine={false} tickLine={false} />
+        <XAxis dataKey="rotulo" tick={eixo} axisLine={false} tickLine={false} />
         <YAxis tick={eixo} axisLine={false} tickLine={false} width={56} tickFormatter={emReais} />
         <Tooltip
           contentStyle={estiloTooltip}
@@ -143,22 +171,23 @@ export function FluxoCaixaChart({ periodo }: { periodo: Periodo }) {
   )
 }
 
-/** Despesas do mês (contas pagas) por categoria. */
-export function DespesasPorCategoriaChart() {
+/** Despesas pagas no período por categoria. */
+export function DespesasPorCategoriaChart({ dados }: { dados: Financeiro['despesas_por_categoria'] }) {
+  if (dados.length === 0) return <SemDados />
   return (
     <ResponsiveContainer width="100%" height={260} debounce={DEBOUNCE}>
       <PieChart>
         <Pie
-          data={despesasPorCategoria}
+          data={dados}
           dataKey="valor"
-          nameKey="categoria"
+          nameKey="rotulo"
           innerRadius={55}
           outerRadius={85}
           paddingAngle={2}
           stroke="var(--card)"
         >
-          {despesasPorCategoria.map((item, indice) => (
-            <Cell key={item.categoria} fill={coresDespesas[indice % coresDespesas.length]} />
+          {dados.map((item) => (
+            <Cell key={item.categoria} fill={COR_CATEGORIA[item.categoria] ?? 'var(--muted-foreground)'} />
           ))}
         </Pie>
         <Tooltip contentStyle={estiloTooltip} formatter={(valor) => formatarMoeda(Number(valor))} />
@@ -168,11 +197,12 @@ export function DespesasPorCategoriaChart() {
   )
 }
 
-/** Insumos mais consumidos no mês (barras horizontais). */
-export function MateriaisConsumidosChart() {
+/** Insumos mais consumidos no período (barras horizontais). */
+export function MateriaisConsumidosChart({ dados }: { dados: Estoque['materiais_consumidos'] }) {
+  if (dados.length === 0) return <SemDados />
   return (
     <ResponsiveContainer width="100%" height={260} debounce={DEBOUNCE}>
-      <BarChart data={materiaisConsumidos} layout="vertical" margin={{ left: 8 }}>
+      <BarChart data={dados} layout="vertical" margin={{ left: 8 }}>
         <CartesianGrid horizontal={false} stroke="var(--border)" strokeDasharray="3 3" />
         <XAxis type="number" tick={eixo} axisLine={false} tickLine={false} />
         <YAxis
@@ -181,7 +211,7 @@ export function MateriaisConsumidosChart() {
           tick={eixo}
           axisLine={false}
           tickLine={false}
-          width={80}
+          width={96}
         />
         <Tooltip contentStyle={estiloTooltip} cursor={{ fill: 'var(--accent)', opacity: 0.4 }} />
         <Bar dataKey="quantidade" name="Consumo" fill="var(--chart-4)" radius={[0, 4, 4, 0]} />

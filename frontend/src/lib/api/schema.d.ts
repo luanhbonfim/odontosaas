@@ -644,6 +644,29 @@ export interface paths {
         patch: operations["convenios_partial_update"];
         trace?: never;
     };
+    "/api/dashboard/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Números do Dashboard (atendimento, financeiro, estoque) por período.
+         *
+         *     Qualquer usuário autenticado acessa; os blocos `financeiro`/`estoque` vêm
+         *     `null` quando o usuário não tem permissão de ver o módulo ou o plano da
+         *     clínica o desabilitou — a view não passa pelo gate de path do `PermissaoModulo`.
+         */
+        get: operations["dashboard_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dentistas/": {
         parameters: {
             query?: never;
@@ -954,7 +977,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Lista os insumos com estoque no/abaixo do mínimo (alerta de reposição). */
+        /** @description Lista os insumos ativos com estoque no/abaixo do mínimo (alerta de reposição). */
         get: operations["insumos_alertas_retrieve"];
         put?: never;
         post?: never;
@@ -2500,6 +2523,15 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em: string;
         };
+        Atendimento: {
+            consultas_hoje: components["schemas"]["MetricaInteira"];
+            taxa_confirmacao: components["schemas"]["MetricaPercentual"];
+            pacientes_ativos: components["schemas"]["MetricaInteira"];
+            confirmacoes_pendentes: number;
+            consultas_por_dia: components["schemas"]["ConsultaPorDia"][];
+            consultas_por_status: components["schemas"]["ConsultaPorStatus"][];
+            proximas_consultas: components["schemas"]["ProximaConsulta"][];
+        };
         /** @description Avisos expostos ao tenant autenticado (carrossel pós-login). */
         AvisoPublico: {
             readonly id: number;
@@ -2564,6 +2596,15 @@ export interface components {
          * @enum {string}
          */
         CanalEnum: "WHATSAPP";
+        /**
+         * @description * `MATERIAIS` - Materiais
+         *     * `SALARIOS` - Salários
+         *     * `ALUGUEL` - Aluguel
+         *     * `LABORATORIO` - Laboratório
+         *     * `OUTRAS` - Outras
+         * @enum {string}
+         */
+        CategoriaEnum: "MATERIAIS" | "SALARIOS" | "ALUGUEL" | "LABORATORIO" | "OUTRAS";
         CategoriaInsumo: {
             readonly id: number;
             nome: string;
@@ -2763,6 +2804,18 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em: string;
         };
+        ConsultaPorDia: {
+            /** Format: date */
+            data: string;
+            dia: string;
+            confirmadas: number;
+            pendentes: number;
+        };
+        ConsultaPorStatus: {
+            status: string;
+            rotulo: string;
+            total: number;
+        };
         /**
          * @description * `AGENDADA` - Agendada
          *     * `EM_ATENDIMENTO` - Em atendimento
@@ -2795,6 +2848,12 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em: string;
         };
+        Dashboard: {
+            periodo: string;
+            atendimento: components["schemas"]["Atendimento"];
+            financeiro: components["schemas"]["Financeiro"] | null;
+            estoque: components["schemas"]["Estoque"] | null;
+        };
         Dentista: {
             readonly id: number;
             nome_completo: string;
@@ -2813,6 +2872,12 @@ export interface components {
             /** Format: date-time */
             readonly atualizado_em: string;
         };
+        DespesaCategoria: {
+            categoria: string;
+            rotulo: string;
+            /** Format: decimal */
+            valor: string;
+        };
         /**
          * @description * `ENVIADA` - Enviada
          *     * `RECEBIDA` - Recebida
@@ -2829,6 +2894,22 @@ export interface components {
             readonly id: number;
             nome: string;
             ativo?: boolean;
+        };
+        Estoque: {
+            itens_em_estoque: components["schemas"]["MetricaInteira"];
+            insumos_abaixo_minimo: components["schemas"]["MetricaInteira"];
+            materiais_gastos: components["schemas"]["MetricaQuantidade"];
+            custo_de_materiais: components["schemas"]["MetricaDinheiro"];
+            materiais_consumidos: components["schemas"]["MaterialConsumido"][];
+            estoque_baixo: components["schemas"]["EstoqueBaixoItem"][];
+        };
+        EstoqueBaixoItem: {
+            item: string;
+            unidade: string;
+            /** Format: decimal */
+            atual: string;
+            /** Format: decimal */
+            minimo: string;
         };
         Fatura: {
             readonly id: number;
@@ -2871,6 +2952,23 @@ export interface components {
             readonly criado_em: string;
             /** Format: date-time */
             readonly atualizado_em: string;
+        };
+        Financeiro: {
+            contas_a_receber: components["schemas"]["MetricaDinheiro"];
+            contas_a_pagar: components["schemas"]["MetricaDinheiro"];
+            faturamento_bruto: components["schemas"]["MetricaDinheiro"];
+            faturamento_liquido: components["schemas"]["MetricaDinheiro"];
+            fluxo_caixa: components["schemas"]["FluxoMensal"][];
+            despesas_por_categoria: components["schemas"]["DespesaCategoria"][];
+        };
+        FluxoMensal: {
+            /** @description AAAA-MM */
+            mes: string;
+            rotulo: string;
+            /** Format: decimal */
+            entradas: string;
+            /** Format: decimal */
+            saidas: string;
         };
         /**
          * @description * `PIX` - Pix
@@ -2983,6 +3081,7 @@ export interface components {
             fornecedor?: number | null;
             readonly fornecedor_nome: string;
             forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
+            categoria?: components["schemas"]["CategoriaEnum"] | components["schemas"]["BlankEnum"];
             numero_parcela?: number;
             total_parcelas?: number;
             /**
@@ -3046,6 +3145,36 @@ export interface components {
             /** Format: email */
             email: string;
             ativo: boolean;
+        };
+        MaterialConsumido: {
+            material: string;
+            unidade: string;
+            /** Format: decimal */
+            quantidade: string;
+        };
+        MetricaDinheiro: {
+            /** Format: decimal */
+            valor: string;
+            /** Format: double */
+            variacao: number | null;
+        };
+        MetricaInteira: {
+            valor: number;
+            /** Format: double */
+            variacao: number | null;
+        };
+        /** @description `valor` nulo = sem consultas no período (exibir "—", nunca 0%). */
+        MetricaPercentual: {
+            /** Format: double */
+            valor: number | null;
+            /** Format: double */
+            variacao: number | null;
+        };
+        MetricaQuantidade: {
+            /** Format: decimal */
+            valor: string;
+            /** Format: double */
+            variacao: number | null;
         };
         /**
          * @description * `agenda` - agenda
@@ -3484,6 +3613,7 @@ export interface components {
             fornecedor?: number | null;
             readonly fornecedor_nome?: string;
             forma_pagamento?: components["schemas"]["FormaPagamentoEnum"] | components["schemas"]["BlankEnum"];
+            categoria?: components["schemas"]["CategoriaEnum"] | components["schemas"]["BlankEnum"];
             numero_parcela?: number;
             total_parcelas?: number;
             /**
@@ -3792,6 +3922,17 @@ export interface components {
             readonly criado_em: string;
             /** Format: date-time */
             readonly atualizado_em: string;
+        };
+        ProximaConsulta: {
+            id: number;
+            paciente: string;
+            telefone: string;
+            /** Format: date-time */
+            inicio: string;
+            /** Format: decimal */
+            valor: string;
+            status: string;
+            status_confirmacao: string;
         };
         RegistroAuditoria: {
             readonly id: number;
@@ -5228,6 +5369,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Convenio"];
+                };
+            };
+        };
+    };
+    dashboard_retrieve: {
+        parameters: {
+            query?: {
+                periodo?: "ano" | "mes" | "semestre";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
                 };
             };
         };

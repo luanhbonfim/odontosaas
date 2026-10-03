@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-import { type Periodo, periodos } from './dados-demo'
+import { type Periodo, periodos } from './periodos'
 
 type PeriodoSelectorProps = {
   valor: Periodo

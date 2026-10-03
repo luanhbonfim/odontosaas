@@ -60,7 +60,28 @@ describe('LancamentoFormDrawer', () => {
       vencimento: null,
       forma_pagamento: undefined,
       fornecedor: 3,
+      categoria: '',
     })
+  })
+
+  it('DESPESA tem select de Categoria e envia o valor escolhido; RECEITA não tem', async () => {
+    fornecedoresMock.mockReturnValue({ data: [] })
+    criarMock.mockResolvedValue({})
+    const user = userEvent.setup()
+    const { unmount } = render(
+      <LancamentoFormDrawer tipo="DESPESA" trigger={<button>Novo lançamento</button>} />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Novo lançamento' }))
+    await user.type(screen.getByLabelText(/descrição/i), 'Aluguel')
+    await user.type(screen.getByLabelText(/^valor/i), '1000')
+    await user.selectOptions(screen.getByLabelText(/categoria/i), 'ALUGUEL')
+    await user.click(screen.getByRole('button', { name: /^salvar$/i }))
+    expect(criarMock).toHaveBeenCalledWith(expect.objectContaining({ categoria: 'ALUGUEL' }))
+    unmount()
+
+    render(<LancamentoFormDrawer tipo="RECEITA" trigger={<button>Novo lançamento</button>} />)
+    await user.click(screen.getByRole('button', { name: 'Novo lançamento' }))
+    expect(screen.queryByLabelText(/categoria/i)).toBeNull()
   })
 
   it('bloqueia envio com valor <= 0', async () => {

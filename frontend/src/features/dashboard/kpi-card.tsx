@@ -8,10 +8,13 @@ type KpiCardProps = {
   titulo: string
   valor: string
   icone: ComponentType<{ className?: string }>
-  variacao?: number
+  /** `null`/ausente = sem base de comparação (sem seta; só a legenda, se houver). */
+  variacao?: number | null
   legenda?: string
   /** Quando true, uma variação negativa é "boa" (ex.: custos, contas a pagar). */
   inverterCor?: boolean
+  /** "%" por padrão; "p.p." (pontos percentuais) para métricas que já são percentuais. */
+  sufixoVariacao?: string
 }
 
 /** Cartão de indicador (KPI) com valor, ícone e variação opcional. */
@@ -22,6 +25,7 @@ export function KpiCard({
   variacao,
   legenda,
   inverterCor = false,
+  sufixoVariacao = '%',
 }: KpiCardProps) {
   const subiu = (variacao ?? 0) >= 0
   const bom = inverterCor ? !subiu : subiu
@@ -33,7 +37,7 @@ export function KpiCard({
         <div className="min-w-0">
           <p className="truncate text-sm text-muted-foreground">{titulo}</p>
           <p className="mt-1 text-2xl font-semibold tracking-tight">{valor}</p>
-          {variacao !== undefined ? (
+          {variacao !== undefined && variacao !== null ? (
             <p
               className={cn(
                 'mt-1 flex items-center gap-1 text-xs font-medium',
@@ -42,7 +46,8 @@ export function KpiCard({
             >
               <IconeTendencia className="size-3.5" />
               {subiu ? '+' : ''}
-              {variacao}%
+              {variacao}
+              {sufixoVariacao}
               {legenda ? <span className="text-muted-foreground"> {legenda}</span> : null}
             </p>
           ) : legenda ? (
