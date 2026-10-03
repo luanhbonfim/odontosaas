@@ -3,6 +3,7 @@ import { Menu } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { useSessao } from '@/features/auth/use-sessao'
+import { BuscaGlobal } from '@/features/busca/busca-global'
 import { useUI } from '@/stores/ui'
 
 import { UserMenu } from './user-menu'
@@ -54,7 +55,10 @@ export function Topbar() {
         <span className="text-sm font-medium">{usuario?.clinica.nomeFantasia ?? 'Clínica'}</span>
         <StatusBackend />
       </div>
-      <UserMenu />
+      <div className="flex items-center gap-2">
+        <BuscaGlobal />
+        <UserMenu />
+      </div>
     </header>
   )
 }

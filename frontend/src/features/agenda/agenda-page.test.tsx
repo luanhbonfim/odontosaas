@@ -5,7 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AgendaPage } from './agenda-page'
 
-const { consultasMock, atualizarMock, revertMock, changeViewMock, unselectMock, toastErrorMock } =
+const {
+  consultasMock,
+  atualizarMock,
+  revertMock,
+  changeViewMock,
+  unselectMock,
+  toastErrorMock,
+  gotoDateMock,
+} =
   vi.hoisted(() => ({
     consultasMock: vi.fn(),
     atualizarMock: vi.fn(),
@@ -13,6 +21,7 @@ const { consultasMock, atualizarMock, revertMock, changeViewMock, unselectMock, 
     changeViewMock: vi.fn(),
     unselectMock: vi.fn(),
     toastErrorMock: vi.fn(),
+    gotoDateMock: vi.fn(),
   }))
 vi.mock('sonner', () => ({ toast: { error: toastErrorMock, success: vi.fn() } }))
 
@@ -36,7 +45,11 @@ vi.mock('@fullcalendar/react', async () => {
   return {
     default: React.forwardRef((props: FCProps, ref: React.Ref<unknown>) => {
       React.useImperativeHandle(ref, () => ({
-        getApi: () => ({ changeView: changeViewMock, unselect: unselectMock }),
+        getApi: () => ({
+          changeView: changeViewMock,
+          unselect: unselectMock,
+          gotoDate: gotoDateMock,
+        }),
       }))
       const slot = { start: new Date('2026-08-10T09:00'), end: new Date('2026-08-10T09:30') }
       return (
@@ -163,9 +176,9 @@ const CONSULTA_RE = {
   dentista_nome: 'Ana',
 }
 
-function renderPage() {
+function renderPage(url = '/agenda') {
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[url]}>
       <AgendaPage />
     </MemoryRouter>,
   )
@@ -279,5 +292,34 @@ describe('AgendaPage', () => {
       }),
     )
     expect(revertMock).not.toHaveBeenCalled()
+  })
+
+  describe('deep link da busca global (?consulta=ID)', () => {
+    it('AGENDADA: posiciona o calendário no dia e abre em modo editar', () => {
+      consultasMock.mockReturnValue({ data: [CONSULTA_AG, CONSULTA_RE], isError: false })
+      renderPage('/agenda?consulta=1')
+      expect(gotoDateMock).toHaveBeenCalledWith('2026-08-10T13:00:00Z')
+      expect(screen.getByTestId('modal')).toHaveTextContent('editar:1')
+    })
+
+    it('consulta já realizada abre em modo visualizar', () => {
+      consultasMock.mockReturnValue({ data: [CONSULTA_AG, CONSULTA_RE], isError: false })
+      renderPage('/agenda?consulta=2')
+      expect(screen.getByTestId('modal')).toHaveTextContent('visualizar:2')
+    })
+
+    it('id inexistente avisa e não abre modal', () => {
+      consultasMock.mockReturnValue({ data: [CONSULTA_AG], isError: false })
+      renderPage('/agenda?consulta=999')
+      expect(toastErrorMock).toHaveBeenCalledWith('Consulta não encontrada.')
+      expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
+    })
+
+    it('sem o parâmetro, nada abre', () => {
+      consultasMock.mockReturnValue({ data: [CONSULTA_AG], isError: false })
+      renderPage()
+      expect(gotoDateMock).not.toHaveBeenCalled()
+      expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
+    })
   })
 })

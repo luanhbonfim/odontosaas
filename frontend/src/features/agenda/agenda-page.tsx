@@ -2,7 +2,8 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/layout/page-header'
@@ -51,6 +52,25 @@ export function AgendaPage() {
     ultimoAvisoPassadoEm.current = agora
     toast.error('Não é possível agendar em uma data passada.')
   }
+  // Deep link da busca global: `/agenda?consulta=ID` posiciona o calendário no dia
+  // e abre a consulta (editar se AGENDADA, senão visualizar — igual ao clique no evento).
+  const [params, setParams] = useSearchParams()
+  const consultaDoLink = params.get('consulta')
+  useEffect(() => {
+    if (!consultaDoLink || !data) return
+    const consulta = data.find((c) => String(c.id) === consultaDoLink)
+    if (consulta) {
+      calRef.current?.getApi().gotoDate(consulta.inicio)
+      setModal(
+        consulta.status === 'AGENDADA'
+          ? { modo: 'editar', consulta }
+          : { modo: 'visualizar', consulta },
+      )
+    } else {
+      toast.error('Consulta não encontrada.')
+    }
+    setParams({}, { replace: true })
+  }, [consultaDoLink, data, setParams])
   const eventos = (data ?? []).map(consultaParaEvento)
   // No mobile a semana (7 colunas) não cabe: começa na visão Dia com toolbar compacta.
   const desktop = useEhDesktop()

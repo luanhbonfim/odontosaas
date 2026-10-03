@@ -206,6 +206,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/busca/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Busca global por paciente (nome/CPF) e consulta (paciente/procedimento).
+         *
+         *     Qualquer usuário autenticado acessa; cada bloco vem `null` sem a permissão de
+         *     ver o módulo (a view não passa pelo gate de path do `PermissaoModulo`).
+         */
+        get: operations["busca_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/categorias-insumo/": {
         parameters: {
             query?: never;
@@ -2591,6 +2613,11 @@ export interface components {
         };
         /** @enum {unknown} */
         BlankEnum: "";
+        /** @description Bloco `null` = sem permissão para o módulo (a UI simplesmente não o mostra). */
+        Busca: {
+            pacientes: components["schemas"]["PacienteBusca"][] | null;
+            consultas: components["schemas"]["ConsultaBusca"][] | null;
+        };
         /**
          * @description * `WHATSAPP` - WhatsApp
          * @enum {string}
@@ -2803,6 +2830,16 @@ export interface components {
             readonly criado_em: string;
             /** Format: date-time */
             readonly atualizado_em: string;
+        };
+        ConsultaBusca: {
+            id: number;
+            /** Format: date-time */
+            inicio: string;
+            status: string;
+            paciente_id: number;
+            paciente_nome: string;
+            dentista_nome: string;
+            procedimento: string;
         };
         ConsultaPorDia: {
             /** Format: date */
@@ -3258,6 +3295,13 @@ export interface components {
             readonly criado_em: string;
             /** Format: date-time */
             readonly atualizado_em: string;
+        };
+        PacienteBusca: {
+            id: number;
+            nome_completo: string;
+            cpf: string;
+            ativo: boolean;
+            telefone_whatsapp: string;
         };
         PaginatedPacienteList: {
             /** @example 123 */
@@ -4382,6 +4426,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AvisoPublico"][];
+                };
+            };
+        };
+    };
+    busca_retrieve: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Busca"];
                 };
             };
         };
