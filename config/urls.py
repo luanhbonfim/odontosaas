@@ -21,6 +21,7 @@ from rest_framework_simplejwt.views import (
 
 from apps.agenda.views import AnamneseViewSet, ConsultaViewSet, FichaViewSet
 from apps.auditoria.views import RegistroAuditoriaViewSet
+from apps.busca.views import BuscaView
 from apps.convenios.views import ConvenioViewSet
 from apps.dashboard.views import DashboardView
 from apps.dentistas.views import DentistaViewSet, EspecialidadeViewSet
@@ -108,6 +109,7 @@ urlpatterns = [
     # Usuário logado (nome, papel, clínica) — base do contexto de sessão do frontend
     path("api/auth/me/", MeView.as_view(), name="auth_me"),
     path("api/dashboard/", DashboardView.as_view(), name="dashboard"),
+    path("api/busca/", BuscaView.as_view(), name="busca"),
     # Grade papel×módulo (Recepção/Dentista) da tela "Permissões" — Gerente/Admin
     path("api/permissoes-modulo/", PermissoesModuloView.as_view(), name="permissoes_modulo"),
     path("api/auth/encerrar-suporte/", EncerrarSuporteTenantView.as_view(), name="encerrar_suporte_tenant"),
