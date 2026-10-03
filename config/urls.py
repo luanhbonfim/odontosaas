@@ -22,6 +22,7 @@ from rest_framework_simplejwt.views import (
 from apps.agenda.views import AnamneseViewSet, ConsultaViewSet, FichaViewSet
 from apps.auditoria.views import RegistroAuditoriaViewSet
 from apps.convenios.views import ConvenioViewSet
+from apps.dashboard.views import DashboardView
 from apps.dentistas.views import DentistaViewSet, EspecialidadeViewSet
 from apps.estoque.views import (
     CategoriaInsumoViewSet,
@@ -106,6 +107,7 @@ urlpatterns = [
     path("api/auth/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     # Usuário logado (nome, papel, clínica) — base do contexto de sessão do frontend
     path("api/auth/me/", MeView.as_view(), name="auth_me"),
+    path("api/dashboard/", DashboardView.as_view(), name="dashboard"),
     # Grade papel×módulo (Recepção/Dentista) da tela "Permissões" — Gerente/Admin
     path("api/permissoes-modulo/", PermissoesModuloView.as_view(), name="permissoes_modulo"),
     path("api/auth/encerrar-suporte/", EncerrarSuporteTenantView.as_view(), name="encerrar_suporte_tenant"),

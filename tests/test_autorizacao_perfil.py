@@ -49,10 +49,10 @@ def _cliente(papel):
 def test_matriz_de_permissoes_por_perfil():
     clinica = _setup()
     try:
-        # Recepção: agenda ok, financeiro bloqueado
+        # Recepção: agenda e financeiro ok (matriz: financeiro FULL)
         recepcao = _cliente("RECEPCAO")
         assert recepcao.get("/api/consultas/", HTTP_HOST=HOST).status_code == 200
-        assert recepcao.get("/api/faturas/", HTTP_HOST=HOST).status_code == 403
+        assert recepcao.get("/api/faturas/", HTTP_HOST=HOST).status_code == 200
         # Recepção vê Dentistas (leitura), mas não pode criar
         assert recepcao.get("/api/dentistas/", HTTP_HOST=HOST).status_code == 200
         assert (
