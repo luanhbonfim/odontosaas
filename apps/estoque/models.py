@@ -31,8 +31,29 @@ class CategoriaInsumo(ModeloBase):
         return self.nome
 
 
+class InsumoQuerySet(models.QuerySet):
+    def com_saldo(self):
+        """Anota `saldo_calculado` (ENTRADAS − SAÍDAS) numa única query — evita o
+        N+1 de chamar `calcular_saldo()` por insumo (dashboard, alertas, lista)."""
+        return self.annotate(
+            saldo_calculado=Coalesce(
+                Sum(
+                    Case(
+                        When(movimentacoes__tipo="SAIDA", then=-F("movimentacoes__quantidade")),
+                        default=F("movimentacoes__quantidade"),
+                        output_field=DecimalField(max_digits=12, decimal_places=2),
+                    )
+                ),
+                Value(Decimal("0")),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            )
+        )
+
+
 class Insumo(ModeloBase):
     """Item de estoque da clínica (material de consumo, EPI, etc.)."""
+
+    objects = InsumoQuerySet.as_manager()
 
     class Unidade(models.TextChoices):
         UNIDADE = "UN", "Unidade"
@@ -64,7 +85,11 @@ class Insumo(ModeloBase):
         return f"{self.nome} ({self.get_unidade_display()})"
 
     def calcular_saldo(self):
-        """Saldo atual do insumo: soma das ENTRADAS menos as SAÍDAS (1 query)."""
+        """Saldo atual do insumo: soma das ENTRADAS menos as SAÍDAS (1 query).
+        Usa o valor anotado por `Insumo.objects.com_saldo()` quando existir."""
+        anotado = getattr(self, "saldo_calculado", None)
+        if anotado is not None:
+            return anotado
         return self.movimentacoes.aggregate(
             saldo=Coalesce(
                 Sum(

@@ -1,5 +1,6 @@
 """Serializers do app financeiro."""
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import Fatura, LancamentoFinanceiro
@@ -66,6 +67,7 @@ class LancamentoFinanceiroSerializer(serializers.ModelSerializer):
             "fornecedor",
             "fornecedor_nome",
             "forma_pagamento",
+            "categoria",
             "numero_parcela",
             "total_parcelas",
             "origem_automatica",
@@ -79,6 +81,22 @@ class LancamentoFinanceiroSerializer(serializers.ModelSerializer):
         if valor <= 0:
             raise serializers.ValidationError("O valor deve ser maior que zero.")
         return valor
+
+    def validate(self, attrs):
+        tipo = attrs.get("tipo") or getattr(self.instance, "tipo", None)
+        if attrs.get("categoria") and tipo != LancamentoFinanceiro.Tipo.DESPESA:
+            raise serializers.ValidationError(
+                {"categoria": "Categoria só se aplica a despesas (contas a pagar)."}
+            )
+        # Status PAGO sem data some do caixa (o Dashboard soma por `pago_em`); só a
+        # action `quitar` setava isso — garante também na escrita direta.
+        if (
+            attrs.get("status") == LancamentoFinanceiro.Status.PAGO
+            and not attrs.get("pago_em")
+            and not getattr(self.instance, "pago_em", None)
+        ):
+            attrs["pago_em"] = timezone.now()
+        return attrs
 
     def get_consulta_procedimento(self, obj) -> str:
         if not obj.consulta_id:

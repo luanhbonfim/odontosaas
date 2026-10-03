@@ -92,6 +92,7 @@ def gerar_conta_da_compra(movimentacao, fornecedor, valor, forma_pagamento="", d
         vencimento=data_vencimento,
         fornecedor=fornecedor,
         forma_pagamento=forma_pagamento,
+        categoria=LancamentoFinanceiro.Categoria.MATERIAIS,
     )
     movimentacao.lancamento_financeiro = lancamento
     movimentacao.save(update_fields=["lancamento_financeiro", "atualizado_em"])

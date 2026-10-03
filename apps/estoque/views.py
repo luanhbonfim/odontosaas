@@ -33,14 +33,14 @@ class FornecedorViewSet(viewsets.ModelViewSet):
 class InsumoViewSet(ExclusaoProtegidaMixin, viewsets.ModelViewSet):
     """CRUD de insumos (expõe o `saldo` calculado a partir das movimentações)."""
 
-    queryset = Insumo.objects.all()
+    queryset = Insumo.objects.com_saldo()
     serializer_class = InsumoSerializer
     mensagem_protegido = "Não é possível excluir: há movimentações ou consumos vinculados a este insumo."
 
     @action(detail=False, methods=["get"])
     def alertas(self, request):
-        """Lista os insumos com estoque no/abaixo do mínimo (alerta de reposição)."""
-        insumos = [insumo for insumo in self.get_queryset() if insumo.estoque_baixo()]
+        """Lista os insumos ativos com estoque no/abaixo do mínimo (alerta de reposição)."""
+        insumos = [insumo for insumo in self.get_queryset().filter(ativo=True) if insumo.estoque_baixo()]
         return Response(self.get_serializer(insumos, many=True).data)
 
 

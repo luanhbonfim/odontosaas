@@ -57,6 +57,13 @@ class LancamentoFinanceiro(ModeloBase):
         DINHEIRO = "DINHEIRO", "Dinheiro"
         TRANSFERENCIA = "TRANSFERENCIA", "Transferência"
 
+    class Categoria(models.TextChoices):
+        MATERIAIS = "MATERIAIS", "Materiais"
+        SALARIOS = "SALARIOS", "Salários"
+        ALUGUEL = "ALUGUEL", "Aluguel"
+        LABORATORIO = "LABORATORIO", "Laboratório"
+        OUTRAS = "OUTRAS", "Outras"
+
     tipo = models.CharField(max_length=10, choices=Tipo.choices)
     descricao = models.CharField(max_length=255)
     valor = models.DecimalField(max_digits=12, decimal_places=2)
@@ -85,6 +92,9 @@ class LancamentoFinanceiro(ModeloBase):
         on_delete=models.SET_NULL,
         related_name="lancamentos",
     )
+    # Categoria da despesa (gráfico "Despesas por categoria" do Dashboard) — só
+    # DESPESA; vazio = "Sem categoria".
+    categoria = models.CharField(max_length=20, choices=Categoria.choices, blank=True)
     # Fornecedor da compra (só relevante para DESPESA gerada por compra de insumo).
     fornecedor = models.ForeignKey(
         "estoque.Fornecedor",

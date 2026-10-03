@@ -232,6 +232,7 @@ def test_paciente_nome_e_origem_automatica():
         assert compra["fatura"] is None
         assert compra["paciente_nome"] == ""
         assert compra["origem_automatica"] is True
+        assert compra["categoria"] == "MATERIAIS"  # compra de insumo gera despesa de Materiais
 
         # 4) Lançamentos manuais (RECEITA e DESPESA, sem nenhum vínculo) —
         #    origem_automatica=False, únicos editáveis/excluíveis pela tela geral.
@@ -251,6 +252,54 @@ def test_paciente_nome_e_origem_automatica():
             HTTP_HOST=host,
         ).json()
         assert manual_despesa["origem_automatica"] is False
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_categoria_so_despesa_e_pago_sem_data_recebe_pago_em():
+    host = "apifincat.localhost"
+    clinica = _criar_clinica("api_fin_cat", host)
+    client = APIClient()
+    try:
+        # categoria em DESPESA ok; em RECEITA -> 400
+        ok = client.post(
+            "/api/lancamentos/",
+            {"tipo": "DESPESA", "descricao": "Aluguel", "valor": "1000", "categoria": "ALUGUEL"},
+            format="json",
+            HTTP_HOST=host,
+        )
+        assert ok.status_code == 201, ok.content
+        assert ok.json()["categoria"] == "ALUGUEL"
+        ruim = client.post(
+            "/api/lancamentos/",
+            {"tipo": "RECEITA", "descricao": "Venda", "valor": "10", "categoria": "ALUGUEL"},
+            format="json",
+            HTTP_HOST=host,
+        )
+        assert ruim.status_code == 400
+        assert "categoria" in ruim.json()
+
+        # categoria inválida -> 400
+        assert (
+            client.post(
+                "/api/lancamentos/",
+                {"tipo": "DESPESA", "descricao": "X", "valor": "1", "categoria": "INEXISTENTE"},
+                format="json",
+                HTTP_HOST=host,
+            ).status_code
+            == 400
+        )
+
+        # PAGO via escrita direta sem `pago_em`: o serializer preenche (senão some do caixa)
+        pago = client.post(
+            "/api/lancamentos/",
+            {"tipo": "RECEITA", "descricao": "Venda paga", "valor": "10", "status": "PAGO"},
+            format="json",
+            HTTP_HOST=host,
+        ).json()
+        assert pago["pago_em"] is not None
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)
