@@ -15,6 +15,13 @@ def usuario_atual():
     return getattr(_estado, "usuario", None)
 
 
+def definir_usuario_atual(usuario):
+    """Registra o usuário da requisição corrente (chamado pela autenticação JWT do DRF,
+    que acontece depois deste middleware; ele limpa o estado ao fim da requisição)."""
+    if getattr(usuario, "is_authenticated", False) and getattr(usuario, "pk", None):
+        _estado.usuario = usuario
+
+
 class AuditoriaMiddleware:
     """Guarda o usuário autenticado no thread-local durante a requisição."""
 

@@ -131,12 +131,118 @@ def test_api_auditoria_read_only():
         # listagem com filtro
         resp = client.get("/api/auditoria/?modelo=Paciente&acao=CRIACAO", HTTP_HOST=host)
         assert resp.status_code == 200
-        assert len(resp.json()) == 1
-        assert resp.json()[0]["modelo"] == "Paciente"
+        assert resp.json()["count"] == 1
+        assert resp.json()["results"][0]["modelo"] == "Paciente"
 
         # somente-leitura: POST não é permitido
         resp = client.post("/api/auditoria/", {"acao": "CRIACAO"}, format="json", HTTP_HOST=host)
         assert resp.status_code == 405
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+def _cliente_jwt(host, email):
+    from django.core.cache import cache
+
+    cache.clear()
+    c = APIClient()
+    tok = c.post(
+        "/api/auth/token/", {"email": email, "password": "Senha12345"}, format="json", HTTP_HOST=host
+    ).json()["access"]
+    c.credentials(HTTP_AUTHORIZATION=f"Bearer {tok}")
+    return c
+
+
+@pytest.mark.no_auto_auth
+@pytest.mark.django_db(transaction=True)
+def test_api_auditoria_permissao_filtros_e_paginacao():
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.usuarios.perfis import sincronizar_grupos
+
+    host = "apiaud2.localhost"
+    clinica = _criar_clinica("api_aud2", host)
+    try:
+        with schema_context(clinica.schema_name):
+            sincronizar_grupos()
+            adm = Usuario.objects.create_user(
+                email="adm@c.com", password="Senha12345", papel="ADMIN", nome_completo="Admin Silva"
+            )
+            Usuario.objects.create_user(email="ger@c.com", password="Senha12345", papel="DENTISTA_GERENTE")
+            Usuario.objects.create_user(email="rec@c.com", password="Senha12345", papel="RECEPCAO")
+            Usuario.objects.create_user(email="den@c.com", password="Senha12345", papel="DENTISTA")
+            RegistroAuditoria.objects.all().delete()
+            for i in range(25):
+                RegistroAuditoria.objects.create(
+                    acao="CRIACAO", modelo="Paciente", objeto_id=str(i), objeto_repr=f"Paciente {i}", usuario=adm
+                )
+            antigo = RegistroAuditoria.objects.create(
+                acao="EXCLUSAO", modelo="Guia", objeto_id="9", objeto_repr="Guia G-9", usuario=None
+            )
+            RegistroAuditoria.objects.filter(pk=antigo.pk).update(
+                criado_em=timezone.now() - timedelta(days=10)
+            )
+
+        admin = _cliente_jwt(host, "adm@c.com")
+        # Paginada (20 por página) e ordenada do mais recente
+        r = admin.get("/api/auditoria/", HTTP_HOST=host).json()
+        assert r["count"] == 26 and len(r["results"]) == 20 and r["next"]
+        assert r["results"][0]["usuario_nome"] == "Admin Silva"
+        assert r["results"][0]["acao_rotulo"] == "Criação"
+
+        # Filtros: modelo, ação, usuário, busca, período (dias inclusivos, fuso local)
+        assert admin.get("/api/auditoria/?modelo=Guia", HTTP_HOST=host).json()["count"] == 1
+        sistema = admin.get("/api/auditoria/?acao=EXCLUSAO", HTTP_HOST=host).json()["results"][0]
+        assert sistema["usuario_nome"] == ""  # ação sem usuário (sistema)
+        assert admin.get("/api/auditoria/?usuario=abc", HTTP_HOST=host).json()["count"] == 0
+        assert admin.get(f"/api/auditoria/?usuario={adm.id}", HTTP_HOST=host).json()["count"] >= 25
+        assert admin.get("/api/auditoria/?search=guia g-9", HTTP_HOST=host).json()["count"] == 1
+        assert admin.get("/api/auditoria/?search=admin silva", HTTP_HOST=host).json()["count"] >= 25
+        hoje = timezone.localdate().isoformat()
+        assert admin.get(f"/api/auditoria/?de={hoje}&ate={hoje}&modelo=Paciente", HTTP_HOST=host).json()["count"] == 25
+        assert admin.get(f"/api/auditoria/?de={hoje}&modelo=Guia", HTTP_HOST=host).json()["count"] == 0
+        assert admin.get(f"/api/auditoria/?ate={hoje}&modelo=Guia", HTTP_HOST=host).json()["count"] == 1
+        # data inválida é ignorada (não 500)
+        assert admin.get("/api/auditoria/?de=ontem", HTTP_HOST=host).status_code == 200
+
+        # Gerente lê; Recepção e Dentista não têm o módulo
+        assert _cliente_jwt(host, "ger@c.com").get("/api/auditoria/", HTTP_HOST=host).status_code == 200
+        assert _cliente_jwt(host, "rec@c.com").get("/api/auditoria/", HTTP_HOST=host).status_code == 403
+        assert _cliente_jwt(host, "den@c.com").get("/api/auditoria/", HTTP_HOST=host).status_code == 403
+    finally:
+        connection.set_schema_to_public()
+        clinica.delete(force_drop=True)
+
+
+@pytest.mark.no_auto_auth
+@pytest.mark.django_db(transaction=True)
+def test_auditoria_registra_usuario_no_fluxo_jwt():
+    """Regressão: o middleware roda antes do DRF autenticar o JWT, então a trilha
+    ficava sem usuário ("Sistema") em toda ação feita pela API."""
+    from apps.usuarios.perfis import sincronizar_grupos
+
+    host = "audjwt.localhost"
+    clinica = _criar_clinica("aud_jwt", host)
+    try:
+        with schema_context(clinica.schema_name):
+            sincronizar_grupos()
+            adm = Usuario.objects.create_user(email="adm@c.com", password="Senha12345", papel="ADMIN")
+        cliente = _cliente_jwt(host, "adm@c.com")
+        resp = cliente.post(
+            "/api/pacientes/",
+            {"nome_completo": "Via API", "cpf": "11122233344"},
+            format="json",
+            HTTP_HOST=host,
+        )
+        assert resp.status_code == 201, resp.content
+        with schema_context(clinica.schema_name):
+            registro = RegistroAuditoria.objects.get(modelo="Paciente", acao="CRIACAO")
+            assert registro.usuario_id == adm.id
+        # Sem vazamento entre requisições: fora de um request volta a não ter usuário.
+        assert usuario_atual() is None
     finally:
         connection.set_schema_to_public()
         clinica.delete(force_drop=True)

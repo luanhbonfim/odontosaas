@@ -109,3 +109,14 @@ class MultiTenantJWTAuthentication(JWTAuthentication):
 
         return user
 
+
+    def authenticate(self, request):
+        resultado = super().authenticate(request)
+        if resultado is not None and connection.schema_name != "public":
+            # O middleware de auditoria roda ANTES da autenticação DRF (o
+            # `request.user` dele é sempre anônimo no fluxo JWT): registra aqui o
+            # usuário autenticado para que a trilha LGPD saiba quem agiu.
+            from apps.auditoria.middleware import definir_usuario_atual
+
+            definir_usuario_atual(resultado[0])
+        return resultado
