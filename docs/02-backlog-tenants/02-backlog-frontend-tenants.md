@@ -167,7 +167,7 @@
 
 - [x] **Dashboard** inicial: consultas do dia, confirmações pendentes, alertas de estoque, KPIs financeiros (ligar aos endpoints reais). **Escopo por papel:** DENTISTA vê só os **seus** dados; Financeiro só para quem tem permissão (nota 1 da matriz) — **entregue**: `GET /api/dashboard/?periodo=` agregado (blocos `financeiro`/`estoque` nulos sem permissão/módulo), comparação like-for-like, campo `categoria` em despesas, `Insumo.objects.com_saldo()`.
 - [x] **Busca global** (paciente/consulta) na Topbar — **entregue**: `GET /api/busca/?q=` (pacientes por nome/CPF, consultas por paciente/procedimento; escopo do dentista; blocos nulos sem permissão) + paleta Ctrl+K na Topbar + deep link `/agenda?consulta=ID`.
-- [ ] Auditoria: tela **read-only** de trilha LGPD (consumindo `/api/auditoria/`) para ADMIN
+- [x] Auditoria: tela **read-only** de trilha LGPD (consumindo `/api/auditoria/`) para ADMIN — **entregue**: `/auditoria` (Gerente/Admin, conforme a matriz) com filtros (registro, ação, usuário, período, busca) e paginação; backend paginado. **Corrigido de quebra:** a trilha nunca registrava o usuário no fluxo JWT (middleware rodava antes da autenticação).
 - [ ] Revisão de **acessibilidade AA** (axe/teclado/foco) e **responsividade** (mobile/tablet/desktop)
 - [ ] **Dark mode** revisado, `prefers-reduced-motion`, estados vazios/erro em todas as telas
 - [ ] **Performance**: code-splitting por rota, orçamento de bundle, skeletons consistentes

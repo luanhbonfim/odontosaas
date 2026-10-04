@@ -5,6 +5,7 @@ import { toast, Toaster } from 'sonner'
 import { EmConstrucao } from '@/components/common/em-construcao'
 import { AppShell } from '@/components/layout/app-shell'
 import { AgendaPage } from '@/features/agenda/agenda-page'
+import { AuditoriaPage } from '@/features/auditoria/auditoria-page'
 import { LoginPage } from '@/features/auth/login-page'
 import { RequireAuth, RequireModulo, SomenteVisitante } from '@/features/auth/require-auth'
 import { ConfirmacaoPage } from '@/features/confirmacao/confirmacao-page'
@@ -201,6 +202,7 @@ export function App() {
 
             <Route path="equipe" element={<UsuariosPage />} />
             <Route path="permissoes" element={<PermissoesPage />} />
+            <Route path="auditoria" element={<AuditoriaPage />} />
             <Route path="meu-plano" element={<MeuPlanoPage />} />
             <Route path="minha-conta" element={<MinhaContaPage />} />
           </Route>

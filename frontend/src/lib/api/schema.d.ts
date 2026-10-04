@@ -50,9 +50,11 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Consulta da trilha de auditoria (somente leitura).
+         * @description Consulta da trilha de auditoria (somente leitura, paginada).
          *
-         *     Filtros opcionais por query string: `?modelo=Paciente` e `?acao=CRIACAO`.
+         *     Filtros opcionais por query string: `?modelo=Paciente`, `?acao=CRIACAO`,
+         *     `?usuario=<id>`, `?de=AAAA-MM-DD` e `?ate=AAAA-MM-DD` (dias inclusivos, no
+         *     fuso da clínica) e `?search=` (descrição do objeto, nome ou e-mail de quem agiu).
          */
         get: operations["auditoria_list"];
         put?: never;
@@ -71,9 +73,11 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Consulta da trilha de auditoria (somente leitura).
+         * @description Consulta da trilha de auditoria (somente leitura, paginada).
          *
-         *     Filtros opcionais por query string: `?modelo=Paciente` e `?acao=CRIACAO`.
+         *     Filtros opcionais por query string: `?modelo=Paciente`, `?acao=CRIACAO`,
+         *     `?usuario=<id>`, `?de=AAAA-MM-DD` e `?ate=AAAA-MM-DD` (dias inclusivos, no
+         *     fuso da clínica) e `?search=` (descrição do objeto, nome ou e-mail de quem agiu).
          */
         get: operations["auditoria_retrieve"];
         put?: never;
@@ -3318,6 +3322,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Paciente"][];
         };
+        PaginatedRegistroAuditoriaList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["RegistroAuditoria"][];
+        };
         /**
          * @description * `ADMIN` - Administrador(a)
          *     * `DENTISTA_GERENTE` - Dentista Gerente
@@ -3981,10 +4000,13 @@ export interface components {
         RegistroAuditoria: {
             readonly id: number;
             readonly acao: components["schemas"]["AcaoEnum"];
+            readonly acao_rotulo: string;
             readonly modelo: string;
             readonly objeto_id: string;
             readonly objeto_repr: string;
             readonly usuario: number | null;
+            /** @description Nome de quem agiu ('' = ação do sistema/sem usuário, ex.: Celery). */
+            readonly usuario_nome: string;
             /** Format: date-time */
             readonly criado_em: string;
         };
@@ -4259,7 +4281,12 @@ export interface operations {
     };
     auditoria_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4271,7 +4298,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RegistroAuditoria"][];
+                    "application/json": components["schemas"]["PaginatedRegistroAuditoriaList"];
                 };
             };
         };

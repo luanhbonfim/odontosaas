@@ -14,6 +14,7 @@ import {
   Package,
   PieChart,
   Plug,
+  ScrollText,
   Settings,
   Shield,
   Sparkles,
@@ -160,6 +161,7 @@ export const gruposNav: GrupoNav[] = [
     itens: [
       { rotulo: 'Equipe', para: '/equipe', icone: UsersRound, chaveModulo: 'usuarios' },
       { rotulo: 'Permissões', para: '/permissoes', icone: Lock, papeis: RH },
+      { rotulo: 'Auditoria', para: '/auditoria', icone: ScrollText, papeis: RH },
     ],
   },
   {
