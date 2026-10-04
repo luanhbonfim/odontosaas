@@ -24,7 +24,7 @@ export function CabecalhoDrawer({
   return (
     <SheetHeader className="gap-0 space-y-0">
       <div className="flex items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-text">
           <Icone className="size-5" />
         </span>
         <SheetTitle>{titulo}</SheetTitle>

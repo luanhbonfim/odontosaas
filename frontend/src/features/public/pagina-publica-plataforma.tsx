@@ -15,7 +15,7 @@ import { RecursosSection } from './components/recursos-section'
  *
  * Tema claro (rosa blush + dourado) consistente com o app das clínicas: usa os
  * tokens semânticos de `src/index.css` (`bg-background`, `text-foreground`,
- * `bg-card`, `border-border`, `text-primary`, ...) em vez de cores hex cruas.
+ * `bg-card`, `border-border`, `text-primary-text`, ...) em vez de cores hex cruas.
  */
 export function PaginaPublicaPlataforma() {
   return (

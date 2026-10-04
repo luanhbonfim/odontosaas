@@ -250,7 +250,7 @@ function DoisFatores() {
                 <button
                   type="button"
                   onClick={() => copiar(inicio.secret)}
-                  className="break-all text-left font-mono text-sm text-primary hover:underline"
+                  className="break-all text-left font-mono text-sm text-primary-text hover:underline"
                   title="Copiar chave"
                 >
                   {inicio.secret}

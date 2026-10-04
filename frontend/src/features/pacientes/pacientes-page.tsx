@@ -85,7 +85,7 @@ const COLUNAS_BASE: ColumnDef<Paciente, unknown>[] = [
     cell: ({ row }) => (
       <Link
         to={`/pacientes/${row.original.id}`}
-        className="font-medium text-primary hover:underline"
+        className="font-medium text-primary-text hover:underline"
       >
         {row.original.nome_completo}
       </Link>
@@ -256,7 +256,7 @@ export function PacientesPage() {
                     <div className="min-w-0">
                       <Link
                         to={`/pacientes/${p.id}`}
-                        className="font-semibold text-primary break-words hover:underline"
+                        className="font-semibold text-primary-text break-words hover:underline"
                       >
                         {p.nome_completo}
                       </Link>

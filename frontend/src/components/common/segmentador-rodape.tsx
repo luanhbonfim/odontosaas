@@ -38,7 +38,7 @@ export function SegmentadorRodape({
             onClick={() => aoMudar(it.id)}
             className={cn(
               'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors',
-              ativoItem ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+              ativoItem ? 'text-primary-text' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             <it.icone className="size-5" />

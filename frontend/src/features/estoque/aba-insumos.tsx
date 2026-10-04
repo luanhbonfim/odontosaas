@@ -99,7 +99,7 @@ export function AbaInsumos() {
       accessorKey: 'nome',
       header: 'Nome',
       cell: ({ row }) => (
-        <Link to={`/estoque/${row.original.id}`} className="font-medium text-primary hover:underline">
+        <Link to={`/estoque/${row.original.id}`} className="font-medium text-primary-text hover:underline">
           {row.original.nome}
         </Link>
       ),
@@ -164,7 +164,7 @@ export function AbaInsumos() {
               <div className="min-w-0">
                 <Link
                   to={`/estoque/${insumo.id}`}
-                  className="font-semibold text-primary break-words hover:underline"
+                  className="font-semibold text-primary-text break-words hover:underline"
                 >
                   {insumo.nome}
                 </Link>

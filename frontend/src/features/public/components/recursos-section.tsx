@@ -79,7 +79,7 @@ export function RecursosSection() {
     >
       <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary-text">
             Tudo em uma plataforma
           </p>
           <h2
@@ -97,7 +97,7 @@ export function RecursosSection() {
         {/* Destaque: Assistente com IA + mini-mockup de chat */}
         <div className="mt-12 grid grid-cols-1 items-center gap-8 overflow-hidden rounded-3xl border border-primary/25 bg-card/70 p-6 shadow-lg shadow-primary/10 ring-1 ring-primary/10 backdrop-blur-md sm:p-8 lg:grid-cols-2 lg:gap-10">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-text">
               <Sparkles className="size-3.5" aria-hidden="true" />
               Novo diferencial
             </span>
@@ -132,7 +132,7 @@ export function RecursosSection() {
             />
             <div className="rounded-2xl border border-border bg-background/80 p-4 shadow-xl shadow-primary/10 ring-1 ring-primary/10 backdrop-blur-md">
               <div className="mb-3 flex items-center gap-2.5 border-b border-border pb-3">
-                <span className="flex size-9 items-center justify-center rounded-full bg-primary/15 text-primary ring-1 ring-primary/20">
+                <span className="flex size-9 items-center justify-center rounded-full bg-primary/15 text-primary-text ring-1 ring-primary/20">
                   <Bot className="size-5" aria-hidden="true" />
                 </span>
                 <div>
@@ -150,7 +150,7 @@ export function RecursosSection() {
                   </p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
                     <Bot className="size-3.5" aria-hidden="true" />
                   </span>
                   <p className="max-w-[85%] rounded-2xl rounded-tl-sm bg-primary/10 px-3 py-2 text-xs leading-relaxed text-foreground ring-1 ring-primary/20">
@@ -163,7 +163,7 @@ export function RecursosSection() {
                   </p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
                     <Bot className="size-3.5" aria-hidden="true" />
                   </span>
                   <p className="max-w-[85%] rounded-2xl rounded-tl-sm bg-primary/10 px-3 py-2 text-xs leading-relaxed text-foreground ring-1 ring-primary/20">

@@ -40,7 +40,7 @@ export function FaqSection() {
     <section id="faq" aria-labelledby="faq-titulo" className="border-b border-border bg-background scroll-mt-24">
       <div className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
         <div className="text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary-text">
             Perguntas frequentes
           </p>
           <h2
@@ -60,7 +60,7 @@ export function FaqSection() {
               <summary className="flex cursor-pointer items-center justify-between gap-4 px-5 py-4 text-left text-base font-semibold text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
                 {item.pergunta}
                 <ChevronDown
-                  className="size-5 shrink-0 text-primary transition-transform group-open:rotate-180"
+                  className="size-5 shrink-0 text-primary-text transition-transform group-open:rotate-180"
                   aria-hidden="true"
                 />
               </summary>

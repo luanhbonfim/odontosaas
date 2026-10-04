@@ -102,7 +102,7 @@ function BolhaClinica({ texto, hora, etiqueta }: { texto: string; hora: string; 
   return (
     <div className="flex flex-col items-start">
       {etiqueta && (
-        <span className="mb-1 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+        <span className="mb-1 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary-text">
           {Icone && <Icone className="size-3" aria-hidden="true" />}
           {etiqueta}
         </span>
@@ -208,7 +208,7 @@ export function IntegracoesShowcase() {
     >
       <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary-text">
             Integrações nativas
           </p>
           <h2
@@ -310,7 +310,7 @@ export function IntegracoesShowcase() {
                   key={titulo}
                   className="rounded-xl border border-border bg-card/70 p-4 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/10"
                 >
-                  <span className="flex size-9 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
+                  <span className="flex size-9 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary-text">
                     <Icon className="size-5" aria-hidden="true" />
                   </span>
                   <p className="mt-3 text-sm font-bold text-foreground">{titulo}</p>
@@ -324,7 +324,7 @@ export function IntegracoesShowcase() {
         {/* Destaque: Confirmação por link (print de demonstração) */}
         <div className="mt-16 grid grid-cols-1 items-center gap-10 rounded-3xl border border-primary/20 bg-card/60 p-6 shadow-lg shadow-primary/10 backdrop-blur-md sm:p-8 lg:grid-cols-2 lg:gap-12">
           <div className="order-2 lg:order-1">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-text">
               <Link2 className="size-3.5" aria-hidden="true" />
               Confirmação por link
             </span>

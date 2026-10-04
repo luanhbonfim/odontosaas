@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, Outlet } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { Clock, ShieldAlert, X } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -20,6 +20,21 @@ export function AppShell() {
 
   const { data: meuPlano } = useMeuPlano()
   const [avisoVencimentoDismissed, setAvisoVencimentoDismissed] = useState(false)
+
+  // Troca de rota: leva o foco ao título da nova página (leitores de tela anunciam a
+  // mudança e o teclado recomeça do conteúdo). Ignora a 1ª renderização e mudanças só de
+  // query string (filtros, deep links).
+  const { pathname } = useLocation()
+  const principalRef = useRef<HTMLElement>(null)
+  const pathnameAnterior = useRef(pathname)
+  useEffect(() => {
+    if (pathnameAnterior.current === pathname) return
+    pathnameAnterior.current = pathname
+    const alvo = principalRef.current?.querySelector<HTMLElement>('h1') ?? principalRef.current
+    if (!alvo) return
+    if (!alvo.hasAttribute('tabindex')) alvo.setAttribute('tabindex', '-1')
+    alvo.focus({ preventScroll: true })
+  }, [pathname])
 
   const diasRestantes = meuPlano?.status?.dias_restantes
   // Limite configurável pelo Vendor Admin (Aviso de Vencimento) — 15 é só o
@@ -45,11 +60,17 @@ export function AppShell() {
 
   return (
     <div className="min-h-svh bg-background text-foreground">
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+      >
+        Pular para o conteúdo
+      </a>
       <CarrosselAvisos />
 
       {/* Banner Superior Fixo de Suporte Read-Only */}
       {isImpersonate && (
-        <div className="sticky top-0 z-[70] flex items-center justify-between border-b border-amber-500/40 bg-amber-950/90 px-4 py-2 text-xs text-amber-200 backdrop-blur-md shadow-md">
+        <div role="region" aria-label="Modo suporte" className="sticky top-0 z-[70] flex items-center justify-between border-b border-amber-500/40 bg-amber-950/90 px-4 py-2 text-xs text-amber-200 backdrop-blur-md shadow-md">
           <div className="flex items-center gap-2">
             <ShieldAlert className="size-4 text-amber-400 shrink-0 animate-pulse" />
             <span>
@@ -72,7 +93,7 @@ export function AppShell() {
 
       {/* Banner Superior Discreto de Vencimento Próximo (Fica sobre o menu lateral com z-[60]) */}
       {isVencimentoProximo && (
-        <div className="sticky top-0 z-[60] flex items-center justify-between border-b border-amber-500/40 bg-amber-500/20 px-4 py-2 text-xs text-amber-950 dark:text-amber-100 backdrop-blur-md shadow-xs">
+        <div role="region" aria-label="Aviso de vencimento do plano" className="sticky top-0 z-[60] flex items-center justify-between border-b border-amber-500/40 bg-amber-500/20 px-4 py-2 text-xs text-amber-950 dark:text-amber-100 backdrop-blur-md shadow-xs">
           <div className="flex items-center gap-2">
             <Clock className="size-4 text-amber-600 dark:text-amber-400 shrink-0 animate-pulse" />
             <span>
@@ -90,6 +111,7 @@ export function AppShell() {
             size="icon"
             variant="ghost"
             onClick={() => setAvisoVencimentoDismissed(true)}
+            aria-label="Fechar aviso temporariamente"
             className="size-6 text-amber-800 hover:text-amber-950 dark:text-amber-300 dark:hover:text-white"
             title="Fechar aviso temporariamente"
           >
@@ -108,7 +130,7 @@ export function AppShell() {
         )}
       >
         <Topbar />
-        <main className="flex-1 p-4 sm:p-6">
+        <main id="conteudo" ref={principalRef} className="flex-1 p-4 outline-none sm:p-6">
           <Outlet />
         </main>
       </div>

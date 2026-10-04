@@ -32,6 +32,7 @@ function StatusBackend() {
 
   return (
     <span
+      role="img"
       className={cor + ' inline-block size-2 rounded-full'}
       title={titulo}
       aria-label={titulo}
@@ -45,7 +46,7 @@ export function Topbar() {
   const { usuario } = useSessao()
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
+    <header role="banner" className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
       <div className="flex items-center gap-2">
         {!sidebarAberta && (
           <Button variant="ghost" size="icon" aria-label="Abrir menu" onClick={alternarSidebar}>

@@ -47,7 +47,7 @@ export function HeaderLanding() {
             <a
               key={link.href}
               href={link.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
               {link.label}
             </a>
@@ -99,7 +99,7 @@ export function HeaderLanding() {
                 <a
                   href={link.href}
                   onClick={() => setAberto(false)}
-                  className="block rounded-md px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent hover:text-primary"
+                  className="block rounded-md px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent hover:text-primary-text"
                 >
                   {link.label}
                 </a>

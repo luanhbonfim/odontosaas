@@ -143,7 +143,14 @@ export function AgendaPage() {
               )}
               // Ao trocar de visão, marca se precisa de largura (Semana/Mês) para o
               // wrapper rolar horizontalmente no mobile em vez de espremer as colunas.
-              datesSet={(arg) => setPrecisaLargura(arg.view.type !== 'timeGridDay')}
+              datesSet={(arg) => {
+                setPrecisaLargura(arg.view.type !== 'timeGridDay')
+                // Os ícones das setas vêm com role="img" sem rótulo (o botão já tem
+                // aria-label): decorativos -> escondidos do leitor de tela.
+                document
+                  .querySelectorAll('.fc-icon[role="img"]')
+                  .forEach((icone) => icone.setAttribute('aria-hidden', 'true'))
+              }}
               // Bloco preenchido com a cor do status (sem a "bolinha" do mês).
               eventDisplay="block"
               height="auto"

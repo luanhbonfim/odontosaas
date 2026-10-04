@@ -141,7 +141,7 @@ function CardPlano({
             <span className={f.ativo ? '' : 'line-through'}>
               {f.label}
               {f.emBreve && f.ativo && (
-                <span className="ml-1.5 inline-block rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-primary">
+                <span className="ml-1.5 inline-block rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-primary-text">
                   em breve
                 </span>
               )}
@@ -164,7 +164,7 @@ export function PlanosSection() {
     <section id="planos" aria-labelledby="planos-titulo" className="border-b border-border bg-secondary/30 scroll-mt-24">
       <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary-text">
             Planos & Preços
           </p>
           <h2

@@ -136,7 +136,12 @@ export function DataTable<T>({
                           )}
                         </button>
                       ) : (
-                        flexRender(header.column.columnDef.header, header.getContext())
+                        (header.column.columnDef.header === '' ? (
+                          // Coluna só de ações (cabeçalho vazio): leitor de tela precisa de um nome.
+                          <span className="sr-only">Ações</span>
+                        ) : (
+                          flexRender(header.column.columnDef.header, header.getContext())
+                        ))
                       )}
                     </TableHead>
                   ))}

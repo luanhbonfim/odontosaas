@@ -34,7 +34,7 @@ export function OdontogramaShowcase() {
       <div className="relative mx-auto grid w-full max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:px-8 lg:py-20">
         {/* Texto */}
         <div className="order-2 lg:order-1">
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-card/70 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary shadow-sm shadow-primary/10 ring-1 ring-primary/10 backdrop-blur-md">
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-card/70 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-text shadow-sm shadow-primary/10 ring-1 ring-primary/10 backdrop-blur-md">
             <Sparkles className="size-3.5" aria-hidden="true" />
             Diferencial clínico
           </span>
@@ -61,7 +61,7 @@ export function OdontogramaShowcase() {
           <p className="mt-6 inline-flex items-center gap-2 rounded-lg border border-border bg-card/70 px-3.5 py-2 text-xs font-medium text-muted-foreground backdrop-blur-md">
             <Stethoscope className="size-4 text-primary" aria-hidden="true" />
             <span>
-              <span className="font-semibold text-primary">Em dourado</span>: dentes com
+              <span className="font-semibold text-primary-text">Em dourado</span>: dentes com
               procedimentos registrados.
             </span>
           </p>
@@ -72,7 +72,7 @@ export function OdontogramaShowcase() {
           <div className="rounded-2xl border border-border bg-card/80 p-4 shadow-2xl shadow-primary/10 ring-1 ring-primary/10 backdrop-blur-md sm:p-6">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-bold text-foreground">Odontograma — Maria Silva</p>
-              <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary-text">
                 6 procedimentos
               </span>
             </div>

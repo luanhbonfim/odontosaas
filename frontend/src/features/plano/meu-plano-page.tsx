@@ -96,7 +96,7 @@ export function MeuPlanoPage() {
               </p>
             </div>
           </div>
-          <Button asChild size="sm" className="bg-amber-600 hover:bg-amber-500 text-white font-semibold shrink-0 cursor-pointer">
+          <Button asChild size="sm" className="bg-amber-700 hover:bg-amber-600 text-white font-semibold shrink-0 cursor-pointer">
             <a href={upgrade.whatsapp_url} target="_blank" rel="noreferrer">
               Falar com Comercial
             </a>
@@ -108,9 +108,9 @@ export function MeuPlanoPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Card do Plano Contratado */}
         <Card className="md:col-span-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 shadow-md">
-          <CardHeader className="flex flex-row items-start justify-between pb-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
+          <CardHeader className="flex flex-col items-start justify-between gap-3 pb-3 sm:flex-row">
+            <div className="min-w-0 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
                 <CardTitle className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
                   <Sparkles className="size-5 text-[#D4AF37]" />
                   {plano.nome}
@@ -127,7 +127,7 @@ export function MeuPlanoPage() {
               </CardDescription>
             </div>
 
-            <div className="text-right">
+            <div className="sm:text-right">
               <span className="text-3xl font-extrabold text-foreground tracking-tight">
                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(plano.preco_mensal)}
               </span>
@@ -165,10 +165,10 @@ export function MeuPlanoPage() {
 
             {/* Módulos Inclusos */}
             <div className="space-y-2 pt-2">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Layers className="size-3.5" />
                 Módulos &amp; Recursos Habilitados no Seu Plano
-              </h4>
+              </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 <div className="flex items-center gap-2 p-2 rounded border bg-card/60">
                   {modulos.financeiro ? <CheckCircle2 className="size-4 text-emerald-500" /> : <XCircle className="size-4 text-muted-foreground" />}
@@ -213,9 +213,9 @@ export function MeuPlanoPage() {
                 Suporte Comercial PróClínica
               </p>
               <div className="space-y-1 text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Mail className="size-3 text-[#D4AF37]" />
-                  <span>{upgrade.contato_comercial_email}</span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <Mail className="size-3 shrink-0 text-[#D4AF37]" />
+                  <span className="min-w-0 break-all">{upgrade.contato_comercial_email}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="size-3 text-[#D4AF37]" />
@@ -224,7 +224,7 @@ export function MeuPlanoPage() {
               </div>
             </div>
 
-            <Button asChild className="w-full bg-[#D4AF37] hover:bg-[#c49f2e] text-slate-950 font-bold cursor-pointer shadow-sm">
+            <Button asChild className="h-auto w-full whitespace-normal bg-[#D4AF37] py-2 hover:bg-[#c49f2e] text-slate-950 font-bold cursor-pointer shadow-sm">
               <a href={upgrade.whatsapp_url} target="_blank" rel="noreferrer">
                 <MessageCircle className="size-4 mr-2" />
                 Falar com Especialista
@@ -237,10 +237,10 @@ export function MeuPlanoPage() {
 
       {/* Seção de Capacidade & Consumo em Tempo Real */}
       <div className="space-y-4">
-        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
           <Users className="size-4 text-[#D4AF37]" />
           Capacidade &amp; Consumo de Recursos em Tempo Real
-        </h3>
+        </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Dentistas */}
@@ -366,7 +366,7 @@ export function MeuPlanoPage() {
                 <span className="text-2xl font-bold text-foreground">
                   {(capacidade.armazenamento_mb.limite_mb / 1024).toFixed(0)} GB
                 </span>
-                <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary-text">
                   em breve
                 </span>
               </div>

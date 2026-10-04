@@ -100,7 +100,7 @@ export function AbaGuias({ pacienteId }: { pacienteId: number }) {
       cell: ({ row }) => (
         <Link
           to={`/pacientes/${pacienteId}/guias/${row.original.id}`}
-          className="font-medium text-primary hover:underline"
+          className="font-medium text-primary-text hover:underline"
         >
           {row.original.numero_guia}
         </Link>
@@ -148,7 +148,7 @@ export function AbaGuias({ pacienteId }: { pacienteId: number }) {
               <div className="min-w-0">
                 <Link
                   to={`/pacientes/${pacienteId}/guias/${g.id}`}
-                  className="font-semibold text-primary break-words hover:underline"
+                  className="font-semibold text-primary-text break-words hover:underline"
                 >
                   {g.numero_guia}
                 </Link>

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { violacoesAxe } from '@/test/axe'
 import type { ErroApi } from '@/lib/api/client'
 
 import { LoginPage } from './login-page'
@@ -18,6 +19,13 @@ describe('LoginPage', () => {
       isLoading: false,
     })
   })
+  it('tem landmark main, h1 e nenhuma violação de acessibilidade (axe)', async () => {
+    const { container } = render(<LoginPage aoEntrar={vi.fn()} />)
+    expect(screen.getByRole('main')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Acesse sua clínica' })).toBeInTheDocument()
+    expect(await violacoesAxe(container)).toEqual([])
+  })
+
   it('mostra erros inline quando os campos estão vazios', async () => {
     const user = userEvent.setup()
     render(<LoginPage aoEntrar={vi.fn()} />)

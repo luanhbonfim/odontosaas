@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { ErroApi } from '@/lib/api/client'
@@ -96,7 +96,7 @@ export function LoginPage({ aoEntrar }: LoginPageProps) {
 
   if (ehPublico) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center bg-[#070B18] px-4 text-center text-slate-400">
+      <main className="flex min-h-svh flex-col items-center justify-center bg-[#070B18] px-4 text-center text-slate-400">
         <div className="max-w-md space-y-3">
           <p className="font-mono text-sm uppercase tracking-widest text-[#D4AF37]">404 | Página Não Encontrada</p>
           <h1 className="text-xl font-semibold text-slate-100">
@@ -106,19 +106,17 @@ export function LoginPage({ aoEntrar }: LoginPageProps) {
             O domínio principal é reservado para a página institucional e de vendas da plataforma. O acesso aos consultórios é realizado exclusivamente através do subdomínio próprio de cada clínica.
           </p>
         </div>
-      </div>
+      </main>
     )
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background p-4">
+    <main className="flex min-h-svh items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="items-center text-center">
           <img src="/logo.png" alt="PróClínica" className="mx-auto h-40 w-auto" />
           {nomeClinica && <p className="text-lg font-semibold text-foreground">{nomeClinica}</p>}
-          <CardTitle className="text-base font-normal text-muted-foreground">
-            Acesse sua clínica
-          </CardTitle>
+          <h1 className="text-base font-normal text-muted-foreground">Acesse sua clínica</h1>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
@@ -182,6 +180,6 @@ export function LoginPage({ aoEntrar }: LoginPageProps) {
             </form>
         </CardContent>
       </Card>
-    </div>
+    </main>
   )
 }

@@ -53,7 +53,7 @@ export function FooterLanding() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                    className="text-sm text-muted-foreground transition-colors hover:text-primary-text"
                   >
                     {link.label}
                   </a>
@@ -81,7 +81,7 @@ export function FooterLanding() {
                 <li key={link.label}>
                   <a
                     href={link.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                    className="text-sm text-muted-foreground transition-colors hover:text-primary-text"
                   >
                     {link.label}
                   </a>

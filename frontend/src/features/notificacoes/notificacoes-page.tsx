@@ -270,9 +270,9 @@ function ConfiguracaoTab() {
           <fieldset disabled={!ativo} className="space-y-6 border-t pt-5 disabled:opacity-50">
             {/* Seção: quando enviar a confirmação */}
             <section className="space-y-3">
-              <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <h2 className="flex items-center gap-2 text-sm font-semibold">
                 <CalendarClock className="size-4 text-primary" /> Pedido de confirmação
-              </h3>
+              </h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="dias">Enviar com quantos dias de antecedência</Label>
@@ -325,9 +325,9 @@ function ConfiguracaoTab() {
 
             {/* Seção: aviso de reagendamento */}
             <section className="space-y-2 border-t pt-5">
-              <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <h2 className="flex items-center gap-2 text-sm font-semibold">
                 <CalendarClock className="size-4 text-primary" /> Reagendamento
-              </h3>
+              </h2>
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -368,9 +368,9 @@ function ConfiguracaoTab() {
 
             {/* Seção: aviso de cancelamento */}
             <section className="space-y-2 border-t pt-5">
-              <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <h2 className="flex items-center gap-2 text-sm font-semibold">
                 <XCircle className="size-4 text-primary" /> Aviso de cancelamento
-              </h3>
+              </h2>
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -398,9 +398,9 @@ function ConfiguracaoTab() {
 
             {/* Seção: reforço quando a resposta não é sim/não */}
             <section className="space-y-2 border-t pt-5">
-              <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <h2 className="flex items-center gap-2 text-sm font-semibold">
                 <Repeat className="size-4 text-primary" /> Reforço da resposta
-              </h3>
+              </h2>
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -427,9 +427,9 @@ function ConfiguracaoTab() {
 
             {/* Seção: cancelamento automático de não confirmadas */}
             <section className="space-y-2 border-t pt-5">
-              <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <h2 className="flex items-center gap-2 text-sm font-semibold">
                 <XCircle className="size-4 text-primary" /> Cancelamento automático
-              </h3>
+              </h2>
               <label className="flex cursor-pointer items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -546,7 +546,7 @@ function TemplatesTab() {
                 <CardContent className="space-y-2 p-4">
                   <div className="flex items-center justify-between gap-2">
                     <div className={cn('flex min-w-0 items-center gap-2', !t.ativo && 'opacity-50')}>
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-text">
                         <Icone className="size-4" />
                       </span>
                       <div className="min-w-0">
