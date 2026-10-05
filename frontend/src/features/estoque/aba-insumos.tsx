@@ -9,6 +9,7 @@ import { z } from 'zod'
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { DataTable } from '@/components/common/data-table'
+import { ErroCarregamento } from '@/components/common/erro-carregamento'
 import {
   CabecalhoDrawer,
   Campo,
@@ -44,7 +45,7 @@ const UNIDADES: { valor: string; rotulo: string }[] = [
 ]
 
 export function AbaInsumos() {
-  const { data, isLoading } = useInsumos()
+  const { data, isLoading, isError, refetch } = useInsumos()
   const remover = useRemoverInsumo()
 
   async function excluir(insumo: Insumo) {
@@ -140,6 +141,10 @@ export function AbaInsumos() {
       cell: ({ row }) => acoesInsumo(row.original),
     },
   ]
+
+  if (isError) {
+    return <ErroCarregamento titulo="Não foi possível carregar os insumos" aoTentarDeNovo={() => refetch()} />
+  }
 
   return (
     <div className="space-y-4">

@@ -1,6 +1,7 @@
 import { ArrowRight, CheckCircle2, CreditCard, Receipt, Wallet } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { ErroCarregamento } from '@/components/common/erro-carregamento'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -27,7 +28,7 @@ function CardAtalho({ titulo, descricao, para }: { titulo: string; descricao: st
 }
 
 export function VisaoGeralPage() {
-  const { data, isLoading } = useFluxoCaixa()
+  const { data, isLoading, isError, refetch } = useFluxoCaixa()
 
   return (
     <div className="space-y-6">
@@ -36,7 +37,9 @@ export function VisaoGeralPage() {
         descricao="Resumo consolidado de contas a receber e a pagar."
       />
 
-      {isLoading ? (
+      {isError ? (
+        <ErroCarregamento titulo="Não foi possível carregar o resumo financeiro" aoTentarDeNovo={() => refetch()} />
+      ) : isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-[92px] w-full" />

@@ -74,4 +74,12 @@ describe('InsumosPage', () => {
       expect.objectContaining({ nome: 'Anestésico Lidocaína', unidade: 'UN' }),
     )
   })
+
+  it('erro de carga: avisa em vez de listar vazio', () => {
+    categoriasMock.mockReturnValue({ data: [], isLoading: false })
+    insumosMock.mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch: vi.fn() })
+    renderRota(<InsumosPage />)
+    expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar os insumos')
+    expect(screen.queryByText('Nenhum insumo cadastrado.')).not.toBeInTheDocument()
+  })
 })

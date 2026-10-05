@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AlertasPage } from './alertas-page'
@@ -29,6 +30,16 @@ describe('AlertasPage', () => {
     const tabela = screen.getByRole('table')
     expect(within(tabela).getByText('Resina A2')).toBeInTheDocument()
     expect(within(tabela).getByText('Estoque baixo')).toBeInTheDocument()
+  })
+
+  it('erro: avisa em vez de dizer que não há alertas e tenta de novo', async () => {
+    const refetch = vi.fn()
+    alertasMock.mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch })
+    render(<AlertasPage />)
+    expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar os alertas')
+    expect(screen.queryByText(/nenhum insumo abaixo/i)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+    expect(refetch).toHaveBeenCalled()
   })
 
   it('vazio: mostra aviso de nenhum alerta', () => {

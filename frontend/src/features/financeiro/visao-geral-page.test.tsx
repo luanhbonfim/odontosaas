@@ -23,6 +23,13 @@ function renderizar() {
 describe('VisaoGeralPage', () => {
   afterEach(() => vi.clearAllMocks())
 
+  it('erro: não mostra R$ 0 enganoso; avisa e permite tentar de novo', () => {
+    fluxoCaixaMock.mockReturnValue({ data: undefined, isLoading: false, isError: true, refetch: vi.fn() })
+    renderizar()
+    expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar o resumo financeiro')
+    expect(screen.queryByText('A Receber')).not.toBeInTheDocument()
+  })
+
   it('renderiza os 4 KPIs formatados em moeda, sem skeleton', () => {
     fluxoCaixaMock.mockReturnValue({
       data: {

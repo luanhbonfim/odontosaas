@@ -9,10 +9,15 @@ type EstadoTema = {
   definir: (tema: Tema) => void
 }
 
+function ehSistemaEscuro(): boolean {
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-color-scheme: dark)').matches
+}
+
 export const useTema = create<EstadoTema>()(
   persist(
     (set, get) => ({
-      tema: 'claro',
+      // Sem preferência salva, começa pelo tema do sistema.
+      tema: ehSistemaEscuro() ? 'escuro' : 'claro',
       alternar: () => set({ tema: get().tema === 'claro' ? 'escuro' : 'claro' }),
       definir: (tema) => set({ tema }),
     }),

@@ -8,6 +8,7 @@ import { z } from 'zod'
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { DataTable } from '@/components/common/data-table'
+import { ErroCarregamento } from '@/components/common/erro-carregamento'
 import { CabecalhoDrawer, Campo, CorpoDrawer, LinhaToggle } from '@/components/common/form-kit'
 import { StatusBadge } from '@/components/common/status-badge'
 import { Button } from '@/components/ui/button'
@@ -25,7 +26,7 @@ import {
 } from './use-estoque'
 
 export function AbaCategoriasInsumo() {
-  const { data, isLoading } = useCategoriasInsumo()
+  const { data, isLoading, isError, refetch } = useCategoriasInsumo()
   const remover = useRemoverCategoriaInsumo()
 
   async function excluir(categoria: CategoriaInsumo) {
@@ -90,6 +91,12 @@ export function AbaCategoriasInsumo() {
       cell: ({ row }) => acoesCategoria(row.original),
     },
   ]
+
+  if (isError) {
+    return (
+      <ErroCarregamento titulo="Não foi possível carregar as categorias" aoTentarDeNovo={() => refetch()} />
+    )
+  }
 
   return (
     <div className="space-y-4">

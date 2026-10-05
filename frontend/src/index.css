@@ -159,6 +159,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Controles nativos (date, scrollbar, autofill) acompanham o tema. */
+  :root {
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
   html {
     scroll-behavior: smooth;
   }
@@ -219,4 +226,52 @@
     padding: 0.25rem 0.55rem;
     font-size: 0.8rem;
   }
+}
+
+/* Respeita "reduzir movimento" do sistema: sem animações/transições não essenciais
+   (spinners e skeletons continuam acompanhados de texto). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Agenda (FullCalendar) nos tokens do tema — claro e escuro. O FullCalendar usa
+   variáveis próprias (--fc-*) com padrão branco/azul; aqui apontam para os tokens. */
+.fc {
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--card);
+  --fc-neutral-bg-color: var(--muted);
+  --fc-neutral-text-color: var(--muted-foreground);
+  --fc-today-bg-color: color-mix(in oklch, var(--primary) 14%, transparent);
+  --fc-now-indicator-color: var(--destructive);
+  --fc-highlight-color: color-mix(in oklch, var(--primary) 22%, transparent);
+  --fc-list-event-hover-bg-color: var(--accent);
+  --fc-button-bg-color: var(--secondary);
+  --fc-button-text-color: var(--secondary-foreground);
+  --fc-button-border-color: var(--border);
+  --fc-button-hover-bg-color: var(--accent);
+  --fc-button-hover-border-color: var(--border);
+  --fc-button-active-bg-color: var(--primary);
+  --fc-button-active-border-color: var(--primary);
+}
+.fc .fc-button-primary:not(:disabled):active,
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  color: var(--primary-foreground);
+}
+.fc .fc-col-header-cell-cushion,
+.fc .fc-daygrid-day-number,
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-timegrid-axis-cushion,
+.fc .fc-list-day-text,
+.fc .fc-list-day-side-text {
+  color: var(--foreground);
+}
+.fc .fc-button-primary:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
 }

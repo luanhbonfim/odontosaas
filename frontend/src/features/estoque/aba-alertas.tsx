@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { DataTable } from '@/components/common/data-table'
+import { ErroCarregamento } from '@/components/common/erro-carregamento'
 import { StatusBadge } from '@/components/common/status-badge'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -9,7 +10,7 @@ import { type Insumo, useInsumosAlertas } from './use-estoque'
 const traco = <span className="text-muted-foreground">—</span>
 
 export function AbaAlertas() {
-  const { data, isLoading } = useInsumosAlertas()
+  const { data, isLoading, isError, refetch } = useInsumosAlertas()
   const insumos = data ?? []
 
   const colunas: ColumnDef<Insumo, unknown>[] = [
@@ -35,6 +36,10 @@ export function AbaAlertas() {
       cell: () => <StatusBadge variante="erro">Estoque baixo</StatusBadge>,
     },
   ]
+
+  if (isError) {
+    return <ErroCarregamento titulo="Não foi possível carregar os alertas" aoTentarDeNovo={() => refetch()} />
+  }
 
   if (!isLoading && insumos.length === 0) {
     return (
