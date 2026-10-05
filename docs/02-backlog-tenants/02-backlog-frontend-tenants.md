@@ -172,7 +172,7 @@
 - [x] **Dark mode** revisado, `prefers-reduced-motion`, estados vazios/erro em todas as telas — **entregue**: axe no tema escuro (22 telas + busca/gaveta abertas) com 0 violações; tema segue o sistema por padrão e sem flash (script no index.html); `color-scheme`; FullCalendar nos tokens (claro/escuro); `prefers-reduced-motion` global; erro de carga explícito (`ErroCarregamento`) em Visão Geral, Insumos, Categorias e Alertas.
 - [x] **Performance**: code-splitting por rota, orçamento de bundle, skeletons consistentes — **entregue**: JS inicial de 1,93 MB (536 KB gzip, 1 arquivo) para 171 KB gzip + ~120 chunks sob demanda (`React.lazy` por rota em `src/routes/paginas.ts`, Suspense nos shells com `CarregandoPagina`); gráficos e calendário só nas telas que os usam; orçamento verificável `npm run build:check` (JS inicial ≤180 KB, CSS ≤25, chunk ≤130 gzip).
 - [x] **E2E (Playwright)** dos fluxos críticos: login → agendar → confirmar → financeiro — **entregue**: 8 testes em `frontend/e2e/fluxo-critico.spec.ts` (login, agendar, confirmar, atender, pagamento, financeiro, busca Ctrl+K, auditoria) numa clínica isolada `e2e` criada/zerada por `manage.py preparar_e2e` (setup global); roda no Edge instalado (`E2E_CANAL=chromium` p/ CI). `npm run e2e`.
-- [ ] **Build/deploy** dos estáticos (mesmo domínio da API) + documentação de execução (README do `frontend/`)
+- [x] **Build/deploy** dos estáticos (mesmo domínio da API) + documentação de execução (README do `frontend/`) — **entregue**: `deploy/edge.Dockerfile` + Caddy (estáticos e API no mesmo domínio, cache `immutable` em `/assets/*`, `no-cache` no `index.html`), `frontend/README.md` e `README.md` da raiz reescritos.
 
 ---
 

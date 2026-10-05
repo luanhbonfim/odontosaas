@@ -40,6 +40,20 @@ proclinica.cloud, www.proclinica.cloud {
 		reverse_proxy web:8000
 	}
 
+	# Estáticos com hash no nome (Vite): cache longo e imutável — o deploy novo gera
+	# nomes novos, então nunca serve versão velha. Só o index.html muda de conteúdo.
+	handle /assets/* {
+		root * /srv
+		file_server
+		header {
+			Cache-Control "public, max-age=31536000, immutable"
+			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+			X-Content-Type-Options "nosniff"
+			X-Frame-Options "DENY"
+			Referrer-Policy "strict-origin-when-cross-origin"
+		}
+	}
+
 	# SPA (React/Vite): estáticos + fallback para index.html (React Router).
 	# Headers de segurança aqui: as respostas do Django (@backend) já vêm com os
 	# mesmos headers via SecurityMiddleware (config/settings/prod.py) — sem
@@ -50,6 +64,8 @@ proclinica.cloud, www.proclinica.cloud {
 		try_files {path} /index.html
 		file_server
 		header {
+			# index.html (e as rotas do SPA que caem nele): sempre revalidar.
+			Cache-Control "no-cache"
 			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 			X-Content-Type-Options "nosniff"
 			X-Frame-Options "DENY"
@@ -75,6 +91,20 @@ https:// {
 		reverse_proxy web:8000
 	}
 
+	# Estáticos com hash no nome (Vite): cache longo e imutável — o deploy novo gera
+	# nomes novos, então nunca serve versão velha. Só o index.html muda de conteúdo.
+	handle /assets/* {
+		root * /srv
+		file_server
+		header {
+			Cache-Control "public, max-age=31536000, immutable"
+			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+			X-Content-Type-Options "nosniff"
+			X-Frame-Options "DENY"
+			Referrer-Policy "strict-origin-when-cross-origin"
+		}
+	}
+
 	# SPA (React/Vite): estáticos + fallback para index.html (React Router).
 	# Headers de segurança aqui: as respostas do Django (@backend) já vêm com os
 	# mesmos headers via SecurityMiddleware (config/settings/prod.py) — sem
@@ -85,6 +115,8 @@ https:// {
 		try_files {path} /index.html
 		file_server
 		header {
+			# index.html (e as rotas do SPA que caem nele): sempre revalidar.
+			Cache-Control "no-cache"
 			Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 			X-Content-Type-Options "nosniff"
 			X-Frame-Options "DENY"

@@ -174,12 +174,12 @@ Cada seção com botão **Salvar** próprio, toast de confirmação e registro e
 
 ## 11. ✅ Backlog de implementação (futuro)
 
-- [ ] Model `ConfiguracaoLoginVendor` (public) + migração de seed com os defaults atuais.
-- [ ] Leitura dinâmica de `SIMPLE_JWT`/throttles/lockout a partir do banco (fallback settings).
-- [ ] Endpoints `GET/PATCH /api/plataforma-admin/config-login/` (SuperAdmin + auditoria + validação de faixas).
-- [ ] Enrollment de 2FA por QR na tela (hoje só CLI) + política global + backup codes.
-- [ ] Tela "Configurações de Login & Sessão" (5 seções, FormKit, Dark Navy & Dourado).
-- [ ] Testes: durabilidade pós-restart, faixas inválidas rejeitadas, efeito real no login/expiração.
+- [x] Model `ConfiguracaoLoginVendor` (public) + migração de seed com os defaults atuais.
+- [ ] Leitura dinâmica de `SIMPLE_JWT`/throttles/lockout a partir do banco (fallback settings). — _PARCIAL: throttles, impersonação e aviso de vencimento consomem `get_config()`; durações do JWT, `rotacionar_refresh` e lockout dinâmicos não confirmados._
+- [x] Endpoints `GET/PATCH /api/plataforma-admin/config-login/` (SuperAdmin + auditoria + validação de faixas).
+- [x] Enrollment de 2FA por QR na tela (hoje só CLI) + política global + backup codes. — _tela `configuracao-2fa-page` com QR (política global/backup codes: não verificados)._
+- [x] Tela "Configurações de Login & Sessão" (5 seções, FormKit, Dark Navy & Dourado).
+- [ ] Testes: durabilidade pós-restart, faixas inválidas rejeitadas, efeito real no login/expiração. — _PARCIAL: há testes de GET/PATCH, permissão e faixas; faltam durabilidade pós-restart e efeito real no login/expiração._
 
 ---
 

@@ -200,7 +200,7 @@
 
 - [x] **F3 (Pacientes) — FEITO:** `Paciente.dentista_responsavel` (FK) **+ `dentistas_compartilhados` (M2M)** + UI para atribuir; escopo em `apps/core/mixins.py::escopo_dentista_q` (responsável **ou** compartilhado **ou** com consulta), reusado pelo `PacienteViewSet`; demais papéis = todos.
 - [x] **F4 (Agenda/Consultas) — FEITO:** `ConsultaViewSet`/`AnamneseViewSet` usam `FiltraPorPacienteMixin` + `escopo_dentista_q` (também planos/guias — N1 corrigido).
-- [ ] **Dashboard:** KPIs/consultas do dentista limitados aos dele (quando ligar aos endpoints reais).
+- [x] **Dashboard:** KPIs/consultas do dentista limitados aos dele (quando ligar aos endpoints reais). — _entregue em `GET /api/dashboard/` (consultas do próprio dentista; pacientes ativos pelo escopo); `tests/test_dashboard.py`._
 - [x] **Estoque/Insumos:** permanece **geral** (todos) — decisão do usuário (settled).
 - [x] **Testes — FEITO:** dentista A não vê dados do dentista B (inclusive relações); gerente/recepção/admin veem tudo (`test_pacientes_api.py`).
 
