@@ -1,66 +1,69 @@
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { toast, Toaster } from 'sonner'
 
+import { CarregandoPagina } from '@/components/common/carregando-pagina'
 import { EmConstrucao } from '@/components/common/em-construcao'
 import { AppShell } from '@/components/layout/app-shell'
-import { AgendaPage } from '@/features/agenda/agenda-page'
-import { AuditoriaPage } from '@/features/auditoria/auditoria-page'
-import { LoginPage } from '@/features/auth/login-page'
 import { RequireAuth, RequireModulo, SomenteVisitante } from '@/features/auth/require-auth'
-import { ConfirmacaoPage } from '@/features/confirmacao/confirmacao-page'
 import { useAuth } from '@/features/auth/use-auth'
-import { DashboardPage } from '@/features/dashboard/dashboard-page'
-import { ConveniosPage } from '@/features/convenios/convenios-page'
-import { AlertasPage } from '@/features/estoque/alertas-page'
-import { CategoriasInsumoPage } from '@/features/estoque/categorias-insumo-page'
-import { FornecedoresPage } from '@/features/estoque/fornecedores-page'
-import { InsumoDetalhePage } from '@/features/estoque/insumo-detalhe-page'
-import { InsumosPage } from '@/features/estoque/insumos-page'
-import { MovimentacoesPage } from '@/features/estoque/movimentacoes-page'
-import { ProcedimentosPage } from '@/features/procedimentos/procedimentos-page'
-import { DentistasPage } from '@/features/dentistas/dentistas-page'
-import { ContasPagarPage } from '@/features/financeiro/contas-pagar-page'
-import { ContasReceberPage } from '@/features/financeiro/contas-receber-page'
-import { VisaoGeralPage } from '@/features/financeiro/visao-geral-page'
-import { IntegracoesPage } from '@/features/integracoes/integracoes-page'
-import { NotificacoesPage } from '@/features/notificacoes/notificacoes-page'
-import { FichaPage } from '@/features/pacientes/ficha-page'
-import { GuiaPage } from '@/features/pacientes/guia-page'
-import { PacienteDetalhePage } from '@/features/pacientes/paciente-detalhe-page'
-import { PacientesPage } from '@/features/pacientes/pacientes-page'
-import { PermissoesPage } from '@/features/usuarios/permissoes-page'
-import { UsuariosPage } from '@/features/usuarios/usuarios-page'
+import { ClinicaNaoEncontradaPage } from '@/features/error/clinica-nao-encontrada-page'
 import { queryClient } from '@/lib/api/query-client'
 import { aplicarTema, useTema } from '@/stores/tema'
+import {
+  AgendaPage,
+  AlertasPage,
+  AuditoriaPage,
+  AvisosPage,
+  CategoriasInsumoPage,
+  CeleryMonitorPage,
+  Configuracao2FAPage,
+  ConfiguracaoAvisoVencimentoPage,
+  ConfiguracoesLoginPage,
+  ConfirmacaoPage,
+  ContasPagarPage,
+  ContasReceberPage,
+  ConveniosPage,
+  DashboardPage,
+  DatabaseStudioPage,
+  DentistasPage,
+  FichaPage,
+  FornecedoresPage,
+  GuiaPage,
+  InsumoDetalhePage,
+  InsumosPage,
+  IntegracoesPage,
+  LoginPage,
+  MasterAdminPage,
+  MeuPlanoPage,
+  MinhaContaPage,
+  MovimentacoesPage,
+  NaoEncontradaPage,
+  NotificacoesPage,
+  PacienteDetalhePage,
+  PacientesPage,
+  PaginaPublicaPlataforma,
+  PermissoesPage,
+  PlanosPage,
+  ProcedimentosPage,
+  TenantDetalhesPage,
+  TenantsPage,
+  UsuariosPage,
+  VendorDashboardPage,
+  VendorLoginPage,
+  VendorShell,
+  VisaoGeralPage,
+} from '@/routes/paginas'
 
-import { MeuPlanoPage } from '@/features/plano/meu-plano-page'
-import { MinhaContaPage } from '@/features/conta/minha-conta-page'
 import { VENDOR_BASE_PATH } from '@/features/vendor-admin/constants'
-import { VendorDashboardPage } from '@/features/vendor-admin/vendor-dashboard-page'
-import { VendorLoginPage } from '@/features/vendor-admin/vendor-login-page'
 import {
   VendorRequireAuth,
   VendorRequireSuperAdmin,
   VendorSomenteVisitante,
 } from '@/features/vendor-admin/vendor-require-auth'
-import { VendorShell } from '@/features/vendor-admin/vendor-shell'
-import { PlanosPage } from '@/features/vendor-admin/planos/planos-page'
-import { AvisosPage } from '@/features/vendor-admin/avisos/avisos-page'
-import { TenantsPage } from '@/features/vendor-admin/tenants/tenants-page'
-import { TenantDetalhesPage } from '@/features/vendor-admin/tenants/tenant-detalhes-page'
-import { MasterAdminPage } from '@/features/vendor-admin/master-admin/master-admin-page'
-import { ConfiguracoesLoginPage } from '@/features/vendor-admin/config-login/configuracoes-login-page'
-import { ConfiguracaoAvisoVencimentoPage } from '@/features/vendor-admin/aviso-vencimento/configuracao-aviso-vencimento-page'
-import { Configuracao2FAPage } from '@/features/vendor-admin/seguranca/configuracao-2fa-page'
-import { DatabaseStudioPage } from '@/features/vendor-admin/studio/database-studio-page'
-import { CeleryMonitorPage } from '@/features/vendor-admin/celery/celery-monitor-page'
 
 import { Navigate } from 'react-router-dom'
-import { PaginaPublicaPlataforma } from '@/features/public/pagina-publica-plataforma'
-import { ClinicaNaoEncontradaPage } from '@/features/error/clinica-nao-encontrada-page'
 import { useClinicaAtual } from '@/features/auth/use-clinica-atual'
-import { NaoEncontradaPage } from '@/features/error/nao-encontrada-page'
 
 function LoginRoute() {
   const { entrar } = useAuth()
@@ -124,93 +127,98 @@ export function App() {
   return (
     <BrowserRouter>
       <SessaoWatcher />
-      <Routes>
-        {/* Rota Raiz */}
-        <Route path="/" element={<RootRouter />} />
+      <Suspense fallback={<CarregandoPagina />}>
+        <Routes>
+          {/* Rota Raiz */}
+          <Route path="/" element={<RootRouter />} />
 
-        {/* Pública (paciente): confirmação de consulta por link do WhatsApp */}
-        <Route path="/c/:token" element={<ConfirmacaoPage />} />
-        
-        {/* Pública, só para quem não está logado no subdomínio do Tenant */}
-        <Route element={<SomenteVisitante />}>
-          <Route path="/login" element={<LoginRoute />} />
-        </Route>
+          {/* Pública (paciente): confirmação de consulta por link do WhatsApp */}
+          <Route path="/c/:token" element={<ConfirmacaoPage />} />
 
-        {/* Rotas do Vendor Admin (Plataforma Global) */}
-        <Route element={<VendorSomenteVisitante />}>
-          <Route path={`${VENDOR_BASE_PATH}/login`} element={<VendorLoginPage />} />
-        </Route>
+          {/* Pública, só para quem não está logado no subdomínio do Tenant */}
+          <Route element={<SomenteVisitante />}>
+            <Route path="/login" element={<LoginRoute />} />
+          </Route>
 
-        <Route element={<VendorRequireAuth />}>
-          <Route path={VENDOR_BASE_PATH} element={<VendorShell />}>
-            <Route index element={<VendorDashboardPage />} />
-            <Route path="tenants" element={<TenantsPage />} />
-            <Route path="tenants/:id" element={<TenantDetalhesPage />} />
-            <Route path="planos" element={<PlanosPage />} />
-            <Route path="avisos" element={<AvisosPage />} />
-            <Route path="studio" element={<DatabaseStudioPage />} />
-            <Route path="celery" element={<CeleryMonitorPage />} />
-            <Route path="auditoria" element={<EmConstrucao titulo="Trilha de Auditoria do Vendor" />} />
-            {/* 100% superadmin-only no backend (sem nenhuma ação staff) — guarda de rota aqui também. */}
-            <Route element={<VendorRequireSuperAdmin />}>
-              <Route path="admin-master" element={<MasterAdminPage />} />
-              <Route path="configuracoes" element={<ConfiguracoesLoginPage />} />
-              <Route path="aviso-vencimento" element={<ConfiguracaoAvisoVencimentoPage />} />
-              <Route path="seguranca-2fa" element={<Configuracao2FAPage />} />
+          {/* Rotas do Vendor Admin (Plataforma Global) */}
+          <Route element={<VendorSomenteVisitante />}>
+            <Route path={`${VENDOR_BASE_PATH}/login`} element={<VendorLoginPage />} />
+          </Route>
+
+          <Route element={<VendorRequireAuth />}>
+            <Route path={VENDOR_BASE_PATH} element={<VendorShell />}>
+              <Route index element={<VendorDashboardPage />} />
+              <Route path="tenants" element={<TenantsPage />} />
+              <Route path="tenants/:id" element={<TenantDetalhesPage />} />
+              <Route path="planos" element={<PlanosPage />} />
+              <Route path="avisos" element={<AvisosPage />} />
+              <Route path="studio" element={<DatabaseStudioPage />} />
+              <Route path="celery" element={<CeleryMonitorPage />} />
+              <Route
+                path="auditoria"
+                element={<EmConstrucao titulo="Trilha de Auditoria do Vendor" />}
+              />
+              {/* 100% superadmin-only no backend (sem nenhuma ação staff) — guarda de rota aqui também. */}
+              <Route element={<VendorRequireSuperAdmin />}>
+                <Route path="admin-master" element={<MasterAdminPage />} />
+                <Route path="configuracoes" element={<ConfiguracoesLoginPage />} />
+                <Route path="aviso-vencimento" element={<ConfiguracaoAvisoVencimentoPage />} />
+                <Route path="seguranca-2fa" element={<Configuracao2FAPage />} />
+              </Route>
             </Route>
           </Route>
-        </Route>
 
-        {/* Protegidas do Tenant da Clínica: exigem sessão válida (guarda em cada navegação) */}
-        <Route element={<RequireAuth />}>
-          <Route element={<AppShell />}>
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="agenda" element={<AgendaPage />} />
-            <Route path="pacientes" element={<PacientesPage />} />
-            <Route path="pacientes/novo" element={<PacienteDetalhePage />} />
-            <Route path="pacientes/:pacienteId/guias/nova" element={<GuiaPage />} />
-            <Route path="pacientes/:pacienteId/guias/:guiaId" element={<GuiaPage />} />
-            <Route path="pacientes/:pacienteId/fichas/nova" element={<FichaPage />} />
-            <Route path="pacientes/:pacienteId/fichas/:fichaId" element={<FichaPage />} />
-            <Route path="pacientes/:id" element={<PacienteDetalhePage />} />
-            <Route path="dentistas" element={<DentistasPage />} />
-            <Route path="convenios" element={<ConveniosPage />} />
-            <Route path="procedimentos" element={<ProcedimentosPage />} />
-            {/* Módulos contratáveis/opcionais via plano */}
-            <Route element={<RequireModulo modulo="estoque" />}>
-              <Route path="estoque" element={<InsumosPage />} />
-              <Route path="estoque/categorias" element={<CategoriasInsumoPage />} />
-              <Route path="estoque/movimentacoes" element={<MovimentacoesPage />} />
-              <Route path="estoque/fornecedores" element={<FornecedoresPage />} />
-              <Route path="estoque/alertas" element={<AlertasPage />} />
-              <Route path="estoque/:insumoId" element={<InsumoDetalhePage />} />
+          {/* Protegidas do Tenant da Clínica: exigem sessão válida (guarda em cada navegação) */}
+          <Route element={<RequireAuth />}>
+            <Route element={<AppShell />}>
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="agenda" element={<AgendaPage />} />
+              <Route path="pacientes" element={<PacientesPage />} />
+              <Route path="pacientes/novo" element={<PacienteDetalhePage />} />
+              <Route path="pacientes/:pacienteId/guias/nova" element={<GuiaPage />} />
+              <Route path="pacientes/:pacienteId/guias/:guiaId" element={<GuiaPage />} />
+              <Route path="pacientes/:pacienteId/fichas/nova" element={<FichaPage />} />
+              <Route path="pacientes/:pacienteId/fichas/:fichaId" element={<FichaPage />} />
+              <Route path="pacientes/:id" element={<PacienteDetalhePage />} />
+              <Route path="dentistas" element={<DentistasPage />} />
+              <Route path="convenios" element={<ConveniosPage />} />
+              <Route path="procedimentos" element={<ProcedimentosPage />} />
+              {/* Módulos contratáveis/opcionais via plano */}
+              <Route element={<RequireModulo modulo="estoque" />}>
+                <Route path="estoque" element={<InsumosPage />} />
+                <Route path="estoque/categorias" element={<CategoriasInsumoPage />} />
+                <Route path="estoque/movimentacoes" element={<MovimentacoesPage />} />
+                <Route path="estoque/fornecedores" element={<FornecedoresPage />} />
+                <Route path="estoque/alertas" element={<AlertasPage />} />
+                <Route path="estoque/:insumoId" element={<InsumoDetalhePage />} />
+              </Route>
+
+              <Route element={<RequireModulo modulo="financeiro" />}>
+                <Route path="financeiro" element={<VisaoGeralPage />} />
+                <Route path="financeiro/receber" element={<ContasReceberPage />} />
+                <Route path="financeiro/pagar" element={<ContasPagarPage />} />
+              </Route>
+
+              <Route element={<RequireModulo modulo="whatsapp" />}>
+                <Route path="notificacoes" element={<NotificacoesPage />} />
+              </Route>
+
+              <Route element={<RequireModulo modulo="google_calendar" />}>
+                <Route path="integracoes" element={<IntegracoesPage />} />
+              </Route>
+
+              <Route path="equipe" element={<UsuariosPage />} />
+              <Route path="permissoes" element={<PermissoesPage />} />
+              <Route path="auditoria" element={<AuditoriaPage />} />
+              <Route path="meu-plano" element={<MeuPlanoPage />} />
+              <Route path="minha-conta" element={<MinhaContaPage />} />
             </Route>
-
-            <Route element={<RequireModulo modulo="financeiro" />}>
-              <Route path="financeiro" element={<VisaoGeralPage />} />
-              <Route path="financeiro/receber" element={<ContasReceberPage />} />
-              <Route path="financeiro/pagar" element={<ContasPagarPage />} />
-            </Route>
-
-            <Route element={<RequireModulo modulo="whatsapp" />}>
-              <Route path="notificacoes" element={<NotificacoesPage />} />
-            </Route>
-
-            <Route element={<RequireModulo modulo="google_calendar" />}>
-              <Route path="integracoes" element={<IntegracoesPage />} />
-            </Route>
-
-            <Route path="equipe" element={<UsuariosPage />} />
-            <Route path="permissoes" element={<PermissoesPage />} />
-            <Route path="auditoria" element={<AuditoriaPage />} />
-            <Route path="meu-plano" element={<MeuPlanoPage />} />
-            <Route path="minha-conta" element={<MinhaContaPage />} />
           </Route>
-        </Route>
 
-        {/* 404 / Página não encontrada para qualquer rota inexistente */}
-        <Route path="*" element={<NaoEncontradaPage />} />
-      </Routes>
+          {/* 404 / Página não encontrada para qualquer rota inexistente */}
+          <Route path="*" element={<NaoEncontradaPage />} />
+        </Routes>
+      </Suspense>
       <Toaster richColors closeButton theme={tema === 'escuro' ? 'dark' : 'light'} />
     </BrowserRouter>
   )

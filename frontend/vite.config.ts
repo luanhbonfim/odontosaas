@@ -13,6 +13,27 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  build: {
+    // Orçamento de bundle: ver scripts/verificar-bundle.mjs (npm run build:check).
+    chunkSizeWarningLimit: 450,
+    rolldownOptions: {
+      output: {
+        // React/roteador em chunk próprio (cache entre deploys: o código do app muda mais
+        // que as libs). Gráficos (recharts) e calendário (FullCalendar) NÃO entram em grupo:
+        // forçar um chunk nomeado os puxava para o carregamento inicial; assim ficam só
+        // nos chunks das telas que os usam (verificado por scripts/verificar-bundle.mjs).
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-react',
+              test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/,
+              priority: 20,
+            },
+          ],
+        },
+      },
+    },
+  },
   server: {
     host: 'localhost',
     // Acesse o app em http://demo.localhost:5173 → com changeOrigin:false o Host

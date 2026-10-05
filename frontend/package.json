@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
+    "build:check": "vite build && node scripts/verificar-bundle.mjs",
     "gen:api": "openapi-typescript http://localhost:8000/api/schema/ -o src/lib/api/schema.d.ts",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { Clock, ShieldAlert, X } from 'lucide-react'
 
@@ -7,6 +7,7 @@ import { useUI } from '@/stores/ui'
 import { tokenStore } from '@/lib/api/token-store'
 import { api } from '@/lib/api/client'
 import { queryClient } from '@/lib/api/query-client'
+import { CarregandoPagina } from '@/components/common/carregando-pagina'
 import { Button } from '@/components/ui/button'
 import { CarrosselAvisos } from '@/features/avisos/carrossel-avisos'
 import { useMeuPlano } from '@/features/plano/use-meu-plano'
@@ -131,7 +132,9 @@ export function AppShell() {
       >
         <Topbar />
         <main id="conteudo" ref={principalRef} className="flex-1 p-4 outline-none sm:p-6">
-          <Outlet />
+          <Suspense fallback={<CarregandoPagina />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

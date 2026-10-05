@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { CarregandoPagina } from '@/components/common/carregando-pagina'
 import {
   LayoutDashboard,
   Building2,
@@ -362,7 +363,9 @@ export function VendorShell() {
 
         {/* Dynamic Page Outlet */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-[#0B132B]">
-          <Outlet />
+          <Suspense fallback={<CarregandoPagina />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
