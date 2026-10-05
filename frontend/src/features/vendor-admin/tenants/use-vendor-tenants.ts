@@ -109,6 +109,8 @@ export type WhatsAppParams = {
 
 export type MetricasOperacionais = {
   total_pacientes: number
+  /** Limite de pacientes ATIVOS do plano (null = ilimitado). `total_pacientes` conta só os ativos. */
+  limite_pacientes?: number | null
   total_agendamentos: number
   total_dentistas: number
   total_usuarios: number

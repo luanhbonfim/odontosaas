@@ -18,6 +18,7 @@ import type { ErroApi } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 import { useDebounce } from '@/lib/hooks/use-debounce'
 
+import { AvisoLimitePacientes } from './aviso-limite-pacientes'
 import { type Paciente, TAMANHO_PAGINA, useExcluirPaciente, usePacientes } from './use-pacientes'
 
 const traco = <span className="text-muted-foreground">—</span>
@@ -194,6 +195,8 @@ export function PacientesPage() {
           </Button>
         }
       />
+
+      <AvisoLimitePacientes />
 
       {isError ? (
         <EmptyState

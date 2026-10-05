@@ -100,6 +100,12 @@ class Clinica(TenantMixin):
             return self.plano_assinatura.limite_usuarios
         return None
 
+    def get_limite_pacientes(self):
+        """Limite de pacientes **ativos** do plano (None = ilimitado). Sem override por clínica."""
+        if self.plano_assinatura:
+            return self.plano_assinatura.limite_pacientes_ativos
+        return None
+
     def recurso_habilitado(self, nome_recurso: str) -> bool:
         """
         Verifica se um módulo/recurso está habilitado para a clínica.

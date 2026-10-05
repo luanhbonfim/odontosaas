@@ -28,7 +28,7 @@
 
 - [ ] V.1: Auditar **enforcement do limite de dentistas** — ao cadastrar dentista além do `limite_dentistas`, bloquear com mensagem clara + sugestão de upgrade.
 - [ ] V.2: Auditar **enforcement do limite de usuários** (`limite_usuarios`) na criação de usuários.
-- [ ] V.3: Auditar **enforcement do limite de pacientes ativos** (`limite_pacientes_ativos`) — ver Sprint P.
+- [x] V.3: Auditar **enforcement do limite de pacientes ativos** (`limite_pacientes_ativos`) — ver Sprint P. — **entregue** pela Sprint P.
 - [ ] V.4: Auditar **gating de módulos** por plano: Financeiro/TISS e Estoque só acessíveis quando `modulo_*_ativo` (rota + UI escondida + API 403).
 - [ ] V.5: Auditar **gating de integrações**: Google (`sync_google_ativo`) e WhatsApp (`whatsapp_waha_ativo`).
 - [ ] V.6: Revalidar a **matriz de papéis** (Admin/Gerente/Dentista/Recepção) — reconfirmar `pode_gerenciar` em todo endpoint que muta `Usuario` (ver [[odonto-hierarquia-usuarios]]) e escopo do dentista.
@@ -38,11 +38,11 @@
 ## 👥 Sprint P — Limite de Pacientes Ativos (enforcement + UX)
 > Tornar `limite_pacientes_ativos` real e amigável.
 
-- [ ] P.1: Definir "paciente ativo" (regra de negócio — ex.: não arquivado / com atividade) e contagem por schema.
-- [ ] P.2: Enforcement ao cadastrar/reativar paciente acima da cota (bloqueio + mensagem + CTA de upgrade).
-- [ ] P.3: Indicador de uso (X de Y pacientes) em **Meu Plano** e aviso ao se aproximar do limite.
-- [ ] P.4: Vendor Admin: consumo real de pacientes por clínica.
-- [ ] P.5: Testes (no limite, acima, arquivar libera vaga).
+- [x] P.1: Definir "paciente ativo" (regra de negócio — ex.: não arquivado / com atividade) e contagem por schema. — **entregue**: paciente ativo = `Paciente.ativo=True` (status Ativo/Inativo controlado pela clínica); contagem por schema em `apps/pacientes/limites.py`.
+- [x] P.2: Enforcement ao cadastrar/reativar paciente acima da cota (bloqueio + mensagem + CTA de upgrade). — **entregue**: `POST /api/pacientes/` e reativação (`PATCH ativo=true`) respondem 400 com `codigo: "limite_pacientes"`, `limite` e `atual`; cadastrar já inativo não exige vaga; a importação do Google Agenda também respeita a cota (evento não importado). Clínica já acima da cota (plano menor) mantém os pacientes, só não cadastra mais.
+- [x] P.3: Indicador de uso (X de Y pacientes) em **Meu Plano** e aviso ao se aproximar do limite. — **entregue**: `GET /api/pacientes/cota/` + aviso na lista de Pacientes (>= 90% e esgotado, com link do plano para gerente/admin) e mensagens na barra de Meu Plano.
+- [x] P.4: Vendor Admin: consumo real de pacientes por clínica. — **entregue**: `metricas` do tenant devolve `limite_pacientes`; a aba Métricas mostra "ativos / limite" (âmbar ao esgotar). Sem override por clínica (só o limite do plano).
+- [x] P.5: Testes (no limite, acima, arquivar libera vaga). — **entregue**: `tests/test_limite_pacientes.py` (abaixo/no limite/acima, inativar libera vaga, reativação, ilimitado, acima da cota, Google) + testes de frontend.
 
 ## ☁️ Sprint(s) A — Armazenamento em Nuvem (1 GB no Essencial)
 > Detalhe completo em **[01-backlog-armazenamento-nuvem.md](01-backlog-armazenamento-nuvem.md)** (AS1–AS4).

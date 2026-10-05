@@ -1364,19 +1364,34 @@ export function TenantDetalhesPage() {
           {/* Grid de Volumetria */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
-              { rotulo: 'Pacientes', valor: metricas ? (metricas.total_pacientes ?? 0) : 0 },
+              {
+                rotulo: 'Pacientes ativos',
+                valor: metricas
+                  ? `${metricas.total_pacientes ?? 0} / ${metricas.limite_pacientes ?? '∞'}`
+                  : '0',
+                // Cota esgotada: destaca para o suporte (a clínica não consegue cadastrar mais).
+                alerta:
+                  !!metricas &&
+                  metricas.limite_pacientes != null &&
+                  (metricas.total_pacientes ?? 0) >= metricas.limite_pacientes,
+              },
               { rotulo: 'Agendamentos', valor: metricas ? (metricas.total_agendamentos ?? 0) : 0 },
               { rotulo: 'Dentistas', valor: metricas ? (metricas.total_dentistas ?? 0) : 0 },
               { rotulo: 'Usuários', valor: metricas ? (metricas.total_usuarios ?? 0) : 0 },
               { rotulo: 'Procedimentos', valor: metricas ? (metricas.total_procedimentos ?? 0) : 0 },
               { rotulo: 'Lançamentos Fin.', valor: metricas ? (metricas.total_lancamentos ?? 0) : 0 },
-            ].map((kpi, idx) => (
+            ].map((kpi: { rotulo: string; valor: string | number; alerta?: boolean }, idx) => (
               <Card key={idx} className="border-[#1E2D56] bg-[#111D3B] p-3 text-center">
                 <p className="text-[11px] text-slate-400 font-medium">{kpi.rotulo}</p>
                 {carregandoMetricas ? (
                   <Skeleton className="h-7 w-12 mx-auto mt-1 bg-[#1A2A4E]" />
                 ) : (
-                  <p className="text-xl font-bold text-white mt-1">{kpi.valor}</p>
+                  <p
+                    className={'text-xl font-bold mt-1 ' + (kpi.alerta ? 'text-amber-400' : 'text-white')}
+                    title={kpi.alerta ? 'Limite de pacientes ativos do plano atingido' : undefined}
+                  >
+                    {kpi.valor}
+                  </p>
                 )}
               </Card>
             ))}

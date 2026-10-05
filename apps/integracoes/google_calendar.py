@@ -7,6 +7,7 @@ Isolado da task Celery para facilitar o mock nos testes (basta mockar `build`).
 import contextlib
 import datetime as dt
 import hashlib
+import logging
 import re
 import uuid
 
@@ -20,6 +21,8 @@ from googleapiclient.errors import HttpError
 
 from apps.agenda.models import AgendaEvento, Consulta, EventoGoogleRemovido
 from apps.integracoes.models import ConfiguracaoSincronizacao, CredencialGoogleCalendar
+
+logger = logging.getLogger(__name__)
 
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 
@@ -213,6 +216,7 @@ def _extrair_telefone(texto):
 
 def _obter_ou_criar_paciente(telefone, nome):
     """Acha o paciente pelo telefone (compara dígitos) ou cria um novo (sem CPF)."""
+    from apps.pacientes.limites import cota_pacientes, tenant_atual
     from apps.pacientes.models import Paciente
 
     alvo = "".join(ch for ch in telefone if ch.isdigit())
@@ -220,6 +224,9 @@ def _obter_ou_criar_paciente(telefone, nome):
         tel = "".join(ch for ch in paciente.telefone_whatsapp if ch.isdigit())
         if tel and (tel == alvo or tel.endswith(alvo) or alvo.endswith(tel)):
             return paciente
+    # Paciente novo ocupa uma vaga do plano: no limite, o evento não é importado.
+    if cota_pacientes(tenant_atual())["atingiu_limite"]:
+        return None
     return Paciente.objects.create(
         nome_completo=nome or "Paciente (Google Agenda)", telefone_whatsapp=alvo
     )
@@ -253,6 +260,12 @@ def _importar_evento(item, credencial):
         return None
 
     paciente = _obter_ou_criar_paciente(telefone, (item.get("summary") or "").strip())
+    if paciente is None:
+        logger.warning(
+            "Evento %s do Google Agenda não importado: limite de pacientes ativos do plano atingido.",
+            event_id,
+        )
+        return None
     consulta = Consulta.objects.create(
         paciente=paciente,
         dentista=dentista,

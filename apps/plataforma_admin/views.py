@@ -832,6 +832,7 @@ class TenantVendorViewSet(viewsets.ModelViewSet):
                 "schema_name": clinica.schema_name,
                 "total_pacientes": total_pacientes,
                 "total_pacientes_ativos": total_pacientes,
+                "limite_pacientes": clinica.get_limite_pacientes(),
                 "total_dentistas": total_dentistas,
                 "total_dentistas_ativos": total_dentistas,
                 "total_usuarios": total_usuarios,

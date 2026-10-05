@@ -50,7 +50,7 @@ class MeuPlanoView(APIView):
 
         limite_dentistas = clinica.get_limite_dentistas()
         limite_usuarios = clinica.get_limite_usuarios()
-        limite_pacientes = plano.limite_pacientes_ativos if plano else None
+        limite_pacientes = clinica.get_limite_pacientes()
         limite_armazenamento_mb = plano.limite_armazenamento_mb if plano else 1024
 
         dados = {

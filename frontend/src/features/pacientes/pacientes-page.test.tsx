@@ -21,6 +21,8 @@ vi.mock('./use-pacientes', async (importOriginal) => {
   }
 })
 // Debounce identidade: a busca reflete imediatamente no teste.
+// O aviso de cota tem teste próprio (aviso-limite-pacientes.test.tsx).
+vi.mock('./aviso-limite-pacientes', () => ({ AvisoLimitePacientes: () => null }))
 vi.mock('@/lib/hooks/use-debounce', () => ({ useDebounce: (valor: unknown) => valor }))
 vi.mock('@/features/dentistas/use-dentistas', () => ({
   useDentistas: () => ({ data: [{ id: 3, nome_completo: 'Dra. Ana' }] }),

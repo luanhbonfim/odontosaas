@@ -2,12 +2,14 @@
 
 from django.db.models import Exists, OuterRef
 from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.agenda.models import Anamnese, Consulta
 from apps.core.mixins import ExclusaoProtegidaMixin, FiltraPorPacienteMixin, escopo_dentista_q
 from apps.core.pagination import PaginacaoPadrao
 
+from .limites import cota_pacientes, garantir_vaga_paciente
 from .models import Guia, Paciente, PlanoOdontologico
 from .serializers import GuiaSerializer, PacienteSerializer, PlanoOdontologicoSerializer
 
@@ -67,7 +69,24 @@ class PacienteViewSet(ExclusaoProtegidaMixin, viewsets.ModelViewSet):
             queryset = queryset.filter(dentista_responsavel_id=responsavel)
         return queryset
 
+    def _tenant(self):
+        return getattr(self.request, "tenant", None)
+
+    @action(detail=False, methods=["get"], url_path="cota")
+    def cota(self, request):
+        """Uso x limite de pacientes ativos do plano (alimenta o aviso na lista)."""
+        return Response(cota_pacientes(self._tenant()))
+
+    def perform_update(self, serializer):
+        # Reativar (inativo -> ativo) ocupa uma vaga: respeita o limite do plano.
+        if serializer.validated_data.get("ativo") is True and not serializer.instance.ativo:
+            garantir_vaga_paciente(self._tenant(), reativacao=True)
+        serializer.save()
+
     def perform_create(self, serializer):
+        # Paciente novo já ativo ocupa uma vaga (cadastrar inativo não exige vaga).
+        if serializer.validated_data.get("ativo", True):
+            garantir_vaga_paciente(self._tenant())
         # Dentista que cadastra vira o responsável (mantém acesso; não reatribui).
         usuario = self.request.user
         dentista = getattr(usuario, "dentista", None)

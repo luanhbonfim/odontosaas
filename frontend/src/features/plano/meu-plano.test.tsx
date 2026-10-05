@@ -209,4 +209,64 @@ describe('MeuPlanoPage', () => {
 
     expect(await screen.findByText('Renovação próxima do vencimento')).toBeInTheDocument()
   })
+
+  it('pacientes: avisa perto do limite e bloqueio ao atingir (Sprint P)', async () => {
+    const base = (pacientes: Record<string, unknown>) => ({
+      data: {
+        clinica: {
+          nome_fantasia: 'Clínica Cota',
+          razao_social: 'Cota LTDA',
+          cnpj: null,
+          schema_name: 'cota',
+          responsavel_nome: 'Dra. Ana',
+          responsavel_email: null,
+          responsavel_telefone: '11999999999',
+        },
+        plano: {
+          id: 3,
+          nome: 'Plano Cota',
+          periodicidade: 'MENSAL',
+          periodicidade_display: 'Mensal',
+          preco_mensal: 30,
+          preco_anual: null,
+        },
+        status: {
+          status_assinatura: 'ATIVA',
+          status_efetivo: 'ATIVA',
+          ativo: true,
+          vigencia_fim: '2027-12-31',
+          dias_restantes: 300,
+          vencido: false,
+        },
+        capacidade: {
+          dentistas: { atual: 1, limite: 3, ilimitado: false, percentual: 33, atingiu_limite: false },
+          usuarios: { atual: 1, limite: 5, ilimitado: false, percentual: 20, atingiu_limite: false },
+          pacientes,
+          armazenamento_mb: { atual_mb: 0, limite_mb: 1024, percentual: 0 },
+        },
+        modulos: { financeiro: true, estoque: true, sync_google: true, whatsapp_waha: true },
+        upgrade: {
+          contato_comercial_email: 'c@x.com',
+          contato_comercial_whatsapp: '5511999999999',
+          whatsapp_url: 'https://wa.me/5511999999999',
+        },
+      },
+    })
+
+    vi.mocked(api.get).mockResolvedValueOnce(
+      base({ atual: 95, limite: 100, ilimitado: false, percentual: 95, atingiu_limite: false }),
+    )
+    const { unmount } = renderComQueryClient(<MeuPlanoPage />)
+    expect(await screen.findByText('Perto do limite do plano.')).toBeInTheDocument()
+    expect(screen.queryByText(/novos cadastros e reativações estão bloqueados/)).not.toBeInTheDocument()
+    unmount()
+
+    vi.mocked(api.get).mockResolvedValueOnce(
+      base({ atual: 100, limite: 100, ilimitado: false, percentual: 100, atingiu_limite: true }),
+    )
+    renderComQueryClient(<MeuPlanoPage />)
+    expect(
+      await screen.findByText(/novos cadastros e reativações estão bloqueados/),
+    ).toBeInTheDocument()
+  })
 })

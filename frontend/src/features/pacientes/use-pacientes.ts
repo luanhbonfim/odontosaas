@@ -92,3 +92,23 @@ export function useAtualizarPaciente() {
     },
   })
 }
+
+/** Uso x limite de pacientes ATIVOS do plano (`GET /pacientes/cota/`). A chave começa com
+ * 'pacientes', então qualquer mutação de paciente já a invalida. */
+export type CotaPacientes = {
+  atual: number
+  /** null = ilimitado */
+  limite: number | null
+  ilimitado: boolean
+  percentual: number
+  atingiu_limite: boolean
+  proximo_do_limite: boolean
+}
+
+export function useCotaPacientes() {
+  return useQuery({
+    queryKey: ['pacientes', 'cota'],
+    queryFn: async () => (await api.get<CotaPacientes>('/pacientes/cota/')).data,
+    staleTime: 30_000,
+  })
+}

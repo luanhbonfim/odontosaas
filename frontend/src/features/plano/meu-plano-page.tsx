@@ -348,6 +348,16 @@ export function MeuPlanoPage() {
                   <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>{capacidade.pacientes.percentual}% ocupado</span>
                   </div>
+                  {capacidade.pacientes.atingiu_limite ? (
+                    <p role="alert" className="pt-1 text-xs font-medium text-destructive">
+                      Limite atingido: novos cadastros e reativações estão bloqueados. Inative
+                      pacientes que não frequentam mais ou faça upgrade.
+                    </p>
+                  ) : capacidade.pacientes.percentual >= 90 ? (
+                    <p className="pt-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+                      Perto do limite do plano.
+                    </p>
+                  ) : null}
                 </div>
               )}
             </CardContent>

@@ -43,6 +43,9 @@ class Command(BaseCommand):
         elif not Clinica.objects.get(schema_name=SCHEMA).ativo:
             raise CommandError("A clínica 'e2e' existe mas está inativa.")
 
+        # Sem plano => sem limites: um plano de teste anterior não deve vazar para a suíte.
+        Clinica.objects.filter(schema_name=SCHEMA).update(plano_assinatura=None)
+
         from apps.agenda.models import Anamnese, Consulta, Ficha
         from apps.dentistas.models import Dentista
         from apps.financeiro.models import Fatura, LancamentoFinanceiro
